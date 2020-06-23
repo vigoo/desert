@@ -1,0 +1,10 @@
+dist/*
+target/
+project/boot/
+project/plugins/project/
+.history
+.cache
+.lib/
+.idea
+travis-deploy-key
+travis-deploy-key.pub
