@@ -47,7 +47,4 @@ trait BinaryInput {
       if (optimizeForPositive) r else (r >>> 1) ^ -(r & 1)
     }
   }
-
-  def read[T: BinaryDeserializer](): Either[DesertFailure, T] =
-    implicitly[BinaryDeserializer[T]].deserialize(this)
 }

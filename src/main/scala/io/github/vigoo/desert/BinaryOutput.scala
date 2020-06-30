@@ -44,7 +44,4 @@ trait BinaryOutput {
 
   def writeUnknown(value: Any, typeRegistry: TypeRegistry): Either[DesertFailure, Unit] =
     ???
-
-  def write[T : BinarySerializer](value: T): Either[DesertFailure, Unit] =
-    implicitly[BinarySerializer[T]].serialize(value, this)
 }

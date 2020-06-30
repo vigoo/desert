@@ -97,8 +97,9 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         fieldName = witness.value.name
         chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
         output = chunkedOutput.outputFor(chunk)
-        _ <- ChunkedSerOps.fromEither(
-          headCodec.value.serialize(headValue, output)
+        _ <- ChunkedSerOps.fromSer(
+          headCodec.value.serialize(headValue),
+          output
         )
         _ <- ChunkedSerOps.recordFieldIndex(fieldName, chunk)
         _ <- tailCodec.serialize(tailValues)
@@ -136,13 +137,13 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             // Expect H in the input stream and wrap with Some()
             for {
               input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromEither(headCodec.value.deserialize(input))
+              headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
             } yield Some(headValue)
           } else {
             // Expect Option[H] in the input stream
             for {
               input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromEither(optHeadCodec.value.deserialize(input))
+              headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.value.deserialize(), input)
             } yield headValue
           }
         }
@@ -171,9 +172,9 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             // The field was made optional in by a newer version, reading as Option[H]
             for {
               input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              isDefined <- ChunkedDeserOps.fromEither(booleanCodec.deserialize(input))
+              isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
               headValue <- if (isDefined) {
-                ChunkedDeserOps.fromEither(headCodec.value.deserialize(input))
+                ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
               } else {
                 ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
               }
@@ -182,7 +183,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             // Default case, reading the field from the given chunk
             for {
               input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromEither(headCodec.value.deserialize(input))
+              headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
             } yield headValue
           }
         }
@@ -229,7 +230,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           primaryOutput <- getOutput
           chunkedOutput = createChunkedOutput(primaryOutput)
           hlist = gen.to(value)
-          initialState = ChunkedSerState(Map.empty, Map.empty)
+          state <- getSerializerState
+          initialState = ChunkedSerState(state, Map.empty, Map.empty)
           result <- Ser.fromEither(
             hlistSerializer.value.serialize(hlist)
               .run(chunkedOutput)
@@ -237,16 +239,20 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           (finalState, _) = result
           _ <- chunkedOutput.writeEvolutionHeader(finalState.fieldIndices)
           _ <- chunkedOutput.writeOrderedChunks()
+          _ <- setSerializerState(finalState.serializerState)
         } yield ()
     } {
       for {
         storedVersion <- readByte()
         primaryInput <- getInput
         chunkedInput <- createChunkedInput(primaryInput, storedVersion)
-        initialState = ChunkedSerState(Map.empty, Map.empty)
-        hlist <- Deser.fromEither(hlistDeserializer.value.deserialize()
+        state <- getDeserializerState
+        initialState = ChunkedSerState(state, Map.empty, Map.empty)
+        result <- Deser.fromEither(hlistDeserializer.value.deserialize()
           .run(chunkedInput)
-          .runA(initialState))
+          .run(initialState))
+        (finalState, hlist) = result
+        _ <- setDeserializerState(finalState.serializerState)
       } yield gen.from(hlist)
     }
 
@@ -421,13 +427,21 @@ object GenericBinaryCodec {
     def writeOrderedChunks(): Ser[Unit]
   }
 
-  case class ChunkedSerState(lastIndexPerChunk: Map[Byte, Byte],
+  case class ChunkedSerState(serializerState: SerializerState,
+                             lastIndexPerChunk: Map[Byte, Byte],
                              fieldIndices: Map[String, FieldPosition])
 
   type ChunkedSer[T] = ReaderT[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedOutput, T]
 
   object ChunkedSerOps {
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ReaderT.liftF(StateT.liftF(value))
+    final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
+      for {
+        chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        runResult <- fromEither(value.run(output).run(chunkedState.serializerState))
+        (resultState, result) = runResult
+        _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
+      } yield result
 
     final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
 
@@ -470,6 +484,13 @@ object GenericBinaryCodec {
 
   object ChunkedDeserOps {
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ReaderT.liftF(StateT.liftF(value))
+    final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
+      for {
+        chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        runResult <- fromEither(value.run(input).run(chunkedState.serializerState))
+        (resultState, result) = runResult
+        _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
+      } yield result
 
     final def pure[T](value: T): ChunkedDeser[T] = fromEither(Right[DesertFailure, T](value))
 
