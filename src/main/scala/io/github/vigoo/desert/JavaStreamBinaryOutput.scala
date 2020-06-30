@@ -19,6 +19,12 @@ class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
   override final def writeLong(value: Long): Either[DesertFailure, Unit] =
     handleFailures(dataStream.writeLong(value))
 
+  override def writeFloat(value: Float): Either[DesertFailure, Unit] =
+    handleFailures(dataStream.writeFloat(value))
+
+  override def writeDouble(value: Double): Either[DesertFailure, Unit] =
+    handleFailures(dataStream.writeDouble(value))
+
   override final def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit] =
     handleFailures(dataStream.write(value))
 

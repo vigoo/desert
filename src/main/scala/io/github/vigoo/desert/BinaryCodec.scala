@@ -34,6 +34,8 @@ trait BinarySerializerOps {
   final def writeInt(value: Int): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeInt(value)))
   final def writeVarInt(value: Int, optimizeForPositive: Boolean): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeVarInt(value, optimizeForPositive)))
   final def writeLong(value: Long): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeLong(value)))
+  final def writeFloat(value: Float): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeFloat(value)))
+  final def writeDouble(value: Double): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeDouble(value)))
   final def writeBytes(value: Array[Byte]): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeBytes(value)))
   final def writeUnknown(value: Any, typeRegistry: TypeRegistry): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeUnknown(value, typeRegistry)))
   final def write[U : BinarySerializer](value: U): Ser[Unit] = implicitly[BinarySerializer[U]].serialize(value)
@@ -78,6 +80,8 @@ trait BinaryDeserializerOps {
   final def readInt(): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readInt()))
   final def readVarInt(optimizeForPositive: Boolean): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readVarInt(optimizeForPositive)))
   final def readLong(): Deser[Long] = getInput.flatMap(input => Deser.fromEither(input.readLong()))
+  final def readFloat(): Deser[Float] = getInput.flatMap(input => Deser.fromEither(input.readFloat()))
+  final def readDouble(): Deser[Double] = getInput.flatMap(input => Deser.fromEither(input.readDouble()))
   final def readBytes(count: Int): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readBytes(count)))
   final def read[T: BinaryDeserializer](): Deser[T] = implicitly[BinaryDeserializer[T]].deserialize()
 

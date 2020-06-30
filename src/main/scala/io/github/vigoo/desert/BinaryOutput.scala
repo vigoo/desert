@@ -5,6 +5,8 @@ trait BinaryOutput {
   def writeShort(value: Short): Either[DesertFailure, Unit]
   def writeInt(value: Int): Either[DesertFailure, Unit]
   def writeLong(value: Long): Either[DesertFailure, Unit]
+  def writeFloat(value: Float): Either[DesertFailure, Unit]
+  def writeDouble(value: Double): Either[DesertFailure, Unit]
   def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit]
 
   def writeVarInt(value: Int, optimizeForPositive: Boolean = false): Either[DesertFailure, Unit] = {

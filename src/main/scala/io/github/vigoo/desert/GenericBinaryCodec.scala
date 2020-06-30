@@ -69,11 +69,11 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       .map { case (name, idx) => (name, idx.toByte) }
       .toMap
 
-  println("GenericBinaryCodec initialized")
-  println(s"version: $version")
-  println(s"fieldGenerations: $fieldGenerations")
-  println(s"fieldDefaults: $fieldDefaults")
-  println(s"madeOptionalAt: $madeOptionalAt")
+//  println("GenericBinaryCodec initialized")
+//  println(s"version: $version")
+//  println(s"fieldGenerations: $fieldGenerations")
+//  println(s"fieldDefaults: $fieldDefaults")
+//  println(s"madeOptionalAt: $madeOptionalAt")
 
   implicit val hnilSerializer: ChunkedBinarySerializer[HNil] =
     (_: HNil) => ChunkedSerOps.unit
@@ -113,7 +113,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
       val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
 
-      println(s"Reading optional field $fieldName from chunk $chunk")
+//      println(s"Reading optional field $fieldName from chunk $chunk")
 
       ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
         if (chunkedInput.storedVersion < chunk) {
@@ -156,7 +156,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
       val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
       ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-        println(s"Reading field $fieldName from chunk $chunk")
+//        println(s"Reading field $fieldName from chunk $chunk")
         if (chunkedInput.storedVersion < chunk) {
           // Field was not serialized
           fieldDefaults.get(fieldName) match {
@@ -295,7 +295,10 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                   case None =>
                     Left(UnknownFieldReferenceInEvolutionStep(name))
                 }
-              case FieldRemoved(name, originalIndex) =>
+              case FieldRemoved(name) =>
+                // TODO
+                Right(SerializedEvolutionStep.UnknownEvolutionStep)
+              case FieldKeepReferences(name) =>
                 // TODO
                 Right(SerializedEvolutionStep.UnknownEvolutionStep)
               case _ =>
@@ -305,7 +308,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
               case Left(failure) =>
                 s >> failSerializerWith(failure)
               case Right(step) =>
-                println(s"Writing serialized evolution step $v: $step")
+                // println(s"Writing serialized evolution step $v: $step")
                 s >> write[SerializedEvolutionStep](step)
             }
           }
@@ -342,7 +345,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         }
         chunks <- serializedEvolutionSteps.foldLeft(finishDeserializerWith(Vector.empty[Array[Byte]])) {
           case (m, SerializedEvolutionStep.FieldAddedToNewChunk(size)) => m.flatMap { vec =>
-            println(s"Reading $size bytes for chunk")
+            // println(s"Reading $size bytes for chunk")
             readBytes(size).map(vec :+ _)
           }
           case (m, _) => m.map { vec => vec :+ Array[Byte](0) }

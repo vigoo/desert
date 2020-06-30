@@ -19,6 +19,8 @@ object codecs {
   implicit val shortCodec: BinaryCodec[Short] = BinaryCodec.define[Short](value => writeShort(value))(readShort())
   implicit val intCodec: BinaryCodec[Int] = BinaryCodec.define[Int](value => writeInt(value))(readInt())
   implicit val longCodec: BinaryCodec[Long] = BinaryCodec.define[Long](value => writeLong(value))(readLong())
+  implicit val floatCodec: BinaryCodec[Float] = BinaryCodec.define[Float](value => writeFloat(value))(readFloat())
+  implicit val doubleCodec: BinaryCodec[Double] = BinaryCodec.define[Double](value => writeDouble(value))(readDouble())
 
   implicit val booleanCodec: BinaryCodec[Boolean] = BinaryCodec.define[Boolean](value => writeByte(if (value) 1 else 0))(readByte().map(_ != 0))
 

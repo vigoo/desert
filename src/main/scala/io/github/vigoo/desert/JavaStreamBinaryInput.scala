@@ -19,6 +19,12 @@ class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
   override final def readLong(): Either[DesertFailure, Long] =
     handleFailures(dataStream.readLong())
 
+  override def readFloat(): Either[DesertFailure, Float] =
+    handleFailures(dataStream.readFloat())
+
+  override def readDouble(): Either[DesertFailure, Double] =
+    handleFailures(dataStream.readDouble())
+
   override final def readBytes(count: Int): Either[DesertFailure, Array[Byte]] = {
     val buffer = new Array[Byte](count)
     if (count == 0) {

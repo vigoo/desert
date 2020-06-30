@@ -5,6 +5,8 @@ trait BinaryInput {
   def readShort(): Either[DesertFailure, Short]
   def readInt(): Either[DesertFailure, Int]
   def readLong(): Either[DesertFailure, Long]
+  def readFloat(): Either[DesertFailure, Float]
+  def readDouble(): Either[DesertFailure, Double]
   def readBytes(count: Int): Either[DesertFailure, Array[Byte]]
 
   def readVarInt(optimizeForPositive: Boolean): Either[DesertFailure, Int] = {
