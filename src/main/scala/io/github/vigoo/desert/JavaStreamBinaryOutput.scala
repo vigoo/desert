@@ -22,7 +22,7 @@ class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
   override final def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit] =
     handleFailures(dataStream.write(value))
 
-  private def handleFailures[T](f: => T): Either[DesertFailure, Unit] =
+  private def handleFailures[T](f: => T): Either[DesertFailure, T] =
     Try(f) match {
       case Success(value) => Right(value)
       case Failure(reason) => Left(FailedToWriteOutput(reason))
