@@ -2,6 +2,8 @@ package io.github.vigoo.desert
 
 import java.nio.charset.StandardCharsets
 
+import cats.Order
+import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import cats.instances.either._
 import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
@@ -11,6 +13,7 @@ import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
 
 import scala.collection.{Factory, mutable}
+import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.util.Try
 
 object codecs {
@@ -145,6 +148,7 @@ object codecs {
   implicit def listCodec[A : BinaryCodec]: BinaryCodec[List[A]] = iterableCodec[A, List[A]]
   implicit def vectorCodec[A : BinaryCodec]: BinaryCodec[Vector[A]] = iterableCodec[A, Vector[A]]
   implicit def setCodec[A : BinaryCodec]: BinaryCodec[Set[A]] = iterableCodec[A, Set[A]]
+  implicit def sortedSetCodec[A : BinaryCodec : Ordering]: BinaryCodec[SortedSet[A]] = iterableCodec[A, SortedSet[A]]
 
   implicit def tuple1Codec[T1 : BinaryCodec]: BinaryCodec[Tuple1[T1]] = BinaryCodec.deriveF() { api => import api._; derive }
   implicit def tuple2Codec[T1 : BinaryCodec, T2: BinaryCodec]: BinaryCodec[Tuple2[T1, T2]] = BinaryCodec.deriveF() { api => import api._; derive }
@@ -170,4 +174,78 @@ object codecs {
   implicit def tuple22Codec[T1 : BinaryCodec, T2: BinaryCodec, T3: BinaryCodec, T4: BinaryCodec, T5: BinaryCodec, T6: BinaryCodec, T7: BinaryCodec, T8: BinaryCodec, T9: BinaryCodec, T10: BinaryCodec, T11: BinaryCodec, T12: BinaryCodec, T13: BinaryCodec, T14: BinaryCodec, T15: BinaryCodec, T16: BinaryCodec, T17: BinaryCodec, T18: BinaryCodec, T19: BinaryCodec, T20: BinaryCodec, T21: BinaryCodec, T22: BinaryCodec]: BinaryCodec[Tuple22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]] = BinaryCodec.deriveF() { api => import api._; derive }
 
   implicit def mapCodec[K : BinaryCodec, V: BinaryCodec]: BinaryCodec[Map[K, V]] = iterableCodec[(K, V), Map[K, V]]
+  implicit def sortedMapCodec[K : BinaryCodec : Ordering, V: BinaryCodec]: BinaryCodec[SortedMap[K, V]] = iterableCodec[(K, V), SortedMap[K, V]]
+
+  implicit def eitherCodec[L: BinaryCodec, R: BinaryCodec]: BinaryCodec[Either[L, R]] = new BinaryCodec[Either[L, R]] {
+    override def deserialize(): Deser[Either[L, R]] = {
+      for {
+        isRight <- read[Boolean]()
+        result <- if (isRight) read[R]().map(Right.apply) else read[L]().map(Left.apply)
+      } yield result
+    }
+
+    override def serialize(value: Either[L, R]): Ser[Unit] = {
+      value match {
+        case Left(value) => write(false) >> write(value)
+        case Right(value) => write(true) >> write(value)
+      }
+    }
+  }
+
+  // Cats specific codecs
+
+  implicit def validatedCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validated[E, A]] = new BinaryCodec[Validated[E, A]] {
+    override def deserialize(): Deser[Validated[E, A]] = {
+      for {
+        isValid <- read[Boolean]()
+        result <- if (isValid) read[A]().map(Validated.Valid.apply) else read[E]().map(Validated.Invalid.apply)
+      } yield result
+    }
+
+    override def serialize(value: Validated[E, A]): Ser[Unit] = {
+      value match {
+        case Validated.Invalid(value) => write(false) >> write(value)
+        case Validated.Valid(value) => write(true) >> write(value)
+      }
+    }
+  }
+
+  implicit def nonEmptyListCodec[A: BinaryCodec]: BinaryCodec[NonEmptyList[A]] = {
+    val inner = listCodec[A]
+    BinaryCodec.from(
+      inner.contramap(_.toList),
+      () => inner.deserialize().flatMap { list =>
+        NonEmptyList.fromList(list) match {
+          case Some(value) => finishDeserializerWith(value)
+          case None => failDeserializerWith(DeserializationFailure("Non empty list is serialized as empty", None))
+        }
+      }
+    )
+  }
+
+  implicit def nonEmptySetCodec[A: BinaryCodec : Ordering]: BinaryCodec[NonEmptySet[A]] = {
+    val inner = sortedSetCodec[A]
+    BinaryCodec.from(
+      inner.contramap(_.toSortedSet),
+      () => inner.deserialize().flatMap { set =>
+        NonEmptySet.fromSet(set) match {
+          case Some(value) => finishDeserializerWith(value)
+          case None => failDeserializerWith(DeserializationFailure("Non empty set is serialized as empty", None))
+        }
+      }
+    )
+  }
+
+  implicit def nonEmptyMapCodec[K: BinaryCodec : Ordering : Order, V: BinaryCodec]: BinaryCodec[NonEmptyMap[K, V]] = {
+    val innner = sortedMapCodec[K, V]
+    BinaryCodec.from(
+      innner.contramap(_.toSortedMap),
+      () => innner.deserialize().flatMap { map =>
+        NonEmptyMap.fromMap(map) match {
+          case Some(value) => finishDeserializerWith(value)
+          case None => failDeserializerWith(DeserializationFailure("Non empty map is serialized as empty", None))
+        }
+      }
+    )
+  }
 }
