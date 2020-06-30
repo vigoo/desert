@@ -39,6 +39,17 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     val gen: Gen[Random with Sized, ProdV3] = DeriveGen[ProdV3]
   }
 
+  case class ProdV4(fieldA: String, newField1: Boolean)
+
+  object ProdV4 {
+    implicit val codec: BinaryCodec[ProdV4] = BinaryCodec.derive(
+      FieldAdded("newField1", true),
+      FieldMadeOptional("fieldB"),
+      FieldRemoved("fieldB")
+    )
+    val gen: Gen[Random with Sized, ProdV4] = DeriveGen[ProdV4]
+  }
+
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Evolution")(
       suite("tuples vs products")(
@@ -132,9 +143,45 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
           )
         ),
       ),
-//      suite("removing a field")(
-//        // TODO
-//      ),
+      suite("removing a field")(
+        testM("product with field removed is serializable")(
+          canBeSerialized(ProdV4.gen)
+        ),
+        test("can read v1 value by skipping the field")(
+          canBeSerializedAndReadBack(
+            ProdV1("hello", 200),
+            ProdV4("hello", newField1 = true)
+          )
+        ),
+        test("can read v2 value by skipping the field")(
+          canBeSerializedAndReadBack(
+            ProdV2("hello", newField1 = false, 200),
+            ProdV4("hello", newField1 = false)
+          )
+        ),
+        test("can read v3 value by skipping the field")(
+          canBeSerializedAndReadBack(
+            ProdV3("hello", newField1 = false, Some(200)),
+            ProdV4("hello", newField1 = false)
+          )
+        ),
+        test("cannot read as v1 because of missing field")(
+          cannotBeSerializedAndReadBack[ProdV4, ProdV1](
+            ProdV4("hello", newField1 = false),
+          )
+        ),
+        test("cannot read as v2 because of missing field")(
+          cannotBeSerializedAndReadBack[ProdV4, ProdV2](
+            ProdV4("hello", newField1 = false),
+          )
+        ),
+        test("can read as v3, missing field becomes None")(
+          canBeSerializedAndReadBack(
+            ProdV4("hello", newField1 = false),
+            ProdV3("hello", newField1 = false, fieldB = None),
+          )
+        )
+      ),
 //      suite("adding a new constructor")(
 //        // TODO
 //      )

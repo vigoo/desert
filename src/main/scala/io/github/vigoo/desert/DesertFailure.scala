@@ -12,3 +12,5 @@ case class NonOptionalFieldSerializedAsNone(fieldName: String) extends DesertFai
 case class UnknownFieldReferenceInEvolutionStep(name: String) extends DesertFailure
 case class UnknownSerializedEvolutionStep(code: Int) extends DesertFailure
 case class InvalidStringId(id: StringId) extends DesertFailure
+case class FieldRemovedInSerializedVersion(fieldName: String) extends DesertFailure
+case class FieldWithoutDefaultValuesIsMissing(fieldName: String) extends DesertFailure

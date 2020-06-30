@@ -68,12 +68,17 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       }
       .map { case (name, idx) => (name, idx.toByte) }
       .toMap
+  private val removedFields: Set[String] =
+    evolutionSteps
+      .collect {
+        case FieldRemoved(name) => name
+      }.toSet
 
-//  println("GenericBinaryCodec initialized")
-//  println(s"version: $version")
-//  println(s"fieldGenerations: $fieldGenerations")
-//  println(s"fieldDefaults: $fieldDefaults")
-//  println(s"madeOptionalAt: $madeOptionalAt")
+  //  println("GenericBinaryCodec initialized")
+  //  println(s"version: $version")
+  //  println(s"fieldGenerations: $fieldGenerations")
+  //  println(s"fieldDefaults: $fieldDefaults")
+  //  println(s"madeOptionalAt: $madeOptionalAt")
 
   implicit val hnilSerializer: ChunkedBinarySerializer[HNil] =
     (_: HNil) => ChunkedSerOps.unit
@@ -110,41 +115,45 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                                           (implicit headCodec: Lazy[BinaryCodec[H]],
                                            optHeadCodec: Lazy[BinaryCodec[Option[H]]]): ChunkedDeser[Option[H]] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-      val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
+      if (chunkedInput.removedFields.contains(fieldName)) {
+        ChunkedDeserOps.pure(None)
+      } else {
+        val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
+        val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
 
-//      println(s"Reading optional field $fieldName from chunk $chunk")
+        //      println(s"Reading optional field $fieldName from chunk $chunk")
 
-      ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-        if (chunkedInput.storedVersion < chunk) {
-          // This field was not serialized
-          fieldDefaults.get(fieldName) match {
-            case Some(value) =>
-              if (optSince <= chunk) {
-                // It was originally Option[H]
-                ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
-              } else {
-                // It was made optional after it was added
-                ChunkedDeserOps.pure(Some(value.asInstanceOf[H]))
-              }
-            case None =>
-              ChunkedDeserOps.failWith(DeserializationFailure(s"Field $fieldName is not in the stream and does not have default value", None))
+        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
+          if (chunkedInput.storedVersion < chunk) {
+            // This field was not serialized
+            fieldDefaults.get(fieldName) match {
+              case Some(value) =>
+                if (optSince <= chunk) {
+                  // It was originally Option[H]
+                  ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
+                } else {
+                  // It was made optional after it was added
+                  ChunkedDeserOps.pure(Some(value.asInstanceOf[H]))
+                }
+              case None =>
+                ChunkedDeserOps.failWith(DeserializationFailure(s"Field $fieldName is not in the stream and does not have default value", None))
 
-          }
-        } else {
-          // This field was serialized
-          if (chunkedInput.storedVersion < optSince) {
-            // Expect H in the input stream and wrap with Some()
-            for {
-              input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-            } yield Some(headValue)
+            }
           } else {
-            // Expect Option[H] in the input stream
-            for {
-              input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.value.deserialize(), input)
-            } yield headValue
+            // This field was serialized
+            if (chunkedInput.storedVersion < optSince) {
+              // Expect H in the input stream and wrap with Some()
+              for {
+                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+              } yield Some(headValue)
+            } else {
+              // Expect Option[H] in the input stream
+              for {
+                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.value.deserialize(), input)
+              } yield headValue
+            }
           }
         }
       }
@@ -154,37 +163,42 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   private def readFieldIfExists[H](fieldName: String)
                                   (implicit headCodec: Lazy[BinaryCodec[H]]): ChunkedDeser[H] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-      ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-//        println(s"Reading field $fieldName from chunk $chunk")
-        if (chunkedInput.storedVersion < chunk) {
-          // Field was not serialized
-          fieldDefaults.get(fieldName) match {
-            case Some(value) =>
-              ChunkedDeserOps.pure(value.asInstanceOf[H])
-            case None =>
-              ChunkedDeserOps.failWith(DeserializationFailure(s"Field $fieldName is not in the stream and does not have default value", None))
-          }
-        } else {
-          // Field was serialized
-
-          if (chunkedInput.madeOptionalAt.contains(fieldPosition)) {
-            // The field was made optional in by a newer version, reading as Option[H]
-            for {
-              input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
-              headValue <- if (isDefined) {
-                ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-              } else {
-                ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
-              }
-            } yield headValue
+      // Check if field was removed
+      if (chunkedInput.removedFields.contains(fieldName)) {
+        ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
+      } else {
+        val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
+        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
+          //        println(s"Reading field $fieldName from chunk $chunk")
+          if (chunkedInput.storedVersion < chunk) {
+            // Field was not serialized
+            fieldDefaults.get(fieldName) match {
+              case Some(value) =>
+                ChunkedDeserOps.pure(value.asInstanceOf[H])
+              case None =>
+                ChunkedDeserOps.failWith(FieldWithoutDefaultValuesIsMissing(fieldName))
+            }
           } else {
-            // Default case, reading the field from the given chunk
-            for {
-              input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-              headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-            } yield headValue
+            // Field was serialized
+
+            if (chunkedInput.madeOptionalAt.contains(fieldPosition)) {
+              // The field was made optional in by a newer version, reading as Option[H]
+              for {
+                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
+                headValue <- if (isDefined) {
+                  ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+                } else {
+                  ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
+                }
+              } yield headValue
+            } else {
+              // Default case, reading the field from the given chunk
+              for {
+                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+              } yield headValue
+            }
           }
         }
       }
@@ -293,11 +307,14 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                   case Some(fieldPosition) =>
                     Right(SerializedEvolutionStep.FieldMadeOptional(fieldPosition))
                   case None =>
-                    Left(UnknownFieldReferenceInEvolutionStep(name))
+                    if (removedFields.contains(name)) {
+                      Right(SerializedEvolutionStep.FieldMadeOptional(FieldPosition.removed))
+                    } else {
+                      Left(UnknownFieldReferenceInEvolutionStep(name))
+                    }
                 }
               case FieldRemoved(name) =>
-                // TODO
-                Right(SerializedEvolutionStep.UnknownEvolutionStep)
+                Right(SerializedEvolutionStep.FieldRemoved(name))
               case FieldKeepReferences(name) =>
                 // TODO
                 Right(SerializedEvolutionStep.UnknownEvolutionStep)
@@ -334,6 +351,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
 
           override val madeOptionalAt: Map[FieldPosition, Byte] = Map.empty
 
+          override val removedFields: Set[String] = Set.empty
+
           override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
             if (version == 0) Right(primaryInput) else Left(DeserializingNonExistingChunk(version))
         })
@@ -362,6 +381,11 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             .collect { case (SerializedEvolutionStep.FieldMadeOptional(position), idx) => (position, idx.toByte) }
             .toMap
 
+        override val removedFields: Set[String] =
+          serializedEvolutionSteps
+            .collect { case (SerializedEvolutionStep.FieldRemoved(name)) => name }
+            .toSet
+
         override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
           if (version < inputs.length) {
             Right(inputs(version))
@@ -386,6 +410,8 @@ object GenericBinaryCodec {
         if (byte <= 0) FieldPosition(0, (-byte).toByte) else FieldPosition(byte, 0)
       }
     )
+
+    val removed: FieldPosition = FieldPosition(128.toByte, 0)
   }
 
   sealed trait SerializedEvolutionStep
@@ -402,12 +428,15 @@ object GenericBinaryCodec {
 
     case class FieldMadeOptional(position: FieldPosition) extends SerializedEvolutionStep
 
+    case class FieldRemoved(fieldName: String) extends SerializedEvolutionStep
+
     case object UnknownEvolutionStep extends SerializedEvolutionStep
 
     implicit val codec: BinaryCodec[SerializedEvolutionStep] =
       BinaryCodec.define[SerializedEvolutionStep] {
         case FieldAddedToNewChunk(size) => writeVarInt(size, optimizeForPositive = false)
         case FieldMadeOptional(position) => writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) >> write(position)
+        case FieldRemoved(fieldName) => writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) >> write(fieldName)
         case UnknownEvolutionStep => writeVarInt(Codes.Unknown, optimizeForPositive = false)
       } {
         for {
@@ -415,6 +444,7 @@ object GenericBinaryCodec {
           result <- code match {
             case Codes.Unknown => finishDeserializerWith(UnknownEvolutionStep)
             case Codes.FieldMadeOptionalCode => read[FieldPosition]().map(FieldMadeOptional.apply)
+            case Codes.FieldRemovedCode => read[String]().map(FieldRemoved.apply)
             case size if size > 0 => finishDeserializerWith(FieldAddedToNewChunk(size))
             case _ => failDeserializerWith(UnknownSerializedEvolutionStep(code))
           }
@@ -438,6 +468,7 @@ object GenericBinaryCodec {
 
   object ChunkedSerOps {
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ReaderT.liftF(StateT.liftF(value))
+
     final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
       for {
         chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
@@ -479,6 +510,7 @@ object GenericBinaryCodec {
   trait ChunkedInput {
     val storedVersion: Byte
     val madeOptionalAt: Map[FieldPosition, Byte]
+    val removedFields: Set[String]
 
     def inputFor(version: Byte): Either[DesertFailure, BinaryInput]
   }
@@ -487,6 +519,7 @@ object GenericBinaryCodec {
 
   object ChunkedDeserOps {
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ReaderT.liftF(StateT.liftF(value))
+
     final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
       for {
         chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
