@@ -4,7 +4,6 @@ import cats.data.ReaderT
 import cats.instances.either._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
-import shapeless.{Generic, HList, LabelledGeneric, Lazy}
 
 import scala.language.experimental.macros
 
@@ -33,6 +32,7 @@ trait BinarySerializerOps {
   final def writeByte(value: Byte): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeByte(value)))
   final def writeShort(value: Short): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeShort(value)))
   final def writeInt(value: Int): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeInt(value)))
+  final def writeVarInt(value: Int, optimizeForPositive: Boolean): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeVarInt(value, optimizeForPositive)))
   final def writeLong(value: Long): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeLong(value)))
   final def writeBytes(value: Array[Byte]): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeBytes(value)))
   final def writeUnknown(value: Any, typeRegistry: TypeRegistry): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeUnknown(value, typeRegistry)))
@@ -67,12 +67,13 @@ object BinaryDeserializer {
 trait BinaryDeserializerOps {
   final def getInput: Deser[BinaryInput] = ReaderT.ask[Either[DesertFailure, *], BinaryInput]
 
-  final def readByte(): Deser[Byte] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.readByte()))
-  final def readShort(): Deser[Short] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.readShort()))
-  final def readInt(): Deser[Int] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.readInt()))
-  final def readLong(): Deser[Long] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.readLong()))
-  final def readBytes(count: Int): Deser[Array[Byte]] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.readBytes(count)))
-  final def read[T: BinaryDeserializer](): Deser[T] = ReaderT.ask[Either[DesertFailure, *], BinaryInput].flatMap(input => Deser.fromEither(input.read()))
+  final def readByte(): Deser[Byte] = getInput.flatMap(input => Deser.fromEither(input.readByte()))
+  final def readShort(): Deser[Short] = getInput.flatMap(input => Deser.fromEither(input.readShort()))
+  final def readInt(): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readInt()))
+  final def readVarInt(optimizeForPositive: Boolean): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readVarInt(optimizeForPositive)))
+  final def readLong(): Deser[Long] = getInput.flatMap(input => Deser.fromEither(input.readLong()))
+  final def readBytes(count: Int): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readBytes(count)))
+  final def read[T: BinaryDeserializer](): Deser[T] = getInput.flatMap(input => Deser.fromEither(input.read()))
 
   final def finishDeserializerWith[T](value: T): Deser[T] = Deser.fromEither(Right(value))
   final def failDeserializerWith(failure: DesertFailure): Deser[Nothing] = Deser.fromEither(Left(failure))

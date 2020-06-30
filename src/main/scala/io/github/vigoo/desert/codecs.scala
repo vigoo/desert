@@ -27,14 +27,14 @@ object codecs {
     override def serialize(value: String): Ser[Unit] = {
       val raw = value.getBytes(charset)
       for {
-        _ <- writeInt(raw.size)
+        _ <- writeVarInt(raw.size, optimizeForPositive = true)
         _ <- writeBytes(raw)
       } yield ()
     }
 
     override def deserialize(): Deser[String] = {
       for {
-        count <- readInt()
+        count <- readVarInt(optimizeForPositive = true)
         bytes <- readBytes(count)
         string <- Deser.fromEither(Try(new String(bytes, charset))
           .toEither
@@ -62,7 +62,7 @@ object codecs {
   def iterableCodec[A : BinaryCodec, T <: Iterable[A]](implicit factory: Factory[A, T]): BinaryCodec[T] = new BinaryCodec[T] {
     override def deserialize(): Deser[T] = {
       for {
-        knownSize <- readInt()
+        knownSize <- readVarInt(optimizeForPositive = false)
         result <- if (knownSize == -1) {
           deserializeWithUnknownSize()
         } else {
@@ -105,7 +105,7 @@ object codecs {
 
     private def serializeWithUnknownSize(value: T): Ser[Unit] = {
       for {
-        _ <- writeInt(-1)
+        _ <- writeVarInt(-1, optimizeForPositive = false)
         _ <- value.foldRight(finishSerializer()) {
           case (elem, rest) => write(true) >> write(elem) >> rest
         }
@@ -115,7 +115,7 @@ object codecs {
 
     private def serializeWithKnownSize(value: T, size: Int): Ser[Unit] = {
       for {
-        _ <- writeInt(size)
+        _ <- writeVarInt(size, optimizeForPositive = false)
         _ <- value.foldRight(finishSerializer()) {
           case (elem, rest) => write(elem) >> rest
         }

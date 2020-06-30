@@ -397,12 +397,12 @@ object GenericBinaryCodec {
 
     implicit val codec: BinaryCodec[SerializedEvolutionStep] =
       BinaryCodec.define[SerializedEvolutionStep] {
-        case FieldAddedToNewChunk(size) => writeInt(size)
-        case FieldMadeOptional(position) => writeInt(Codes.FieldMadeOptionalCode) >> write(position)
-        case UnknownEvolutionStep => writeInt(Codes.Unknown)
+        case FieldAddedToNewChunk(size) => writeVarInt(size, optimizeForPositive = false)
+        case FieldMadeOptional(position) => writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) >> write(position)
+        case UnknownEvolutionStep => writeVarInt(Codes.Unknown, optimizeForPositive = false)
       } {
         for {
-          code <- readInt()
+          code <- readVarInt(optimizeForPositive = false)
           result <- code match {
             case Codes.Unknown => finishDeserializerWith(UnknownEvolutionStep)
             case Codes.FieldMadeOptionalCode => read[FieldPosition]().map(FieldMadeOptional.apply)
