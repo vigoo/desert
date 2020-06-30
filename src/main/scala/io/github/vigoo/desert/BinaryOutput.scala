@@ -43,7 +43,4 @@ trait BinaryOutput {
       } yield ()
     }
   }
-
-  def writeUnknown(value: Any, typeRegistry: TypeRegistry): Either[DesertFailure, Unit] =
-    ???
 }

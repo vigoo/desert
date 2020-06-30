@@ -2,11 +2,14 @@ package io.github.vigoo.desert
 
 import cats.data.{ReaderT, StateT}
 import cats.instances.either._
-import io.github.vigoo.desert.BinaryDeserializer.Deser
-import io.github.vigoo.desert.BinarySerializer.Ser
+import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
+import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import io.github.vigoo.desert.SerializerState.{StoreStringResult, StringId}
+import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 trait BinarySerializer[T] { self =>
   import BinarySerializer._
@@ -17,7 +20,9 @@ trait BinarySerializer[T] { self =>
 }
 
 object BinarySerializer {
-  type Ser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], BinaryOutput, T]
+  final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry)
+
+  type Ser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv, T]
 
   object Ser {
     final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] = ReaderT.liftF(StateT.liftF(value))
@@ -25,7 +30,8 @@ object BinarySerializer {
 }
 
 trait BinarySerializerOps {
-  final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], BinaryOutput]
+  final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv].map(_.output)
+  final def getOutputTypeRegistry: Ser[TypeRegistry] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv].map(_.typeRegistry)
   final def getSerializerState: Ser[SerializerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
   final def setSerializerState(state: SerializerState): Ser[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](state))
 
@@ -37,7 +43,20 @@ trait BinarySerializerOps {
   final def writeFloat(value: Float): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeFloat(value)))
   final def writeDouble(value: Double): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeDouble(value)))
   final def writeBytes(value: Array[Byte]): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeBytes(value)))
-  final def writeUnknown(value: Any, typeRegistry: TypeRegistry): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeUnknown(value, typeRegistry)))
+
+  final def writeUnknown(value: Any): Ser[Unit] =
+    getOutputTypeRegistry.flatMap { typeRegistry =>
+      typeRegistry.get(value) match {
+        case Some(registration) =>
+          for {
+            _ <- writeVarInt(registration.id.value, optimizeForPositive = true)
+            _ <- registration.serialize(value)
+          } yield ()
+        case None =>
+          failSerializerWith(TypeNotRegistered(value.getClass))
+      }
+    }
+
   final def write[U : BinarySerializer](value: U): Ser[Unit] = implicitly[BinarySerializer[U]].serialize(value)
 
   final def finishSerializer(): Ser[Unit] = finishSerializerWith(())
@@ -63,7 +82,9 @@ trait BinaryDeserializer[T] { self =>
 }
 
 object BinaryDeserializer {
-  type Deser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], BinaryInput, T]
+  final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry)
+
+  type Deser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv, T]
 
   object Deser {
     final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] = ReaderT.liftF(StateT.liftF(value))
@@ -71,7 +92,8 @@ object BinaryDeserializer {
 }
 
 trait BinaryDeserializerOps {
-  final def getInput: Deser[BinaryInput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], BinaryInput]
+  final def getInput: Deser[BinaryInput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.input)
+  final def getInputTypeRegistry: Deser[TypeRegistry] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.typeRegistry)
   final def getDeserializerState: Deser[SerializerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
   final def setDeserializerState(state: SerializerState): Deser[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](state))
 
@@ -84,6 +106,18 @@ trait BinaryDeserializerOps {
   final def readDouble(): Deser[Double] = getInput.flatMap(input => Deser.fromEither(input.readDouble()))
   final def readBytes(count: Int): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readBytes(count)))
   final def read[T: BinaryDeserializer](): Deser[T] = implicitly[BinaryDeserializer[T]].deserialize()
+
+  final def readUnknown(): Deser[Any] =
+    for {
+      typeRegistry <- getInputTypeRegistry
+      typeId <- readVarInt(optimizeForPositive = true).map(RegisteredTypeId)
+      result <- typeRegistry.forId(typeId) match {
+        case Some(registration) =>
+          registration.codec.deserialize()
+        case None =>
+          failDeserializerWith(InvalidTypeId(typeId))
+      }
+    } yield result
 
   final def finishDeserializerWith[T](value: T): Deser[T] = Deser.fromEither(Right(value))
   final def failDeserializerWith[T](failure: DesertFailure): Deser[T] = Deser.fromEither(Left(failure))
@@ -124,4 +158,16 @@ object BinaryCodec {
     } else {
       f(new GenericBinaryCodec(InitialVersion +: evolutionSteps.toVector))
     }
+
+  def unknown[T](implicit tag: ClassTag[T]): BinaryCodec[T] =
+    define[T](
+      BinarySerializerOps.writeUnknown
+    )(
+      BinaryDeserializerOps.readUnknown().flatMap { value =>
+        Try(value.asInstanceOf[T]) match {
+          case Success(upcasted) => BinaryDeserializerOps.finishDeserializerWith(upcasted)
+          case Failure(exception) => BinaryDeserializerOps.failDeserializerWith(SerializationUpcastError(value.getClass, tag.runtimeClass, exception))
+        }
+      }
+    )
 }

@@ -12,6 +12,7 @@ import scala.annotation.nowarn
 
 @RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
 class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
+  implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class ProdV1(fieldA: String, fieldB: Int)
 

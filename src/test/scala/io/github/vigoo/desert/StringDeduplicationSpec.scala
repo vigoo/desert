@@ -3,11 +3,11 @@ package io.github.vigoo.desert
 import cats.instances.either._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import io.github.vigoo.desert.BinaryDeserializer.Deser
+import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.BinaryDeserializerOps._
-import io.github.vigoo.desert.BinarySerializer.Ser
+import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import org.junit.runner.RunWith
 import zio.test._
 import zio.test.environment.TestEnvironment
@@ -46,11 +46,11 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
       test("reads back duplicated strings correctly") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val result = testSer.run(output).runA(SerializerState.initial).flatMap { _ =>
+        val result = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).flatMap { _ =>
           stream.flush()
           val inStream = new ByteArrayInputStream(stream.toByteArray)
           val input = new JavaStreamBinaryInput(inStream)
-          testDeser.run(input).runA(SerializerState.initial)
+          testDeser.run(DeserializationEnv(input, TypeRegistry.empty)).runA(SerializerState.initial)
         }
 
         assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
@@ -58,7 +58,7 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
       test("reduces the serialized size") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val size = testSer.run(output).runA(SerializerState.initial).map { _ =>
+        val size = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).map { _ =>
           stream.flush()
           stream.toByteArray.length
         }

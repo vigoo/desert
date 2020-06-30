@@ -5,9 +5,9 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import cats.data.{ReaderT, StateT}
 import cats.instances.either._
 import cats.syntax.flatMap._
-import io.github.vigoo.desert.BinaryDeserializer.Deser
+import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
 import io.github.vigoo.desert.BinaryDeserializerOps._
-import io.github.vigoo.desert.BinarySerializer.Ser
+import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.GenericBinaryCodec._
@@ -245,7 +245,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           chunkedOutput = createChunkedOutput(primaryOutput)
           hlist = gen.to(value)
           state <- getSerializerState
-          initialState = ChunkedSerState(state, Map.empty, Map.empty)
+          typeRegistry <- getOutputTypeRegistry
+          initialState = ChunkedSerState(state, typeRegistry, Map.empty, Map.empty)
           result <- Ser.fromEither(
             hlistSerializer.value.serialize(hlist)
               .run(chunkedOutput)
@@ -261,7 +262,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         primaryInput <- getInput
         chunkedInput <- createChunkedInput(primaryInput, storedVersion)
         state <- getDeserializerState
-        initialState = ChunkedSerState(state, Map.empty, Map.empty)
+        typeRegistry <- getInputTypeRegistry
+        initialState = ChunkedSerState(state, typeRegistry, Map.empty, Map.empty)
         result <- Deser.fromEither(hlistDeserializer.value.deserialize()
           .run(chunkedInput)
           .run(initialState))
@@ -461,6 +463,7 @@ object GenericBinaryCodec {
   }
 
   case class ChunkedSerState(serializerState: SerializerState,
+                             typeRegistry: TypeRegistry,
                              lastIndexPerChunk: Map[Byte, Byte],
                              fieldIndices: Map[String, FieldPosition])
 
@@ -472,7 +475,7 @@ object GenericBinaryCodec {
     final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
       for {
         chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
-        runResult <- fromEither(value.run(output).run(chunkedState.serializerState))
+        runResult <- fromEither(value.run(SerializationEnv(output, chunkedState.typeRegistry)).run(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
       } yield result
@@ -523,7 +526,7 @@ object GenericBinaryCodec {
     final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
       for {
         chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
-        runResult <- fromEither(value.run(input).run(chunkedState.serializerState))
+        runResult <- fromEither(value.run(DeserializationEnv(input, chunkedState.typeRegistry)).run(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
       } yield result

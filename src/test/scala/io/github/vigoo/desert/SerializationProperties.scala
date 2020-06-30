@@ -17,27 +17,37 @@ trait SerializationProperties {
       assert(resultValue)(isRight(equalTo(value)))
     }
 
-  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, check: Assertion[B]): TestResult = {
+  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, check: Assertion[B])(implicit typeRegistry: TypeRegistry): TestResult = {
     val resultValue =
       for {
-        serialized <- serializeToArray(value)
-        resultValue <- deserializeFromArray[B](serialized)
+        serialized <- serializeToArray(value, typeRegistry)
+        resultValue <- deserializeFromArray[B](serialized, typeRegistry)
       } yield resultValue
 
     assert(resultValue)(isRight(check))
   }
 
-  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, expectedB: B): TestResult = {
+  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, expectedB: B)(implicit typeRegistry: TypeRegistry): TestResult = {
     canBeSerializedAndReadBack(value, equalTo(expectedB))
   }
 
-  def cannotBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A): TestResult = {
+  def cannotBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A)(implicit typeRegistry: TypeRegistry): TestResult = {
     val resultValue =
       for {
-        serialized <- serializeToArray(value)
-        resultValue <- deserializeFromArray[B](serialized)
+        serialized <- serializeToArray(value, typeRegistry)
+        resultValue <- deserializeFromArray[B](serialized, typeRegistry)
       } yield resultValue
 
     assert(resultValue)(isLeft)
+  }
+
+  def canBeSerializedAndReadBackWithTypeTag(value: Any, expected: Any)(implicit typeRegistry: TypeRegistry): TestResult = {
+    val resultValue =
+      for {
+        serialized <- serializeUnknownToArray(value, typeRegistry)
+        resultValue <- deserializeUnknownFromArray(serialized, typeRegistry)
+      } yield resultValue
+
+    assert(resultValue)(isRight(equalTo(expected)))
   }
 }
