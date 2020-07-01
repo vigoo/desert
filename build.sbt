@@ -1,62 +1,91 @@
+import microsites.ConfigYml
+import sbt.Keys.scalacOptions
+import scoverage.ScoverageKeys.coverageEnabled
+import xerial.sbt.Sonatype._
+
 name := "desert"
-description := "A Scala binary serialization library"
-organization := "io.github.vigoo"
 
 dynverSonatypeSnapshots in ThisBuild := true
 
-scalaVersion := "2.13.2"
+lazy val commonSettings = Seq(
+  organization := "io.github.vigoo",
+  scalaVersion := "2.13.2",
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+  testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
-addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+  libraryDependencies ++= Seq(
+    "dev.zio" %% "zio" % "1.0.0-RC21-2" % "test",
+    "dev.zio" %% "zio-test" % "1.0.0-RC21-2" % "test",
+    "dev.zio" %% "zio-test-sbt" % "1.0.0-RC21-2" % "test",
+    "dev.zio" %% "zio-test-junit" % "1.0.0-RC21-2" % "test",
+    "dev.zio" %% "zio-test-magnolia" % "1.0.0-RC21-2" % "test",
+  ),
 
-libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.typelevel" %% "cats-core" % "2.1.1",
-  "com.chuusai" %% "shapeless" % "2.3.3",
+  coverageEnabled in(Test, compile) := true,
+  coverageEnabled in(Compile, compile) := false,
+  scalacOptions := Seq(
+    "-deprecation",
+    "-unchecked"
+  ),
 
-  "dev.zio" %% "zio" % "1.0.0-RC21-2" % "test",
-  "dev.zio" %% "zio-test"     % "1.0.0-RC21-2" % "test",
-  "dev.zio" %% "zio-test-sbt" % "1.0.0-RC21-2" % "test",
-  "dev.zio" %% "zio-test-junit" % "1.0.0-RC21-2" % "test",
-  "dev.zio" %% "zio-test-magnolia" % "1.0.0-RC21-2" % "test",
+  // Publishing
+  publishMavenStyle := true,
+  licenses := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  publishTo := sonatypePublishTo.value,
+  sonatypeProjectHosting := Some(GitHubHosting("vigoo", "desert", "daniel.vigovszky@gmail.com")),
+  developers := List(
+    Developer(id = "vigoo", name = "Daniel Vigovszky", email = "daniel.vigovszky@gmail.com", url = url("https://vigoo.github.io"))
+  ),
+
+  credentials ++=
+    (for {
+      username <- Option(System.getenv().get("SONATYPE_USERNAME"))
+      password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
+    } yield
+      Credentials(
+        "Sonatype Nexus Repository Manager",
+        "oss.sonatype.org",
+        username,
+        password)).toSeq,
+
 )
 
-testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+lazy val root = Project("desert", file(".")).settings(commonSettings).settings(
+  publishArtifact := false,
+  description := "A Scala binary serialization library"
+) aggregate(core, akka, catsEffect, zio)
 
-coverageEnabled in(Test, compile) := true
-coverageEnabled in(Compile, compile) := false
-
-scalacOptions := Seq(
-  "-deprecation",
-  "-unchecked"
+lazy val core = Project("desert-core", file("desert-core")).settings(commonSettings).settings(
+  description := "A Scala binary serialization library",
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.typelevel" %% "cats-core" % "2.1.1",
+    "com.chuusai" %% "shapeless" % "2.3.3",
+  )
 )
 
+lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
+  description := "Akka serialization bindings for desert",
+  libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-actor" % "2.6.6",
+    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.6",
+  )
+).dependsOn(core)
 
-// Publishing
+lazy val catsEffect = Project("desert-cats-effect", file("desert-cats-effect")).settings(commonSettings).settings(
+  description := "Cats-effect API bindings for desert",
+  libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-effect" % "2.1.3"
+  )
+).dependsOn(core)
 
-publishMavenStyle := true
+lazy val zio = Project("desert-zio", file("desert-zio")).settings(commonSettings).settings(
+  description := "ZIO API and codecs for desert",
+  libraryDependencies ++= Seq(
+    "dev.zio" %% "zio" % "1.0.0-RC21-2"
+  )
+).dependsOn(core)
 
-licenses := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
-
-publishTo := sonatypePublishTo.value
-
-import microsites.ConfigYml
-import xerial.sbt.Sonatype._
-sonatypeProjectHosting := Some(GitHubHosting("vigoo", "desert", "daniel.vigovszky@gmail.com"))
-
-developers := List(
-  Developer(id="vigoo", name="Daniel Vigovszky", email="daniel.vigovszky@gmail.com", url=url("https://vigoo.github.io"))
-)
-
-credentials ++=
-  (for {
-    username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-    password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-  } yield
-    Credentials(
-      "Sonatype Nexus Repository Manager",
-      "oss.sonatype.org",
-      username,
-      password)).toSeq
 
 enablePlugins(GhpagesPlugin)
 enablePlugins(SiteScaladocPlugin)
@@ -86,6 +115,7 @@ micrositeConfigYaml := ConfigYml(
 )
 
 // Temporary fix to avoid including mdoc in the published POM
+
 import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 

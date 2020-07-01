@@ -176,7 +176,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
               case Some(value) =>
                 ChunkedDeserOps.pure(value.asInstanceOf[H])
               case None =>
-                ChunkedDeserOps.failWith(FieldWithoutDefaultValuesIsMissing(fieldName))
+                ChunkedDeserOps.failWith(FieldWithoutDefaultValueIsMissing(fieldName))
             }
           } else {
             // Field was serialized
