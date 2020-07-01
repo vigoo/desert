@@ -20,6 +20,7 @@ class PrimitiveSerializationSpec extends DefaultRunnableSpec with SerializationP
       testM("float")(canBeSerialized(Gen.anyFloat)),
       testM("double")(canBeSerialized(Gen.anyDouble)),
       testM("string")(canBeSerialized(Gen.anyString)),
+      testM("unit")(canBeSerialized(Gen.unit)),
 
       suite("variable length int")(
         testM("optimized for positive") {

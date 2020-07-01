@@ -13,8 +13,9 @@ import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
 
 import scala.collection.{Factory, mutable}
-import scala.collection.immutable.{SortedMap, SortedSet}
-import scala.util.Try
+import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 object codecs {
 
@@ -26,6 +27,8 @@ object codecs {
   implicit val doubleCodec: BinaryCodec[Double] = BinaryCodec.define[Double](value => writeDouble(value))(readDouble())
 
   implicit val booleanCodec: BinaryCodec[Boolean] = BinaryCodec.define[Boolean](value => writeByte(if (value) 1 else 0))(readByte().map(_ != 0))
+
+  implicit val unitCodec: BinaryCodec[Unit] = BinaryCodec.define[Unit](_ => finishSerializer())(finishDeserializerWith(()))
 
   implicit val stringCodec: BinaryCodec[String] = new BinaryCodec[String] {
     private val charset = StandardCharsets.UTF_8
@@ -80,6 +83,34 @@ object codecs {
       }
     }
   }
+
+  // Throwable
+
+  implicit val stackTraceElementCodec: BinaryCodec[StackTraceElement] = BinaryCodec.define[StackTraceElement](
+    stackTraceElement => for {
+      _ <- writeByte(0) // version
+      _ <- write(Option(stackTraceElement.getClassName))
+      _ <- write(Option(stackTraceElement.getMethodName))
+      _ <- write(Option(stackTraceElement.getFileName))
+      _ <- writeVarInt(stackTraceElement.getLineNumber, optimizeForPositive = true)
+    } yield ()
+  )(
+    for {
+      _ <- readByte() // version
+      className <- read[Option[String]]()
+      methodName <- read[Option[String]]()
+      fileName <- read[Option[String]]()
+      lineNumber <- readVarInt(optimizeForPositive = true)
+    } yield new StackTraceElement(className.orNull, methodName.orNull, fileName.orNull, lineNumber)
+  )
+
+  implicit def persistedThrowableCodec: BinaryCodec[PersistedThrowable] = BinaryCodec.deriveF() { api => import api._; derive }
+  implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(
+    persistedThrowableCodec.contramap(PersistedThrowable.apply),
+    persistedThrowableCodec.map(persisted => persisted)
+  )
+
+  // Collections
 
   def iterableCodec[A : BinaryCodec, T <: Iterable[A]](implicit factory: Factory[A, T]): BinaryCodec[T] = new BinaryCodec[T] {
     override def deserialize(): Deser[T] = {
@@ -145,10 +176,17 @@ object codecs {
     }
   }
 
+  implicit def wrappedArrayCodec[A: BinaryCodec : ClassTag]: BinaryCodec[ArraySeq[A]] = iterableCodec[A, ArraySeq[A]]
+  implicit def arrayCodec[A: BinaryCodec : ClassTag]: BinaryCodec[Array[A]] = BinaryCodec.from(
+    wrappedArrayCodec.contramap(arr => ArraySeq.unsafeWrapArray(arr)),
+    wrappedArrayCodec.map(_.toArray[A])
+  )
   implicit def listCodec[A : BinaryCodec]: BinaryCodec[List[A]] = iterableCodec[A, List[A]]
   implicit def vectorCodec[A : BinaryCodec]: BinaryCodec[Vector[A]] = iterableCodec[A, Vector[A]]
   implicit def setCodec[A : BinaryCodec]: BinaryCodec[Set[A]] = iterableCodec[A, Set[A]]
   implicit def sortedSetCodec[A : BinaryCodec : Ordering]: BinaryCodec[SortedSet[A]] = iterableCodec[A, SortedSet[A]]
+
+  // Tuples
 
   implicit def tuple1Codec[T1 : BinaryCodec]: BinaryCodec[Tuple1[T1]] = BinaryCodec.deriveF() { api => import api._; derive }
   implicit def tuple2Codec[T1 : BinaryCodec, T2: BinaryCodec]: BinaryCodec[Tuple2[T1, T2]] = BinaryCodec.deriveF() { api => import api._; derive }
@@ -188,6 +226,22 @@ object codecs {
       value match {
         case Left(value) => write(false) >> write(value)
         case Right(value) => write(true) >> write(value)
+      }
+    }
+  }
+
+  implicit def tryCodec[A: BinaryCodec]: BinaryCodec[Try[A]] = new BinaryCodec[Try[A]] {
+    override def deserialize(): Deser[Try[A]] = {
+      for {
+        isSuccess <- read[Boolean]()
+        result <- if (isSuccess) read[A]().map(Success.apply) else read[Throwable]().map(Failure.apply)
+      } yield result
+    }
+
+    override def serialize(value: Try[A]): Ser[Unit] = {
+      value match {
+        case Failure(reason) => write(false) >> write(reason)
+        case Success(value) => write(true) >> write(value)
       }
     }
   }

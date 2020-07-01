@@ -6,7 +6,7 @@ import zio.test.Assertion._
 import zio.test._
 
 trait SerializationProperties {
-  def canBeSerialized[R, A: BinaryCodec](rv: Gen[R, A]): URIO[R, TestResult] =
+  def canBeSerialized[R, A: BinaryCodec](rv: Gen[R, A], test: Option[A => Assertion[A]] = None): URIO[R, TestResult] =
     check(rv) { value =>
       val resultValue =
         for {
@@ -14,7 +14,12 @@ trait SerializationProperties {
           resultValue <- deserializeFromArray(serialized)
         } yield resultValue
 
-      assert(resultValue)(isRight(equalTo(value)))
+      test match {
+        case Some(chk) =>
+          assert(resultValue)(isRight(chk(value)))
+        case None =>
+          assert(resultValue)(isRight(equalTo(value)))
+      }
     }
 
   def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, check: Assertion[B])(implicit typeRegistry: TypeRegistry): TestResult = {
