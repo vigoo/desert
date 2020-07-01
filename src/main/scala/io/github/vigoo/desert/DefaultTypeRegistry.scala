@@ -31,6 +31,12 @@ object DefaultTypeRegistry {
       )
     }
 
+    def registerPlaceholder(): DefaultTypeRegistryBuilder = {
+      copy(
+        lastId = lastId.next
+      )
+    }
+
     def freeze(): TypeRegistry = new DefaultTypeRegistry(byId, ordered)
   }
 

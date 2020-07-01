@@ -69,6 +69,24 @@ class DefaultTypeRegistrySpec extends DefaultRunnableSpec {
           assert(regUnknown)(isNone) &&
           assert(registry.forId(RegisteredTypeId(1)))(isSome(equalTo(RegisteredType(RegisteredTypeId(1), stringCodec, classOf[String])))) &&
           assert(registry.forId(RegisteredTypeId(1000)))(isNone)
+      },
+      test("can skip deprecated type ids during registration") {
+        implicit val stringCodec = codecs.stringCodec
+        implicit val doubleCodec = codecs.doubleCodec
+        implicit val setCodec = codecs.setCodec[Double]
+
+        val registry = DefaultTypeRegistry()
+          .register[String]
+          .registerPlaceholder()
+          .registerPlaceholder()
+          .register[Set[Double]]
+          .freeze()
+
+        val regString = registry.get("hello")
+        val regSet = registry.get(Set(0.1, 0.2))
+
+        assert(regString)(isSome(equalTo(RegisteredType(RegisteredTypeId(1), stringCodec, classOf[String])))) &&
+          assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), setCodec, classOf[Set[Double]]))))
       }
     )
 }
