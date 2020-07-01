@@ -10,7 +10,7 @@ addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVers
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.typelevel" %% "cats-core" % "2.0.0",
+  "org.typelevel" %% "cats-core" % "2.1.1",
   "com.chuusai" %% "shapeless" % "2.3.3",
 
   "dev.zio" %% "zio" % "1.0.0-RC21" % "test",
