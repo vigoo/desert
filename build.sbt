@@ -1,5 +1,6 @@
 import microsites.ConfigYml
 import sbt.Keys.scalacOptions
+import sbtcrossproject.{ CrossProject, CrossType }
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
@@ -53,9 +54,13 @@ lazy val commonSettings = Seq(
 lazy val root = Project("desert", file(".")).settings(commonSettings).settings(
   publishArtifact := false,
   description := "A Scala binary serialization library"
-) aggregate(core, akka, catsEffect, zio)
+) aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js)
 
-lazy val core = Project("desert-core", file("desert-core")).settings(commonSettings).settings(
+lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
   description := "A Scala binary serialization library",
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -70,9 +75,13 @@ lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSetti
     "com.typesafe.akka" %% "akka-actor" % "2.6.6",
     "com.typesafe.akka" %% "akka-actor-typed" % "2.6.6",
   )
-).dependsOn(core)
+).dependsOn(core.jvm)
 
-lazy val catsEffect = Project("desert-cats-effect", file("desert-cats-effect")).settings(commonSettings).settings(
+lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effect")) (JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
   description := "Cats-effect API bindings for desert",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % "2.1.3",
@@ -80,7 +89,11 @@ lazy val catsEffect = Project("desert-cats-effect", file("desert-cats-effect")).
   )
 ).dependsOn(core)
 
-lazy val zio = Project("desert-zio", file("desert-zio")).settings(commonSettings).settings(
+lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
   description := "ZIO API and codecs for desert",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % "1.0.0-RC21-2"
