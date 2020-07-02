@@ -3,6 +3,7 @@ package io.github.vigoo.desert.akka
 import akka.actor.{ActorRef => UntypedActorRef, ExtendedActorSystem => UntypedExtendedActorSystem}
 import akka.actor.typed.{ActorRef, ActorRefResolver, ActorSystem}
 import akka.serialization.Serialization
+import akka.util.ByteString
 import io.github.vigoo.desert.BinaryCodec
 import io.github.vigoo.desert.codecs._
 
@@ -21,4 +22,9 @@ object codecs {
       stringCodec.map(resolver.resolveActorRef)
     )
   }
+
+  implicit val byteStringCodec: BinaryCodec[ByteString] = BinaryCodec.from(
+    arrayCodec[Byte].contramap(_.toArray),
+    arrayCodec[Byte].map(ByteString.fromArrayUnsafe)
+  )
 }
