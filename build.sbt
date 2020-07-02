@@ -1,6 +1,6 @@
 import microsites.ConfigYml
 import sbt.Keys.scalacOptions
-import sbtcrossproject.{ CrossProject, CrossType }
+import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
@@ -61,13 +61,14 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-  description := "A Scala binary serialization library",
-  libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.typelevel" %% "cats-core" % "2.1.1",
-    "com.chuusai" %% "shapeless" % "2.3.3",
+    description := "A Scala binary serialization library",
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.typelevel" %% "cats-core" % "2.1.1",
+      "com.chuusai" %% "shapeless" % "2.3.3",
+    )
   )
-)
+  .jsSettings(coverageEnabled := false)
 
 lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
   description := "Akka serialization bindings for desert",
@@ -77,28 +78,32 @@ lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSetti
   )
 ).dependsOn(core.jvm)
 
-lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effect")) (JVMPlatform, JSPlatform)
+lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effect"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-  description := "Cats-effect API bindings for desert",
-  libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-effect" % "2.1.3",
-    "dev.zio" %% "zio-interop-cats" % "2.1.3.0-RC16" % Test
+    description := "Cats-effect API bindings for desert",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect" % "2.1.3",
+      "dev.zio" %% "zio-interop-cats" % "2.1.3.0-RC16" % Test
+    )
   )
-).dependsOn(core)
+  .jsSettings(coverageEnabled := false)
+  .dependsOn(core)
 
 lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-  description := "ZIO API and codecs for desert",
-  libraryDependencies ++= Seq(
-    "dev.zio" %% "zio" % "1.0.0-RC21-2"
+    description := "ZIO API and codecs for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % "1.0.0-RC21-2"
+    )
   )
-).dependsOn(core)
+  .jsSettings(coverageEnabled := false)
+  .dependsOn(core)
 
 
 enablePlugins(GhpagesPlugin)
