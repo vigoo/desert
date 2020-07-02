@@ -75,7 +75,8 @@ lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSetti
 lazy val catsEffect = Project("desert-cats-effect", file("desert-cats-effect")).settings(commonSettings).settings(
   description := "Cats-effect API bindings for desert",
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-effect" % "2.1.3"
+    "org.typelevel" %% "cats-effect" % "2.1.3",
+    "dev.zio" %% "zio-interop-cats" % "2.1.3.0-RC16" % Test
   )
 ).dependsOn(core)
 
