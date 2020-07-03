@@ -50,6 +50,12 @@ case class SerializationUpcastError(valueType: Class[_], targetType: Class[_], r
   override def message: String = s"Failed to upcast ${valueType.getName} to ${targetType.getName}"
   override def cause: Option[Throwable] = Some(reason)
 }
+case class InvalidConstructorName(name: String, typ: String) extends DesertFailure {
+  override def message: String = s"Invalid constructor name ($name) for type $typ"
+}
+case class InvalidConstructorId(id: Int, typ: String) extends DesertFailure {
+  override def message: String = s"Unknown constructor id ($id) for type $typ"
+}
 
 class DesertException(failure: DesertFailure) extends Exception(failure.message) {
   failure.cause.foreach(initCause)

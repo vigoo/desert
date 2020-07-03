@@ -66,7 +66,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.typelevel" %% "cats-core" % "2.1.1",
       "com.chuusai" %% "shapeless" % "2.3.3",
-    )
+    ),
   )
   .jsSettings(coverageEnabled := false)
 

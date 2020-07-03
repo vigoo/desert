@@ -29,10 +29,3 @@ case class FieldMadeOptional(name: String) extends Evolution
 case class FieldRemoved(name: String) extends Evolution
 
 case class FieldKeepReferences(name: String) extends Evolution
-
-/**
- * New constructor to a coproduct
- *
- * Old version can read if not used (old constructor IDs must remain the same)
- */
-case class NewConstructor(name: String) extends Evolution

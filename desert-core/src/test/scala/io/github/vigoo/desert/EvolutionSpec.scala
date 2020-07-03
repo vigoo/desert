@@ -183,9 +183,6 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
           )
         )
       ),
-//      suite("adding a new constructor")(
-//        // TODO
-//      )
     )
 }
 
