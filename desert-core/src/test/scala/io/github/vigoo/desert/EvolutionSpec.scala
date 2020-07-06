@@ -51,6 +51,8 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     val gen: Gen[Random with Sized, ProdV4] = DeriveGen[ProdV4]
   }
 
+  import EvolutionSpec.TestId
+
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Evolution")(
       suite("tuples vs products")(
@@ -66,6 +68,14 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
             ("hello", 100)
           )
         ),
+      ),
+      suite("value type wrappers")(
+        test("string can be read as a wrapped string")(
+          canBeSerializedAndReadBack(
+            "hello world",
+            TestId("hello world")
+          )
+        )
       ),
       suite("collections")(
         test("list to vector")(
@@ -186,4 +196,9 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     )
 }
 
-@nowarn object EvolutionSpec extends EvolutionSpec
+@nowarn object EvolutionSpec extends EvolutionSpec {
+  case class TestId(value: String) extends AnyVal
+  object TestId {
+    implicit val codec: BinaryCodec[TestId] = BinaryCodec.deriveForWrapper
+  }
+}

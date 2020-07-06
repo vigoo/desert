@@ -4,6 +4,7 @@ import cats.data.{ReaderT, StateT}
 import cats.instances.either._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
+import shapeless.Lazy
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -59,6 +60,8 @@ object BinaryCodec {
   }
 
   def derive[T](evolutionSteps: Evolution*): BinaryCodec[T] = macro Macros.deriveImpl[T]
+
+  def deriveForWrapper[T](implicit codec: Lazy[UnwrappedBinaryCodec[T]]): BinaryCodec[T] = codec.value
 
   def deriveF[T](evolutionSteps: Evolution*)(f: GenericDerivationApi => BinaryCodec[T]): BinaryCodec[T] =
     if (evolutionSteps.isEmpty) {
