@@ -245,8 +245,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         typeName = witness.value.name
         output = chunkedOutput.outputFor(0)
         constructorId <- ChunkedSerOps.getConstructorId(typeName)
-        _ <- ChunkedSerOps.fromSer(writeVarInt(constructorId, optimizeForPositive = true), output)
         _ <- ChunkedSerOps.fromSer(
+          writeVarInt(constructorId, optimizeForPositive = true) >>
           headCodec.value.serialize(headValue),
           output
         )
@@ -352,13 +352,13 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             val serializedEvolutionStep = evolutionSteps(v) match {
               case InitialVersion =>
                 val size = {
-                  streams(v).flush();
+                  streams(v).flush()
                   streams(v).size()
                 }
                 Right(SerializedEvolutionStep.FieldAddedToNewChunk(size))
               case FieldAdded(_, _) =>
                 val size = {
-                  streams(v).flush();
+                  streams(v).flush()
                   streams(v).size()
                 }
                 Right(SerializedEvolutionStep.FieldAddedToNewChunk(size))
@@ -438,7 +438,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
 
         override val removedFields: Set[String] =
           serializedEvolutionSteps
-            .collect { case (SerializedEvolutionStep.FieldRemoved(name)) => name }
+            .collect { case SerializedEvolutionStep.FieldRemoved(name) => name }
             .toSet
 
         override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
@@ -528,21 +528,21 @@ object GenericBinaryCodec {
   type ChunkedSer[T] = ReaderT[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedOutput, T]
 
   object ChunkedSerOps {
+    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedOutput]
+    final def getChunkedState: ChunkedSer[ChunkedSerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+    final def setChunkedState(newState: ChunkedSerState): ChunkedSer[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](newState))
+
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ReaderT.liftF(StateT.liftF(value))
+    final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
+    final def unit: ChunkedSer[Unit] = pure(())
 
     final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
       for {
-        chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        chunkedState <- getChunkedState
         runResult <- fromEither(value.run(SerializationEnv(output, chunkedState.typeRegistry)).run(chunkedState.serializerState))
         (resultState, result) = runResult
-        _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
+        _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result
-
-    final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
-
-    final def unit: ChunkedSer[Unit] = pure(())
-
-    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedOutput]
 
     final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedSer[Unit] =
       ReaderT.liftF {
@@ -565,7 +565,7 @@ object GenericBinaryCodec {
 
     def getConstructorId(typeName: String): ChunkedSer[Int] =
       for {
-        state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        state <- getChunkedState
         result <- state.constructorNameToId.get(typeName) match {
           case Some(id) => pure[Int](id)
           case None => fromEither(Left(InvalidConstructorName(typeName, state.typeDescription)))
@@ -588,25 +588,25 @@ object GenericBinaryCodec {
   type ChunkedDeser[T] = ReaderT[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedInput, T]
 
   object ChunkedDeserOps {
+    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ReaderT.ask[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedInput]
+    final def getChunkedState: ChunkedDeser[ChunkedSerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+    final def setChunkedState(newState: ChunkedSerState): ChunkedDeser[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](newState))
+
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ReaderT.liftF(StateT.liftF(value))
+    final def pure[T](value: T): ChunkedDeser[T] = fromEither(Right[DesertFailure, T](value))
+    final def failWith[T](failure: DesertFailure): ChunkedDeser[T] = fromEither(Left(failure))
 
     final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
       for {
-        chunkedState <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        chunkedState <- getChunkedState
         runResult <- fromEither(value.run(DeserializationEnv(input, chunkedState.typeRegistry)).run(chunkedState.serializerState))
         (resultState, result) = runResult
-        _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](chunkedState.copy(serializerState = resultState)))
+        _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result
-
-    final def pure[T](value: T): ChunkedDeser[T] = fromEither(Right[DesertFailure, T](value))
-
-    final def failWith[T](failure: DesertFailure): ChunkedDeser[T] = fromEither(Left(failure))
-
-    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ReaderT.ask[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedInput]
 
     final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedDeser[FieldPosition] =
       for {
-        state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        state <- getChunkedState
         (newState, position) = state.lastIndexPerChunk.get(chunk) match {
           case Some(lastIndex) =>
             val newIndex: Byte = (lastIndex + 1).toByte
@@ -620,28 +620,28 @@ object GenericBinaryCodec {
               fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, 0))
             ), FieldPosition(chunk, 0))
         }
-        _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], ChunkedSerState](newState))
+        _ <- setChunkedState(newState)
       } yield position
 
-    def getConstructorName(id: Int): ChunkedDeser[String] =
+    final def getConstructorName(id: Int): ChunkedDeser[String] =
       for {
-        state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        state <- getChunkedState
         result <- state.constructorIdToName.get(id) match {
           case Some(name) => pure[String](name)
           case None => fromEither(Left(InvalidConstructorId(id, state.typeDescription)))
         }
       } yield result
 
-    def readOrGetConstructorName(input: BinaryInput): ChunkedDeser[String] =
+    final def readOrGetConstructorName(input: BinaryInput): ChunkedDeser[String] =
       for {
-        state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], ChunkedSerState])
+        state <- getChunkedState
         constructorName <- state.readConstructorName match {
           case Some(value) => pure(value)
           case None =>
             for {
               constructorId <- ChunkedDeserOps.fromDeser(readVarInt(optimizeForPositive = true), input)
               constructorName <- ChunkedDeserOps.getConstructorName(constructorId)
-              _ <- ReaderT.liftF(StateT.modify[Either[DesertFailure, *], ChunkedSerState](_.copy(readConstructorName = Some(constructorName))))
+              _ <- setChunkedState(state.copy(readConstructorName = Some(constructorName)))
             } yield constructorName
         }
       } yield constructorName

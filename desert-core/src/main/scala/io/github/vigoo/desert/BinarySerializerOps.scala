@@ -45,14 +45,14 @@ trait BinarySerializerOps {
     for {
       state <- getSerializerState
       (newState, result) = state.storeString(value)
-      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+      _ <- setSerializerState(newState)
     } yield result
 
   final def storeRef(value: AnyRef): Ser[StoreRefResult] =
     for {
       state <- getSerializerState
       (newState, result) = state.storeRef(value)
-      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+      _ <- setSerializerState(newState)
     } yield result
 
   final def storeRefOrObject[T <: AnyRef](value: T)(implicit codec: Lazy[BinaryCodec[T]]): Ser[Unit] =
