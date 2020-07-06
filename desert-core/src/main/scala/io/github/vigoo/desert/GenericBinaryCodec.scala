@@ -375,9 +375,6 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                 }
               case FieldRemoved(name) =>
                 Right(SerializedEvolutionStep.FieldRemoved(name))
-              case FieldKeepReferences(name) =>
-                // TODO
-                Right(SerializedEvolutionStep.UnknownEvolutionStep)
               case _ =>
                 Right(SerializedEvolutionStep.UnknownEvolutionStep)
             }

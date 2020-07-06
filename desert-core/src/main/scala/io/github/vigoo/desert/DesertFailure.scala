@@ -1,6 +1,6 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.SerializerState.StringId
+import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 
 sealed trait DesertFailure {
@@ -56,6 +56,10 @@ case class InvalidConstructorName(name: String, typ: String) extends DesertFailu
 case class InvalidConstructorId(id: Int, typ: String) extends DesertFailure {
   override def message: String = s"Unknown constructor id ($id) for type $typ"
 }
+case class InvalidRefId(id: RefId) extends DesertFailure {
+  override def message: String = s"Invalid reference identifier ($id)"
+}
+
 
 class DesertException(failure: DesertFailure) extends Exception(failure.message) {
   failure.cause.foreach(initCause)

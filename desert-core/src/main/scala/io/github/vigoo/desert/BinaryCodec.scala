@@ -2,10 +2,12 @@ package io.github.vigoo.desert
 
 import cats.data.{ReaderT, StateT}
 import cats.instances.either._
+import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.SerializerState.{StoreStringResult, StringId}
+import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefId, RefIsNew, StoreRefResult, StoreStringResult, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
+import shapeless.Lazy
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -69,6 +71,19 @@ trait BinarySerializerOps {
       (newState, result) = state.storeString(value)
       _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
     } yield result
+
+  final def storeRef(value: AnyRef): Ser[StoreRefResult] =
+    for {
+      state <- getSerializerState
+      (newState, result) = state.storeRef(value)
+      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+    } yield result
+
+  final def storeRefOrObject[T <: AnyRef](value: T)(implicit codec: Lazy[BinaryCodec[T]]): Ser[Unit] =
+    storeRef(value).flatMap {
+      case RefAlreadyStored(id) => writeVarInt(id.value, optimizeForPositive = true)
+      case RefIsNew(_) => writeVarInt(0, optimizeForPositive = true) >> write(value)(codec.value)
+    }
 }
 
 object BinarySerializerOps extends BinarySerializerOps
@@ -133,6 +148,30 @@ trait BinaryDeserializerOps {
       (newState, _) = state.storeString(value)
       _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
     } yield ()
+
+  final def getRef(value: RefId): Deser[Option[AnyRef]] =
+    for {
+      state <- getDeserializerState
+    } yield state.refsById.get(value)
+
+  final def storeReadRef(value: AnyRef): Deser[Unit] =
+    for {
+      state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
+      (newState, r) = state.storeRef(value)
+      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+    } yield ()
+
+  def readRefOrValue[T <: AnyRef](storeReadReference: Boolean = true)(implicit codec: Lazy[BinaryCodec[T]]): Deser[T] =
+    readVarInt(optimizeForPositive = true).flatMap {
+      case 0 => for {
+        value <- read[T]()(codec.value)
+        _ <- if (storeReadReference) storeReadRef(value) else finishDeserializerWith(())
+      } yield value
+      case id => getRef(RefId(id)).flatMap {
+        case None => failDeserializerWith(InvalidRefId(RefId(id)))
+        case Some(value) => finishDeserializerWith(value.asInstanceOf[T])
+      }
+    }
 }
 
 object BinaryDeserializerOps extends BinaryDeserializerOps
