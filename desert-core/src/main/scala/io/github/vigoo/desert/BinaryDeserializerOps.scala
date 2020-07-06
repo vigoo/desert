@@ -1,0 +1,78 @@
+package io.github.vigoo.desert
+
+import cats.data.{ReaderT, StateT}
+import cats.instances.either._
+import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
+import io.github.vigoo.desert.SerializerState.{RefId, StringId}
+import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
+import shapeless.Lazy
+
+trait BinaryDeserializerOps {
+  final def getInput: Deser[BinaryInput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.input)
+  final def getInputTypeRegistry: Deser[TypeRegistry] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.typeRegistry)
+  final def getDeserializerState: Deser[SerializerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
+  final def setDeserializerState(state: SerializerState): Deser[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](state))
+
+  final def readByte(): Deser[Byte] = getInput.flatMap(input => Deser.fromEither(input.readByte()))
+  final def readShort(): Deser[Short] = getInput.flatMap(input => Deser.fromEither(input.readShort()))
+  final def readInt(): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readInt()))
+  final def readVarInt(optimizeForPositive: Boolean): Deser[Int] = getInput.flatMap(input => Deser.fromEither(input.readVarInt(optimizeForPositive)))
+  final def readLong(): Deser[Long] = getInput.flatMap(input => Deser.fromEither(input.readLong()))
+  final def readFloat(): Deser[Float] = getInput.flatMap(input => Deser.fromEither(input.readFloat()))
+  final def readDouble(): Deser[Double] = getInput.flatMap(input => Deser.fromEither(input.readDouble()))
+  final def readBytes(count: Int): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readBytes(count)))
+  final def read[T: BinaryDeserializer](): Deser[T] = implicitly[BinaryDeserializer[T]].deserialize()
+
+  final def readUnknown(): Deser[Any] =
+    for {
+      typeRegistry <- getInputTypeRegistry
+      typeId <- readVarInt(optimizeForPositive = true).map(RegisteredTypeId)
+      result <- typeRegistry.forId(typeId) match {
+        case Some(registration) =>
+          registration.codec.deserialize()
+        case None =>
+          failDeserializerWith(InvalidTypeId(typeId))
+      }
+    } yield result
+
+  final def finishDeserializerWith[T](value: T): Deser[T] = Deser.fromEither(Right(value))
+  final def failDeserializerWith[T](failure: DesertFailure): Deser[T] = Deser.fromEither(Left(failure))
+
+  final def getString(value: StringId): Deser[Option[String]] =
+    for {
+      state <- getDeserializerState
+    } yield state.stringsById.get(value)
+
+  final def storeReadString(value: String): Deser[Unit] =
+    for {
+      state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
+      (newState, _) = state.storeString(value)
+      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+    } yield ()
+
+  final def getRef(value: RefId): Deser[Option[AnyRef]] =
+    for {
+      state <- getDeserializerState
+    } yield state.refsById.get(value)
+
+  final def storeReadRef(value: AnyRef): Deser[Unit] =
+    for {
+      state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
+      (newState, r) = state.storeRef(value)
+      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+    } yield ()
+
+  def readRefOrValue[T <: AnyRef](storeReadReference: Boolean = true)(implicit codec: Lazy[BinaryCodec[T]]): Deser[T] =
+    readVarInt(optimizeForPositive = true).flatMap {
+      case 0 => for {
+        value <- read[T]()(codec.value)
+        _ <- if (storeReadReference) storeReadRef(value) else finishDeserializerWith(())
+      } yield value
+      case id => getRef(RefId(id)).flatMap {
+        case None => failDeserializerWith(InvalidRefId(RefId(id)))
+        case Some(value) => finishDeserializerWith(value.asInstanceOf[T])
+      }
+    }
+}
+
+object BinaryDeserializerOps extends BinaryDeserializerOps

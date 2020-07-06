@@ -27,12 +27,3 @@ case class FieldMadeOptional(name: String) extends Evolution
  * Old version can read new data only if it was Option[T]
  */
 case class FieldRemoved(name: String) extends Evolution
-
-case class FieldKeepReferences(name: String) extends Evolution
-
-/**
- * New constructor to a coproduct
- *
- * Old version can read if not used (old constructor IDs must remain the same)
- */
-case class NewConstructor(name: String) extends Evolution
