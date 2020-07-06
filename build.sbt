@@ -54,7 +54,7 @@ lazy val commonSettings = Seq(
 lazy val root = Project("desert", file(".")).settings(commonSettings).settings(
   publishArtifact := false,
   description := "A Scala binary serialization library"
-) aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js)
+) aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js, benchmarks)
 
 lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -105,6 +105,16 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .jsSettings(coverageEnabled := false)
   .dependsOn(core)
 
+lazy val benchmarks = project.in(file("benchmarks"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-test" % "1.0.0-RC21-2",
+      "dev.zio" %% "zio-test-magnolia" % "1.0.0-RC21-2",
+    )
+  )
+  .enablePlugins(JmhPlugin)
+  .dependsOn(core.jvm)
 
 enablePlugins(GhpagesPlugin)
 enablePlugins(SiteScaladocPlugin)
