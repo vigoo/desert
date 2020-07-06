@@ -1,6 +1,5 @@
 package io.github.vigoo.desert
 
-import cats.instances.either._
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 import org.junit.runner.RunWith

@@ -1,10 +1,9 @@
 package io.github.vigoo.desert
 
-import cats.data.{ReaderT, StateT}
-import cats.instances.either._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import shapeless.Lazy
+import zio._
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -19,13 +18,15 @@ trait BinarySerializer[T] { self =>
 }
 
 object BinarySerializer {
-  final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry)
-
-  type Ser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv, T]
-
-  object Ser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] = ReaderT.liftF(StateT.liftF(value))
+  final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry, state: Ref[SerializerState])
+  object SerializationEnv {
+    def create(output: BinaryOutput, typeRegistry: TypeRegistry): ZIO[Any, Nothing, SerializationEnv] =
+      for {
+        stateRef <- Ref.make(SerializerState.initial)
+      } yield SerializationEnv(output, typeRegistry, stateRef)
   }
+
+  type Ser[T] = ZIO[SerializationEnv, DesertFailure, T]
 }
 
 trait BinaryDeserializer[T] { self =>
@@ -37,13 +38,15 @@ trait BinaryDeserializer[T] { self =>
 }
 
 object BinaryDeserializer {
-  final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry)
-
-  type Deser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv, T]
-
-  object Deser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] = ReaderT.liftF(StateT.liftF(value))
+  final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry, state: Ref[SerializerState])
+  object DeserializationEnv {
+    def create(input: BinaryInput, typeRegistry: TypeRegistry): ZIO[Any, Nothing, DeserializationEnv] =
+      for {
+        stateRef <- Ref.make(SerializerState.initial)
+      } yield DeserializationEnv(input, typeRegistry, stateRef)
   }
+
+  type Deser[T] = ZIO[DeserializationEnv, DesertFailure, T]
 }
 
 trait BinaryCodec[T] extends BinarySerializer[T] with BinaryDeserializer[T]

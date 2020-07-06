@@ -2,33 +2,33 @@ package io.github.vigoo.desert
 
 import java.io.{DataInputStream, EOFException, InputStream}
 
-import scala.util.{Failure, Success, Try}
+import zio.ZIO
 
 class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
   private val dataStream = new DataInputStream(stream)
 
-  override final def readByte(): Either[DesertFailure, Byte] =
+  override final def readByte(): ZIO[Any, DesertFailure, Byte] =
     handleFailures(dataStream.readByte())
 
-  override final def readShort(): Either[DesertFailure, Short] =
+  override final def readShort(): ZIO[Any, DesertFailure, Short] =
     handleFailures(dataStream.readShort())
 
-  override final def readInt(): Either[DesertFailure, Int] =
+  override final def readInt(): ZIO[Any, DesertFailure, Int] =
     handleFailures(dataStream.readInt())
 
-  override final def readLong(): Either[DesertFailure, Long] =
+  override final def readLong(): ZIO[Any, DesertFailure, Long] =
     handleFailures(dataStream.readLong())
 
-  override def readFloat(): Either[DesertFailure, Float] =
+  override def readFloat(): ZIO[Any, DesertFailure, Float] =
     handleFailures(dataStream.readFloat())
 
-  override def readDouble(): Either[DesertFailure, Double] =
+  override def readDouble(): ZIO[Any, DesertFailure, Double] =
     handleFailures(dataStream.readDouble())
 
-  override final def readBytes(count: Int): Either[DesertFailure, Array[Byte]] = {
+  override final def readBytes(count: Int): ZIO[Any, DesertFailure, Array[Byte]] = {
     val buffer = new Array[Byte](count)
     if (count == 0) {
-      Right(buffer)
+      ZIO.succeed(buffer)
     } else {
       for {
         readBytes <- handleFailures(dataStream.read(buffer))
@@ -37,17 +37,16 @@ class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
     }
   }
 
-  private def handleFailures[T](f: => T): Either[DesertFailure, T] =
-    Try(f) match {
-      case Success(value) => Right(value)
-      case Failure(reason: EOFException) => Left(InputEndedUnexpectedly())
-      case Failure(reason) => Left(FailedToReadInput(reason))
+  private def handleFailures[T](f: => T): ZIO[Any, DesertFailure, T] =
+    ZIO.effect(f).mapError {
+      case _: EOFException => InputEndedUnexpectedly()
+      case reason: Throwable => FailedToReadInput(reason)
     }
 
-  private def assert(condition: Boolean, failure: DesertFailure): Either[DesertFailure, Unit] =
+  private def assert(condition: => Boolean, failure: DesertFailure): ZIO[Any, DesertFailure, Unit] =
     if (condition) {
-      Right(())
+      ZIO.unit
     } else {
-      Left(failure)
+      ZIO.fail(failure)
     }
 }

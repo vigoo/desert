@@ -2,35 +2,32 @@ package io.github.vigoo.desert
 
 import java.io.{DataOutputStream, OutputStream}
 
-import scala.util.{Failure, Success, Try}
+import zio.ZIO
 
 class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
   private val dataStream = new DataOutputStream(stream)
 
-  override final def writeByte(value: Byte): Either[DesertFailure, Unit] =
+  override final def writeByte(value: Byte): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeByte(value))
 
-  override final def writeShort(value: Short): Either[DesertFailure, Unit] =
+  override final def writeShort(value: Short): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeShort(value))
 
-  override final def writeInt(value: Int): Either[DesertFailure, Unit] =
+  override final def writeInt(value: Int): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeInt(value))
 
-  override final def writeLong(value: Long): Either[DesertFailure, Unit] =
+  override final def writeLong(value: Long): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeLong(value))
 
-  override def writeFloat(value: Float): Either[DesertFailure, Unit] =
+  override def writeFloat(value: Float): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeFloat(value))
 
-  override def writeDouble(value: Double): Either[DesertFailure, Unit] =
+  override def writeDouble(value: Double): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.writeDouble(value))
 
-  override final def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit] =
+  override final def writeBytes(value: Array[Byte]): ZIO[Any, DesertFailure, Unit] =
     handleFailures(dataStream.write(value))
 
-  private def handleFailures[T](f: => T): Either[DesertFailure, T] =
-    Try(f) match {
-      case Success(value) => Right(value)
-      case Failure(reason) => Left(FailedToWriteOutput(reason))
-    }
+  private def handleFailures[T](f: => T): ZIO[Any, DesertFailure, T] =
+    ZIO.effect(f).mapError(FailedToWriteOutput.apply)
 }

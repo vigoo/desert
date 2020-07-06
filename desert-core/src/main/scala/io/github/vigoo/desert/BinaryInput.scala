@@ -1,15 +1,17 @@
 package io.github.vigoo.desert
 
-trait BinaryInput {
-  def readByte(): Either[DesertFailure, Byte]
-  def readShort(): Either[DesertFailure, Short]
-  def readInt(): Either[DesertFailure, Int]
-  def readLong(): Either[DesertFailure, Long]
-  def readFloat(): Either[DesertFailure, Float]
-  def readDouble(): Either[DesertFailure, Double]
-  def readBytes(count: Int): Either[DesertFailure, Array[Byte]]
+import zio._
 
-  def readVarInt(optimizeForPositive: Boolean): Either[DesertFailure, Int] = {
+trait BinaryInput {
+  def readByte(): ZIO[Any, DesertFailure, Byte]
+  def readShort(): ZIO[Any, DesertFailure, Short]
+  def readInt(): ZIO[Any, DesertFailure, Int]
+  def readLong(): ZIO[Any, DesertFailure, Long]
+  def readFloat(): ZIO[Any, DesertFailure, Float]
+  def readDouble(): ZIO[Any, DesertFailure, Double]
+  def readBytes(count: Int): ZIO[Any, DesertFailure, Array[Byte]]
+
+  def readVarInt(optimizeForPositive: Boolean): ZIO[Any, DesertFailure, Int] = {
     // Based on https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/io/ByteBufferInput.java#L366
 
     val readResult = readByte().flatMap { b0 =>
@@ -26,22 +28,22 @@ trait BinaryInput {
                   if ((b3 & 0x80) != 0) {
                     readByte().flatMap { b4 =>
                       val r4 = r3 | (b4 & 0x7F) << 28
-                      Right(r4)
+                      ZIO.succeed(r4)
                     }
                   } else {
-                    Right(r3)
+                    ZIO.succeed(r3)
                   }
                 }
               } else {
-                Right(r2)
+                ZIO.succeed(r2)
               }
             }
           } else {
-            Right(r1)
+            ZIO.succeed(r1)
           }
         }
       } else {
-        Right(r0)
+        ZIO.succeed(r0)
       }
     }
 

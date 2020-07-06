@@ -2,24 +2,37 @@ package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import cats.instances.either._
 import BinarySerializerOps._
 import BinaryDeserializerOps._
 import io.github.vigoo.desert.BinaryDeserializer.DeserializationEnv
 import io.github.vigoo.desert.BinarySerializer.SerializationEnv
+import zio.{BootstrapRuntime, Runtime, ZEnv, ZIO}
 
 trait BinarySerialization {
+  this: Runtime[ZEnv] =>
+
+  private def run[T](f: ZIO[ZEnv, DesertFailure, T]): Either[DesertFailure, T] =
+    unsafeRun(f.either)
+
   def serialize[T : BinarySerializer](value: T, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
-    write[T](value).run(SerializationEnv(output, typeRegistry)).runA(SerializerState.initial)
+    run(
+      SerializationEnv.create(output, typeRegistry) >>> write[T](value)
+    )
 
   def serializeUnknown(value: Any, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
-    writeUnknown(value).run(SerializationEnv(output, typeRegistry)).runA(SerializerState.initial)
+    run(
+      SerializationEnv.create(output, typeRegistry) >>> writeUnknown(value)
+    )
 
   def deserialize[T: BinaryDeserializer](input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, T] =
-    read[T]().run(DeserializationEnv(input, typeRegistry)).runA(SerializerState.initial)
+    run(
+      DeserializationEnv.create(input, typeRegistry) >>> read[T]()
+    )
 
   def deserializeUnknown(input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Any] =
-    readUnknown().run(DeserializationEnv(input, typeRegistry)).runA(SerializerState.initial)
+    run(
+      DeserializationEnv.create(input, typeRegistry) >>> readUnknown()
+    )
 
   def serializeToArray[T: BinarySerializer](value: T, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Array[Byte]] = {
     val stream = new ByteArrayOutputStream()
@@ -52,4 +65,4 @@ trait BinarySerialization {
   }
 }
 
-object BinarySerialization extends BinarySerialization
+object BinarySerialization extends BinarySerialization with BootstrapRuntime

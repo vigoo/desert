@@ -1,15 +1,17 @@
 package io.github.vigoo.desert
 
-trait BinaryOutput {
-  def writeByte(value: Byte): Either[DesertFailure, Unit]
-  def writeShort(value: Short): Either[DesertFailure, Unit]
-  def writeInt(value: Int): Either[DesertFailure, Unit]
-  def writeLong(value: Long): Either[DesertFailure, Unit]
-  def writeFloat(value: Float): Either[DesertFailure, Unit]
-  def writeDouble(value: Double): Either[DesertFailure, Unit]
-  def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit]
+import zio.ZIO
 
-  def writeVarInt(value: Int, optimizeForPositive: Boolean = false): Either[DesertFailure, Unit] = {
+trait BinaryOutput {
+  def writeByte(value: Byte): ZIO[Any, DesertFailure, Unit]
+  def writeShort(value: Short): ZIO[Any, DesertFailure, Unit]
+  def writeInt(value: Int): ZIO[Any, DesertFailure, Unit]
+  def writeLong(value: Long): ZIO[Any, DesertFailure, Unit]
+  def writeFloat(value: Float): ZIO[Any, DesertFailure, Unit]
+  def writeDouble(value: Double): ZIO[Any, DesertFailure, Unit]
+  def writeBytes(value: Array[Byte]): ZIO[Any, DesertFailure, Unit]
+
+  def writeVarInt(value: Int, optimizeForPositive: Boolean = false): ZIO[Any, DesertFailure, Unit] = {
     // Based on https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/io/ByteBufferOutput.java#L290
 
     val adjustedValue = if (optimizeForPositive) value else (value << 1) ^ (value >> 31)

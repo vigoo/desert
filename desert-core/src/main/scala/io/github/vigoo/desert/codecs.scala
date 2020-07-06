@@ -2,15 +2,12 @@ package io.github.vigoo.desert
 
 import java.nio.charset.StandardCharsets
 
-import cats.Order
-import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
-import cats.instances.either._
-import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
+import zio._
 
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
@@ -58,7 +55,7 @@ object codecs {
         } else {
           for {
             bytes <- readBytes(countOrId)
-            string <- Deser.fromEither(Try(new String(bytes, charset))
+            string <- ZIO.fromEither(Try(new String(bytes, charset))
               .toEither
               .left.map(reason => DeserializationFailure("Failed to decode string", Some(reason))))
             _ <- storeReadString(string)
@@ -78,7 +75,7 @@ object codecs {
 
     override def serialize(value: Option[T]): Ser[Unit] = {
       value match {
-        case Some(value) => write(true) >> write(value)
+        case Some(value) => write(true) *> write(value)
         case None => write(false)
       }
     }
@@ -160,7 +157,7 @@ object codecs {
       for {
         _ <- writeVarInt(-1, optimizeForPositive = false)
         _ <- value.foldRight(finishSerializer()) {
-          case (elem, rest) => write(true) >> write(elem) >> rest
+          case (elem, rest) => write(true) *> write(elem) *> rest
         }
         _ <- write(false)
       } yield ()
@@ -170,7 +167,7 @@ object codecs {
       for {
         _ <- writeVarInt(size, optimizeForPositive = false)
         _ <- value.foldRight(finishSerializer()) {
-          case (elem, rest) => write(elem) >> rest
+          case (elem, rest) => write(elem) *> rest
         }
       } yield ()
     }
@@ -224,8 +221,8 @@ object codecs {
 
     override def serialize(value: Either[L, R]): Ser[Unit] = {
       value match {
-        case Left(value) => write(false) >> write(value)
-        case Right(value) => write(true) >> write(value)
+        case Left(value) => write(false) *> write(value)
+        case Right(value) => write(true) *> write(value)
       }
     }
   }
@@ -240,66 +237,9 @@ object codecs {
 
     override def serialize(value: Try[A]): Ser[Unit] = {
       value match {
-        case Failure(reason) => write(false) >> write(reason)
-        case Success(value) => write(true) >> write(value)
+        case Failure(reason) => write(false) *> write(reason)
+        case Success(value) => write(true) *> write(value)
       }
     }
-  }
-
-  // Cats specific codecs
-
-  implicit def validatedCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validated[E, A]] = new BinaryCodec[Validated[E, A]] {
-    override def deserialize(): Deser[Validated[E, A]] = {
-      for {
-        isValid <- read[Boolean]()
-        result <- if (isValid) read[A]().map(Validated.Valid.apply) else read[E]().map(Validated.Invalid.apply)
-      } yield result
-    }
-
-    override def serialize(value: Validated[E, A]): Ser[Unit] = {
-      value match {
-        case Validated.Invalid(value) => write(false) >> write(value)
-        case Validated.Valid(value) => write(true) >> write(value)
-      }
-    }
-  }
-
-  implicit def nonEmptyListCodec[A: BinaryCodec]: BinaryCodec[NonEmptyList[A]] = {
-    val inner = listCodec[A]
-    BinaryCodec.from(
-      inner.contramap(_.toList),
-      () => inner.deserialize().flatMap { list =>
-        NonEmptyList.fromList(list) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty list is serialized as empty", None))
-        }
-      }
-    )
-  }
-
-  implicit def nonEmptySetCodec[A: BinaryCodec : Ordering]: BinaryCodec[NonEmptySet[A]] = {
-    val inner = sortedSetCodec[A]
-    BinaryCodec.from(
-      inner.contramap(_.toSortedSet),
-      () => inner.deserialize().flatMap { set =>
-        NonEmptySet.fromSet(set) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty set is serialized as empty", None))
-        }
-      }
-    )
-  }
-
-  implicit def nonEmptyMapCodec[K: BinaryCodec : Ordering : Order, V: BinaryCodec]: BinaryCodec[NonEmptyMap[K, V]] = {
-    val innner = sortedMapCodec[K, V]
-    BinaryCodec.from(
-      innner.contramap(_.toSortedMap),
-      () => innner.deserialize().flatMap { map =>
-        NonEmptyMap.fromMap(map) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty map is serialized as empty", None))
-        }
-      }
-    )
   }
 }

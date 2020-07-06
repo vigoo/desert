@@ -1,6 +1,5 @@
 package io.github.vigoo.desert
 
-import cats.instances.either._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
@@ -9,6 +8,7 @@ import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import org.junit.runner.RunWith
+import zio.ZIO
 import zio.test._
 import zio.test.environment.TestEnvironment
 import zio.test.Assertion._
@@ -43,27 +43,28 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
 
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("String deduplication")(
-      test("reads back duplicated strings correctly") {
-        val stream = new ByteArrayOutputStream()
-        val output = new JavaStreamBinaryOutput(stream)
-        val result = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).flatMap { _ =>
-          stream.flush()
-          val inStream = new ByteArrayInputStream(stream.toByteArray)
-          val input = new JavaStreamBinaryInput(inStream)
-          testDeser.run(DeserializationEnv(input, TypeRegistry.empty)).runA(SerializerState.initial)
-        }
-
-        assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
+      testM("reads back duplicated strings correctly") {
+        for {
+          stream <- ZIO.effect(new ByteArrayOutputStream())
+          output <- ZIO.effect(new JavaStreamBinaryOutput(stream))
+          serEnv <- SerializationEnv.create(output, TypeRegistry.empty)
+          _ <- testSer.provide(serEnv)
+          _ <- ZIO.effect(stream.flush())
+          inStream <- ZIO.effect(new ByteArrayInputStream(stream.toByteArray))
+          input <- ZIO.effect(new JavaStreamBinaryInput(inStream))
+          deserEnv <- DeserializationEnv.create(input, TypeRegistry.empty)
+          result <- testDeser.provide(deserEnv)
+        } yield assert(result)(equalTo(List(s1, s2, s3, s1, s2, s3)))
       },
-      test("reduces the serialized size") {
-        val stream = new ByteArrayOutputStream()
-        val output = new JavaStreamBinaryOutput(stream)
-        val size = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).map { _ =>
-          stream.flush()
-          stream.toByteArray.length
-        }
-
-        assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
+      testM("reduces the serialized size") {
+        for {
+          stream <- ZIO.effect(new ByteArrayOutputStream())
+          output <- ZIO.effect(new JavaStreamBinaryOutput(stream))
+          serEnv <- SerializationEnv.create(output, TypeRegistry.empty)
+          _ <- testSer.provide(serEnv)
+          _ <- ZIO.effect(stream.flush())
+          size <- ZIO.effect(stream.toByteArray.length)
+        } yield assert(size)(isLessThan((s1.length + s2.length) * 2))
       }
     )
 }
