@@ -45,9 +45,9 @@ trait BinaryDeserializerOps {
 
   final def storeReadString(value: String): Deser[Unit] =
     for {
-      state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
+      state <- getDeserializerState
       (newState, _) = state.storeString(value)
-      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+      _ <- setDeserializerState(newState)
     } yield ()
 
   final def getRef(value: RefId): Deser[Option[AnyRef]] =
@@ -57,9 +57,9 @@ trait BinaryDeserializerOps {
 
   final def storeReadRef(value: AnyRef): Deser[Unit] =
     for {
-      state <- ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
-      (newState, r) = state.storeRef(value)
-      _ <- ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](newState))
+      state <- getDeserializerState
+      (newState, _) = state.storeRef(value)
+      _ <- setDeserializerState(newState)
     } yield ()
 
   def readRefOrValue[T <: AnyRef](storeReadReference: Boolean = true)(implicit codec: Lazy[BinaryCodec[T]]): Deser[T] =

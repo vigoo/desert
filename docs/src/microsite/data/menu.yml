@@ -1,0 +1,21 @@
+options:
+  - title: Home
+    url: index
+  - title: Getting started
+    url: docs/
+  - title: Input/output
+    url: docs/input-output
+  - title: Codecs
+    url: docs/codecs
+  - title: Evolution
+    url: docs/evolution
+  - title: Type Registry
+    url: docs/type-registry
+  - title: "Integrations: ZIO"
+    url: docs/zio
+  - title: "Integrations: Cats Effect"
+    url: docs/cats-effect
+  - title: "Integrations: Akka"
+    url: docs/akka
+  - title: API reference
+    url: api/io/github/vigoo/desert/
