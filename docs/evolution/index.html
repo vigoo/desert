@@ -1,0 +1,290 @@
+<!DOCTYPE html><html><head><title>desert: Evolution</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Daniel Vigovszky" /><meta name="description" content="A Scala binary serialization library" /><meta name="og:image" content="/desert/img/poster.png" /><meta name="image" property="og:image" content="/desert/img/poster.png" /><meta name="og:title" content="desert: Evolution" /><meta name="title" property="og:title" content="desert: Evolution" /><meta name="og:site_name" content="desert" /><meta name="og:url" content="https://vigoo.github.io/desert/" /><meta name="og:type" content="website" /><meta name="og:description" content="A Scala binary serialization library" /><link rel="icon" type="image/png" href="/desert/img/favicon.png" /><meta name="twitter:title" content="desert: Evolution" /><meta name="twitter:image" content="https://vigoo.github.io/desert/img/poster.png" /><meta name="twitter:description" content="A Scala binary serialization library" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:creator" content="@dvigovszky" /><link rel="icon" type="image/png" sizes="16x16" href="/desert/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/desert/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/desert/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/desert/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/desert/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/desert/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/desert/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/desert/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/desert/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/desert/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/desert/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/desert/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/desert/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/desert/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/desert/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/desert/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/desert/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/desert/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/desert/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/desert/img/favicon310x150.png" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/desert/highlight/styles/vs.css" /><link rel="stylesheet" href="/desert/css/light-style.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/desert/" class="brand"><div class="brand-wrapper"></div><span>desert</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/desert/index" title="Home" class="">Home</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/" title="Getting started" class="">Getting started</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/input-output" title="Input/output" class="">Input/output</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/codecs" title="Codecs" class="">Codecs</a></div> <div class="sidebar-nav-item active "><a href="/desert/docs/evolution" title="Evolution" class="active">Evolution</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/type-registry" title="Type Registry" class="">Type Registry</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/zio" title="Integrations: ZIO" class="">Integrations: ZIO</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats-effect" title="Integrations: Cats Effect" class="">Integrations: Cats Effect</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/akka" title="Integrations: Akka" class="">Integrations: Akka</a></div> <div class="sidebar-nav-item  "><a href="/desert/api/io/github/vigoo/desert/" title="API reference" class="">API reference</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vigoo" data-github-repo="desert"><div class="content-wrapper"><section><h1 id="evolution">Evolution</h1>
+<p>One of the primary features of <code class="highlighter-rouge">desert</code> is to support data type evolution via its generic codec for 
+ADTs, and with some other design decisions.</p>
+
+<p>In this section we review what kind of changes can be done to the data model without breaking binary 
+compatibility.</p>
+
+<h3 id="tuples-vs-products">Tuples vs products</h3>
+<p>As already mentioned on the <a href="codecs">codecs page</a>, tuples and non-evolved case classes are binary
+compatible. This means that it is possible to convert a tuple to a case class without breaking
+the serialization format:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.github.vigoo.desert._</span>
+<span class="k">import</span> <span class="nn">io.github.vigoo.desert.codecs._</span>
+<span class="k">import</span> <span class="nn">io.github.vigoo.desert.syntax._</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Point</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">y</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+<span class="k">object</span> <span class="nc">Point</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">Point</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">()</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">ex1</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">data1</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">((</span><span class="mi">5</span><span class="o">,</span> <span class="mi">6</span><span class="o">))</span>
+  <span class="n">pt1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Point</span><span class="o">](</span><span class="n">data1</span><span class="o">)</span>
+  <span class="n">data2</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">pt1</span><span class="o">)</span>
+  <span class="n">tup2</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)](</span><span class="n">data2</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">pt1</span><span class="o">,</span> <span class="n">tup2</span><span class="o">)</span>
+<span class="c1">// ex1: Either[DesertFailure, (Point, (Int, Int))] = Right(</span>
+<span class="c1">//   (Point(5, 6), (5, 6))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="primitives-vs-wrappers">Primitives vs wrappers</h3>
+<p>Codecs derived with <code class="highlighter-rouge">deriveForWrapper</code> are also fully compatible with their underlying primitive
+type, so it is fully safe to evolve the date model to make use of more and more value type wrappers:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Id</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="c1">// extends AnyVal // extends AnyVal</span>
+<span class="k">object</span> <span class="nc">Id</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">Id</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">deriveForWrapper</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">ex2</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">data1</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>
+  <span class="n">id1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Id</span><span class="o">](</span><span class="n">data1</span><span class="o">)</span>
+  <span class="n">data2</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">id1</span><span class="o">)</span>
+  <span class="n">raw1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">data2</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">id1</span><span class="o">,</span> <span class="n">raw1</span><span class="o">)</span>
+<span class="c1">// ex2: Either[DesertFailure, (Id, Int)] = Right((Id(3), 3))</span>
+</code></pre></div></div>
+
+<h3 id="collections">Collections</h3>
+<p>Collection codecs share their binary representation via <code class="highlighter-rouge">iterableCodec</code> and they can be freely
+replaced:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">ex3</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">data1</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span>
+  <span class="n">set1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Set</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="n">data1</span><span class="o">)</span>
+  <span class="n">data2</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">set1</span><span class="o">)</span>
+  <span class="n">vec1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Vector</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="n">data2</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">set1</span><span class="o">,</span> <span class="n">vec1</span><span class="o">)</span>
+<span class="c1">// ex3: Either[DesertFailure, (Set[Int], Vector[Int])] = Right(</span>
+<span class="c1">//   (Set(1, 2, 3), Vector(1, 2, 3))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="adding-a-new-field">Adding a new field</h3>
+<p>If a <em>case class</em> gets extended by a new field, it has to be explicitly marked with an <strong>evolution step</strong>
+passed as a parameter to the <code class="highlighter-rouge">derive</code> function. For addig a new field, this defines a <em>default value</em> to be
+used when deserializing an old data. With this the old and the new data model remains fully compatible:</p>
+
+<ul>
+  <li>If the old version reads a new data, it skips the new field</li>
+  <li>If the new version reads an old data, it uses the provided default to set the field</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">PointV1</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">y</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+<span class="k">object</span> <span class="nc">PointV1</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">PointV1</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">()</span>
+<span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">PointV2</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">y</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">z</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+<span class="k">object</span> <span class="nc">PointV2</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">(</span><span class="nc">FieldAdded</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"z"</span><span class="o">,</span> <span class="mi">1</span><span class="o">))</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">ex4</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">oldData</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV1</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">))</span>
+  <span class="n">newPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">oldData</span><span class="o">)</span>
+  <span class="n">newData</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">newPt</span><span class="o">)</span>
+  <span class="n">oldPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV1</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">oldPt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
+<span class="c1">// ex4: Either[DesertFailure, (PointV1, PointV2)] = Right(</span>
+<span class="c1">//   (PointV1(10, 20), PointV2(10, 20, 1))</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>Note that the added field does not have to be last position of the case class.</p>
+
+<h3 id="making-a-field-optional">Making a field optional</h3>
+<p>Another supported evolution step is <em>making a field optional</em>. This can be an intermediate step
+before completely removing an obsolete field. Once again this change has to be recorded in the parameter list for <code class="highlighter-rouge">derive</code>. With that, we get 
+the following capabilities:</p>
+
+<ul>
+  <li>If the old version reads the new data, and it is <code class="highlighter-rouge">Some(x)</code>, it will be read as <code class="highlighter-rouge">x</code></li>
+  <li>If the old version reads the new data, and it is <code class="highlighter-rouge">None</code> the serialization fails</li>
+  <li>If the new version reads the old data, it automatically wraps the field in <code class="highlighter-rouge">Some</code></li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">PointV3</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">y</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">z</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">])</span>
+<span class="k">object</span> <span class="nc">PointV3</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">PointV3</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">(</span>
+    <span class="nc">FieldAdded</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"z"</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span>
+    <span class="nc">FieldMadeOptional</span><span class="o">(</span><span class="s">"z"</span><span class="o">)</span>
+  <span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">ex5</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">v1Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV1</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">))</span>
+  <span class="n">newPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV3</span><span class="o">](</span><span class="n">v1Data</span><span class="o">)</span>
+  <span class="n">newData</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">newPt</span><span class="o">)</span>
+  <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">v2Pt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
+<span class="c1">// ex5: Either[DesertFailure, (PointV2, PointV3)] = Right(</span>
+<span class="c1">//   (PointV2(10, 20, 1), PointV3(10, 20, Some(1)))</span>
+<span class="c1">// )</span>
+
+<span class="k">val</span> <span class="nv">ex5fail</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">v3Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV3</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">,</span> <span class="nc">None</span><span class="o">))</span>
+  <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">v3Data</span><span class="o">)</span>
+<span class="o">}</span> <span class="k">yield</span> <span class="n">v2Pt</span>
+<span class="c1">// ex5fail: Either[DesertFailure, PointV2] = Left(</span>
+<span class="c1">//   NonOptionalFieldSerializedAsNone("z")</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<p>Note that any field can be made optional, not just the one which was added later like in this example.</p>
+
+<h3 id="removing-a-field">Removing a field</h3>
+<p>The third supported evolution step is <em>removing a field</em>. Here backward compatibility has a limitation:</p>
+
+<ul>
+  <li>New version can read old data by simply skipping the removed field</li>
+  <li>Old version can only read new data if the removed field was an <code class="highlighter-rouge">Option[T]</code>, reading it as <code class="highlighter-rouge">None</code></li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">PointV4</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">y</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+<span class="k">object</span> <span class="nc">PointV4</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">PointV4</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">(</span>
+    <span class="nc">FieldAdded</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">"z"</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span>
+    <span class="nc">FieldMadeOptional</span><span class="o">(</span><span class="s">"z"</span><span class="o">),</span>
+    <span class="nc">FieldRemoved</span><span class="o">(</span><span class="s">"z"</span><span class="o">)</span>
+  <span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">ex6</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">v2Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV2</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">,</span> <span class="mi">30</span><span class="o">))</span>
+  <span class="n">newPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV4</span><span class="o">](</span><span class="n">v2Data</span><span class="o">)</span>
+  <span class="n">newData</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">newPt</span><span class="o">)</span>
+  <span class="n">v3Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV3</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
+<span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">v3Pt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
+<span class="c1">// ex6: Either[DesertFailure, (PointV3, PointV4)] = Right(</span>
+<span class="c1">//   (PointV3(10, 20, None), PointV4(10, 20))</span>
+<span class="c1">// )</span>
+
+<span class="k">val</span> <span class="nv">ex6fail</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+  <span class="n">v4Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV4</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">))</span>
+  <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">v4Data</span><span class="o">)</span>
+<span class="o">}</span> <span class="k">yield</span> <span class="n">v2Pt</span>
+<span class="c1">// ex6fail: Either[DesertFailure, PointV2] = Left(</span>
+<span class="c1">//   FieldRemovedInSerializedVersion("z")</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<h3 id="adding-a-new-constructor">Adding a new constructor</h3>
+<p>Adding a new constructor to a <em>sealed trait</em> is allowed, but it has to be added to the end of the 
+list to maintain <em>constructor ID order</em>. For the same reason it is currently not supported to remove
+a constructor either. Each constructor can be evolved separately with the above methods as they have 
+their own evolution steps.</p>
+
+<h3 id="type-registry-placeholders">Type registry placeholders</h3>
+<p>When using <em>type identifiers</em> with the <a href="type-registry">type registry</a> and a previously registered
+type has been removed from the code, it’s place can be kept assigned by using <code class="highlighter-rouge">registerPlaceholder</code>
+in the registration:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">typeRegistry2</span> <span class="k">=</span> <span class="nc">DefaultTypeRegistry</span><span class="o">()</span>
+  <span class="o">.</span><span class="py">registerPlaceholder</span><span class="o">()</span> <span class="c1">// previously: .register[Impl1]</span>
+  <span class="o">.</span><span class="py">register</span><span class="o">[</span><span class="kt">Impl2</span><span class="o">]</span>
+  <span class="o">.</span><span class="py">freeze</span><span class="o">()</span>
+</code></pre></div></div>
+
+<h3 id="generic-product-evolution-encoding">Generic product evolution encoding</h3>
+<p>This section gives an overview of how the above described evolution steps are being encoded in the 
+binary representation of case classes.</p>
+
+<p>Let’s examine the output of serializing the above examples!</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v1</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV1</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">))</span>
+<span class="c1">// v1: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(0, 0, 0, 0, 100, 0, 0, 0, -56)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The first byte is the <strong>version</strong> and it is <code class="highlighter-rouge">0</code> because there are no evolution steps for this type.</li>
+  <li>This makes it compatible with a <code class="highlighter-rouge">(Int, Int)</code> pair</li>
+  <li><code class="highlighter-rouge">0, 0, 0, 100</code> is the fixed 32-bit integer representation of <code class="highlighter-rouge">100</code></li>
+  <li><code class="highlighter-rouge">0, 0, 0, -56</code> is the fixed 32-bit integer representation of <code class="highlighter-rouge">200</code></li>
+  <li>So <code class="highlighter-rouge">PointV1</code> is always serialized into <em>9 bytes</em></li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v2</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV2</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">,</span> <span class="mi">300</span><span class="o">))</span>
+<span class="c1">// v2: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(1, 16, 8, 0, 0, 0, 100, 0, 0, 0, -56, 0, 0, 1, 44)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The first byte is <strong>version</strong> (or in other words, the number of evolution steps) which is now <code class="highlighter-rouge">1</code></li>
+  <li>Because the version is non-zero, the next item to read is a <em>variable-width integer</em> representing the chunk size of the original version-0 data</li>
+  <li>In this case it takes 1 byte: <code class="highlighter-rouge">16</code> which represents <code class="highlighter-rouge">8</code>, the sum of the two 32 bit fields <code class="highlighter-rouge">x</code> and <code class="highlighter-rouge">y</code></li>
+  <li>Following it the next item is again a <em>variable-width integer</em> representing the chunk size for the single newly added field <code class="highlighter-rouge">z</code></li>
+  <li>It is again 1 byte: <code class="highlighter-rouge">8</code> which means <code class="highlighter-rouge">4</code></li>
+  <li>The rest is the first chunk containing the fields from <em>V1</em> and then the next chunk containing the field from <em>V2</em></li>
+  <li>The old version can use the chunk size data to skip the unknown fields and only read the first one</li>
+  <li><code class="highlighter-rouge">PointV2</code> takes <em>15 bytes</em> by having 3 bytes of header and 12 bytes of data</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v3</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV3</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">300</span><span class="o">)))</span>
+<span class="c1">// v3: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(2, 16, 10, 1, 1, 0, 0, 0, 100, 0, 0, 0, -56, 1, 0, 0, 1, 44)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The first byte is now <code class="highlighter-rouge">2</code> as we added a new evolution step</li>
+  <li>The header part starts with almost the same two values, encoded as <code class="highlighter-rouge">16, 10</code></li>
+  <li>The first chunk is still 8 byte long, but the next one is now <code class="highlighter-rouge">10</code> which means <code class="highlighter-rouge">5</code>, because the <code class="highlighter-rouge">Option</code> wrapper adds an extra byte to differentiate <code class="highlighter-rouge">None</code> or <code class="highlighter-rouge">Some</code></li>
+  <li>After the two variable integers we have a third one corresponding to the third evolution step. But as it did not add any new fields, it is not a chunk size, but a special 
+negative number marking the field as optional.</li>
+  <li>This is the value <code class="highlighter-rouge">1</code> which in fact represents <code class="highlighter-rouge">-1</code> in the variable-length integer encoding. This code is
+always followed by a serialized <em>field position</em>, which is again a variable-length integer, in this case <code class="highlighter-rouge">1</code> aka <code class="highlighter-rouge">-1</code> again.
+    <ul>
+      <li>Negative field positions address a non-first chunk</li>
+      <li>Positive field positions address a field in the first chunk</li>
+      <li>This is for space efficiency. The first chunk is kept flat without any chunk size info needed so non-evolved data type serialization is almost zero cost.</li>
+    </ul>
+  </li>
+  <li>The rest is the data itself, first chunk is still <em>8 bytes</em></li>
+  <li>Second chunk is now <em>5 bytes</em>, the <code class="highlighter-rouge">1</code> indicates that it is <code class="highlighter-rouge">Some</code> and the rest 4 bytes are the 32-bit integer</li>
+  <li><code class="highlighter-rouge">PointV3</code> takes <em>18 bytes</em> in total, 5 bytes of header and 13 bytes of data</li>
+</ul>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v4</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV4</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">))</span>
+<span class="c1">// v4: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(3, 16, 0, 1, -128, 3, 2, 122, 0, 0, 0, 100, 0, 0, 0, -56)</span>
+<span class="c1">// )</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The first byte is now <code class="highlighter-rouge">3</code></li>
+  <li>The first chunk size is still <code class="highlighter-rouge">16</code> because we removed the field from the second chunk</li>
+  <li>The next integer still represents the chunk size for the second evolution step, which was adding the field <em>z</em>. But as it has been later removed, the chunk size is now <code class="highlighter-rouge">0</code></li>
+  <li>The third variable integer in the header part is <code class="highlighter-rouge">1</code> representing that a field has been removed.</li>
+  <li>It is followed by the <em>field position</em> which in <code class="highlighter-rouge">V3</code> was <code class="highlighter-rouge">-1</code> pointing to the second chunk. But as that is removed now, it is a special value <code class="highlighter-rouge">-128</code>, which is <code class="highlighter-rouge">FieldPosition.removed</code></li>
+  <li>The fourth variable integer is again a special code, encoded as <code class="highlighter-rouge">3</code> representing the value <code class="highlighter-rouge">-2</code>. This is the code for field removal.</li>
+  <li>It is followed by a <em>serialized string</em> containing the removed field’s name. String deduplication is enabled here as it was described in the <a href="codecs">codecs page</a>.</li>
+  <li>As this is the first occurrence of the string <code class="highlighter-rouge">"z"</code> it is encoded as <code class="highlighter-rouge">2, 122</code>.</li>
+  <li>The rest 8 bytes are the first chunk containing <code class="highlighter-rouge">x</code> and <code class="highlighter-rouge">y</code></li>
+  <li>So <code class="highlighter-rouge">PointV4</code> in this example takes <em>16 bytes</em> in total, where 8 bytes are header and 8 bytes are data. The exact size depends on the string IDs so it can change in real world situations.</li>
+</ul>
+
+</section></div></div></div></div><script src="/desert/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/sbt.min.js"></script><script>
+// For all code blocks, copy the language from the containing div
+// to the inner code tag (where hljs expects it to be)
+const langPrefix = 'language-';
+document.querySelectorAll(`div[class^='${langPrefix}']`).forEach(function(div) {
+  div.classList.forEach(function(cssClass) {
+    if (cssClass.startsWith(langPrefix)) {
+      const lang = cssClass.substring(langPrefix.length);
+      div.querySelectorAll('pre code').forEach(function(code) {
+        code.classList.add(lang);
+      });
+    }
+  });
+});
+
+hljs.configure({languages:['scala','java','bash','scala','sbt']});
+hljs.initHighlightingOnLoad();
+      </script><script>console.info('\x57\x65\x62\x73\x69\x74\x65\x20\x62\x75\x69\x6c\x74\x20\x77\x69\x74\x68\x3a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x5f\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x5f\x20\x5f\x5f\x0a\x20\x20\x20\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x5f\x20\x20\x2f\x20\x2f\x5f\x20\x20\x20\x20\x20\x20\x5f\x5f\x5f\x5f\x20\x5f\x5f\x5f\x20\x20\x28\x5f\x29\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x28\x5f\x29\x20\x2f\x5f\x5f\x5f\x5f\x20\x20\x5f\x5f\x5f\x5f\x5f\x0a\x20\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x60\x5f\x5f\x20\x5c\x2f\x20\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x5f\x2f\x20\x5f\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x20\x2f\x20\x5f\x5f\x2f\x20\x5f\x20\x5c\x2f\x20\x5f\x5f\x5f\x2f\x0a\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x5f\x2f\x20\x2f\x20\x2f\x5f\x2f\x5f\x5f\x5f\x5f\x5f\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x20\x2f\x5f\x5f\x2f\x20\x2f\x20\x20\x2f\x20\x2f\x5f\x2f\x20\x28\x5f\x5f\x20\x20\x29\x20\x2f\x20\x2f\x5f\x2f\x20\x20\x5f\x5f\x28\x5f\x5f\x20\x20\x29\x0a\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2e\x5f\x5f\x5f\x2f\x5c\x5f\x5f\x2f\x20\x20\x20\x20\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x20\x2f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x2f\x20\x20\x20\x5c\x5f\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x5f\x2f\x5c\x5f\x5f\x2f\x5c\x5f\x5f\x5f\x2f\x5f\x5f\x5f\x5f\x2f\x0a\x0a\x68\x74\x74\x70\x73\x3a\x2f\x2f\x34\x37\x64\x65\x67\x2e\x67\x69\x74\x68\x75\x62\x2e\x69\x6f\x2f\x73\x62\x74\x2d\x6d\x69\x63\x72\x6f\x73\x69\x74\x65\x73')</script><script src="/desert/js/docs.js"></script></body></html>
