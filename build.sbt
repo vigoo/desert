@@ -111,6 +111,7 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
 lazy val benchmarks = project.in(file("benchmarks"))
   .settings(commonSettings)
   .settings(
+    publishArtifact := false,
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-test" % "1.0.0-RC21-2",
       "dev.zio" %% "zio-test-magnolia" % "1.0.0-RC21-2",
