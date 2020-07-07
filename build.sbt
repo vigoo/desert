@@ -51,10 +51,13 @@ lazy val commonSettings = Seq(
 
 )
 
-lazy val root = Project("desert", file(".")).settings(commonSettings).settings(
+lazy val root = Project("desert", file("."))
+  .settings(commonSettings)
+  .settings(
   publishArtifact := false,
-  description := "A Scala binary serialization library"
-) aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js, benchmarks)
+  description := "A Scala binary serialization library",
+  )
+  .aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js, benchmarks)
 
 lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -116,32 +119,43 @@ lazy val benchmarks = project.in(file("benchmarks"))
   .enablePlugins(JmhPlugin)
   .dependsOn(core.jvm)
 
-enablePlugins(GhpagesPlugin)
-enablePlugins(SiteScaladocPlugin)
-enablePlugins(MicrositesPlugin)
-
-git.remoteRepo := "git@github.com:vigoo/desert.git"
-
-micrositeUrl := "https://vigoo.github.io"
-micrositeBaseUrl := "/desert"
-micrositeHomepage := "https://vigoo.github.io/desert/"
-micrositeDocumentationUrl := "/desert/docs"
-micrositeAuthor := "Daniel Vigovszky"
-micrositeTwitterCreator := "@dvigovszky"
-micrositeGithubOwner := "vigoo"
-micrositeGithubRepo := "desert"
-micrositeGitterChannel := false
-micrositeDataDirectory := file("src/microsite/data")
-micrositeStaticDirectory := file("src/microsite/static")
-micrositeImgDirectory := file("src/microsite/img")
-micrositeCssDirectory := file("src/microsite/styles")
-micrositeSassDirectory := file("src/microsite/partials")
-micrositeJsDirectory := file("src/microsite/scripts")
-micrositeTheme := "light"
-micrositeHighlightLanguages ++= Seq("scala", "sbt")
-micrositeConfigYaml := ConfigYml(
-  yamlCustomProperties = Map("plugins" -> List("jemoji"))
-)
+lazy val docs = project
+  .settings(commonSettings)
+  .enablePlugins(GhpagesPlugin)
+  .enablePlugins(SiteScaladocPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .enablePlugins(MicrositesPlugin)
+  .settings(
+      name := "desert",
+      description := "A Scala binary serialization library",
+      publishArtifact := false,
+      siteSubdirName in ScalaUnidoc := "api",
+      addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+      unidocProjectFilter in ( ScalaUnidoc, unidoc ) := inAnyProject -- inProjects(core.js, catsEffect.js, zio.js, benchmarks),
+      git.remoteRepo := "git@github.com:vigoo/desert.git",
+      micrositeUrl := "https://vigoo.github.io",
+      micrositeBaseUrl := "/desert",
+      micrositeHomepage := "https://vigoo.github.io/desert/",
+      micrositeDocumentationUrl := "/desert/docs",
+      micrositeAuthor := "Daniel Vigovszky",
+      micrositeTwitterCreator := "@dvigovszky",
+      micrositeGithubOwner := "vigoo",
+      micrositeGithubRepo := "desert",
+      micrositeGitterChannel := false,
+      micrositeDataDirectory := file("docs/src/microsite/data"),
+      micrositeStaticDirectory := file("docs/src/microsite/static"),
+      micrositeImgDirectory := file("docs/src/microsite/img"),
+      micrositeCssDirectory := file("docs/src/microsite/styles"),
+      micrositeSassDirectory := file("docs/src/microsite/partials"),
+      micrositeJsDirectory := file("docs/src/microsite/scripts"),
+      micrositeTheme := "light",
+      micrositeHighlightLanguages ++= Seq("scala", "sbt"),
+      micrositeConfigYaml := ConfigYml(
+        yamlCustomProperties = Map("plugins" -> List("jemoji"))
+      ),
+      micrositeFooterText := Some("<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project")
+    )
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka)
 
 // Temporary fix to avoid including mdoc in the published POM
 
