@@ -156,6 +156,35 @@ val ex6fail = for {
 } yield v2Pt
 ```
 
+### Transient fields
+Adding a new transient field does not change the binary representation.
+
+Making an existing field transient can be recorded as an _evolution step_ called `FieldMadeTransient`.
+It is just an alias for `FieldRemoved` from the serializer's point of view, so the same rules apply
+as for field removal.
+
+```scala mdoc
+case class PointV5(x: Int, @TransientField(0) y: Int)
+object PointV5 {
+  implicit val codec: BinaryCodec[PointV5] = BinaryCodec.derive(
+    FieldAdded[Int]("z", 1),
+    FieldMadeOptional("z"),
+    FieldRemoved("z"),
+    FieldMadeTransient("y")
+  )
+}
+
+val ex7 = for {
+  v4Data <- serializeToArray(PointV4(10, 20))
+  newPt <- deserializeFromArray[PointV5](v4Data)
+} yield newPt
+
+val ex7fail = for {
+  v5Data <- serializeToArray(PointV5(10, 20))
+  v4Pt <- deserializeFromArray[PointV4](v5Data)
+} yield v4Pt
+```
+
 ### Adding a new constructor
 Adding a new constructor to a _sealed trait_ is allowed, but it has to be added to the end of the 
 list to maintain _constructor ID order_. For the same reason it is currently not supported to remove

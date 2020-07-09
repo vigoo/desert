@@ -17,5 +17,7 @@ options:
     url: docs/cats-effect
   - title: "Integrations: Akka"
     url: docs/akka
+  - title: "Release notes"
+    url: docs/release-notes
   - title: API reference
     url: api/io/github/vigoo/desert/
