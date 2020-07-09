@@ -175,14 +175,14 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                                           (implicit headCodec: Lazy[BinaryCodec[H]],
                                            optHeadCodec: Lazy[BinaryCodec[Option[H]]]): ChunkedDeser[Option[H]] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.pure(None)
-      } else {
-        ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
-          chunkedState.transientFields.get(Symbol(fieldName)) match {
-            case Some(value) =>
-              ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
-            case None =>
+      ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
+        chunkedState.transientFields.get(Symbol(fieldName)) match {
+          case Some(value) =>
+            ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
+          case None =>
+            if (chunkedInput.removedFields.contains(fieldName)) {
+              ChunkedDeserOps.pure(None)
+            } else {
               val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
               val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
 
@@ -228,15 +228,15 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   private def readFieldIfExists[H](fieldName: String)
                                   (implicit headCodec: Lazy[BinaryCodec[H]]): ChunkedDeser[H] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      // Check if field was removed
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
-      } else {
-        ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
-          chunkedState.transientFields.get(Symbol(fieldName)) match {
-            case Some(value) =>
-              ChunkedDeserOps.pure(value.asInstanceOf[H])
-            case None =>
+      ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
+        chunkedState.transientFields.get(Symbol(fieldName)) match {
+          case Some(value) =>
+            ChunkedDeserOps.pure(value.asInstanceOf[H])
+          case None =>
+            // Check if field was removed
+            if (chunkedInput.removedFields.contains(fieldName)) {
+              ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
+            } else {
               val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
               ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
                 if (chunkedInput.storedVersion < chunk) {

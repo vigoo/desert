@@ -27,3 +27,15 @@ case class FieldMadeOptional(name: String) extends Evolution
  * Old version can read new data only if it was Option[T]
  */
 case class FieldRemoved(name: String) extends Evolution
+
+object FieldMadeTransient {
+  /**
+   * Field made transient
+   *
+   * An alias for [FieldRemoved]
+   *
+   * New version can read old data by skipping the field
+   * Old version can read new data only if it was Option[T]
+   */
+  def apply(name: String): Evolution = FieldRemoved(name)
+}
