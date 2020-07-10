@@ -30,6 +30,7 @@ val double = serializeToArray(3.14)
 val bool = serializeToArray(true)
 val unit = serializeToArray(())
 val str = serializeToArray("Hello")
+val uuid = serializeToArray(java.util.UUID.randomUUID())
 ``` 
 
 ### Option, Either, Validated, Try
