@@ -28,7 +28,17 @@ class JavaStreamInputOutputSpec extends DefaultRunnableSpec {
           _.readBytes(4),
           Array[Byte](2, 3, 4, 5)
         )
-      }
+      },
+
+      testM("compressed byte array support")(
+        check(Gen.vectorOf(Gen.anyByte)) { bytes =>
+          testWriteAndRead(
+            _.writeCompressedByteArray(bytes.toArray),
+            _.readCompressedByteArray().map(_.toVector),
+            bytes
+          )
+        }
+      )
     )
 
   private def testWriteAndRead[T](write: BinaryOutput => (), read: BinaryInput => Either[DesertFailure, T], expected: T): TestResult = {

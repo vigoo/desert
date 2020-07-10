@@ -1,5 +1,9 @@
 package io.github.vigoo.desert
 
+import java.util.zip.Inflater
+
+import scala.util.control.NonFatal
+
 /**
  * Interface for reading binary data
  *
@@ -90,6 +94,37 @@ trait BinaryInput {
 
     readResult.map { r =>
       if (optimizeForPositive) r else (r >>> 1) ^ -(r & 1)
+    }
+  }
+
+  /**
+   * Reads a compressed byte array from the input
+   *
+   * It assumes to have two variable-length integer representing the uncompressed and the compressed data length
+   * followed by the ZIP-compressed array of bytes. Counterpart of [[BinaryOutput.writeCompressedByteArray]]
+   */
+  def readCompressedByteArray(): Either[DesertFailure, Array[Byte]] = {
+    readVarInt(optimizeForPositive = true).flatMap { uncompressedLength =>
+      if (uncompressedLength == 0) {
+        Right(Array[Byte]())
+      } else {
+        for {
+          compressedLength <- readVarInt(optimizeForPositive = true)
+          compressedData <- readBytes(compressedLength)
+          uncompressedData <- {
+            try {
+              val inflater = new Inflater()
+              inflater.setInput(compressedData)
+              val uncompressedData = new Array[Byte](uncompressedLength)
+              inflater.inflate(uncompressedData)
+              inflater.end()
+              Right(uncompressedData)
+            } catch {
+              case NonFatal(failure) => Left(DeserializationFailure("Failed to uncompress byte array", Some(failure)))
+            }
+          }
+        } yield uncompressedData
+      }
     }
   }
 }

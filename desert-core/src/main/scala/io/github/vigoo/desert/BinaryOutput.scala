@@ -1,5 +1,11 @@
 package io.github.vigoo.desert
 
+import java.io.ByteArrayOutputStream
+import java.util.zip.{Deflater, DeflaterOutputStream}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
+
 /**
  * Interface for writing binary data
  *
@@ -98,6 +104,47 @@ trait BinaryOutput {
         _ <- writeByte(((adjustedValue >>> 21) | 0x80).toByte)
         _ <- writeByte((adjustedValue >>> 28).toByte)
       } yield ()
+    }
+  }
+
+  /**
+   * Compress the given byte array with ZIP and write write the compressed data to the output
+   *
+   * The compressed data is prepended with the uncompressed and the compressed data sizes, encoded with
+   * variable-length integer encoding.
+   *
+   * Use the [[BinaryInput.readCompressedByteArray]] function to read it back.
+   *
+   * @param uncompressedData Uncompressed data
+   * @param level Compression level. Use constants from the [[Deflater]] class
+   */
+  def writeCompressedByteArray(uncompressedData: Array[Byte], level: Int = Deflater.DEFAULT_COMPRESSION): Either[DesertFailure, Unit] = {
+    if (uncompressedData.length == 0) {
+      writeVarInt(0, optimizeForPositive = true)
+    } else {
+      try {
+        val deflater = new Deflater(level)
+        deflater.setInput(uncompressedData)
+        deflater.finish()
+
+        val compressedData = new ArrayBuffer[Byte](uncompressedData.length)
+        val buffer = new Array[Byte](uncompressedData.length)
+        var compressedLength = 0
+        while (!deflater.finished()) {
+          val length = deflater.deflate(buffer)
+          compressedData.addAll(buffer.slice(0, length))
+          compressedLength += length
+        }
+
+        deflater.end()
+        for {
+          _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
+          _ <- writeVarInt(compressedLength, optimizeForPositive = true)
+          _ <- writeBytes(compressedData.toArray, 0, compressedLength)
+        } yield ()
+      } catch {
+        case NonFatal(failure) => Left(SerializationFailure("Failed to compress data", Some(failure)))
+      }
     }
   }
 }
