@@ -37,6 +37,27 @@
 <span class="c1">// str: Either[DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   Array(10, 72, 101, 108, 108, 111)</span>
 <span class="c1">// )</span>
+<span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
+<span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(</span>
+<span class="c1">//     50,</span>
+<span class="c1">//     -39,</span>
+<span class="c1">//     -53,</span>
+<span class="c1">//     -117,</span>
+<span class="c1">//     60,</span>
+<span class="c1">//     43,</span>
+<span class="c1">//     66,</span>
+<span class="c1">//     -54,</span>
+<span class="c1">//     -76,</span>
+<span class="c1">//     76,</span>
+<span class="c1">//     48,</span>
+<span class="c1">//     109,</span>
+<span class="c1">//     -90,</span>
+<span class="c1">//     106,</span>
+<span class="c1">//     73,</span>
+<span class="c1">//     -43</span>
+<span class="c1">//   )</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <h3 id="option-either-validated-try">Option, Either, Validated, Try</h3>
@@ -75,7 +96,7 @@ than trying to recreate the same exception via reflection.</p>
 <span class="c1">//       "java.lang.RuntimeException",</span>
 <span class="c1">//       "Test exception",</span>
 <span class="c1">//       Array(</span>
-<span class="c1">//         repl.MdocSession$App.&lt;init&gt;(codecs.md:77),</span>
+<span class="c1">//         repl.MdocSession$App.&lt;init&gt;(codecs.md:80),</span>
 <span class="c1">//         repl.MdocSession$.app(codecs.md:3),</span>
 <span class="c1">//         mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:82),</span>
 <span class="c1">//         scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),</span>
