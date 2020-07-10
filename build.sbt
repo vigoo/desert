@@ -153,7 +153,8 @@ lazy val docs = project
       micrositeConfigYaml := ConfigYml(
         yamlCustomProperties = Map("plugins" -> List("jemoji"))
       ),
-      micrositeFooterText := Some("<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project")
+      micrositeFooterText := Some("<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project"),
+      micrositeAnalyticsToken := "UA-56320875-2"
     )
   .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka)
 
