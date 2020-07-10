@@ -7,6 +7,8 @@ import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import shapeless.Lazy
 
+import scala.util.Try
+
 trait BinaryDeserializerOps {
   final def getInput: Deser[BinaryInput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.input)
   final def getInputTypeRegistry: Deser[TypeRegistry] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.typeRegistry)
@@ -37,6 +39,7 @@ trait BinaryDeserializerOps {
 
   final def finishDeserializerWith[T](value: T): Deser[T] = Deser.fromEither(Right(value))
   final def failDeserializerWith[T](failure: DesertFailure): Deser[T] = Deser.fromEither(Left(failure))
+  final def deserializerFromTry[T](f: Try[T], failMessage: String): Deser[T] = Deser.fromEither(f.toEither.left.map(failure => DeserializationFailure(failMessage, Some(failure))))
 
   final def getString(value: StringId): Deser[Option[String]] =
     for {

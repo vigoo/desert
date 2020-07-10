@@ -3,9 +3,12 @@ package io.github.vigoo.desert
 import cats.data.{ReaderT, StateT}
 import cats.instances.either._
 import cats.syntax.flatMap._
+import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
 import shapeless.Lazy
+
+import scala.util.Try
 
 trait BinarySerializerOps {
   final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv].map(_.output)
@@ -40,6 +43,7 @@ trait BinarySerializerOps {
   final def finishSerializer(): Ser[Unit] = finishSerializerWith(())
   final def finishSerializerWith[T](value: T): Ser[T] = Ser.fromEither(Right(value))
   final def failSerializerWith(failure: DesertFailure): Ser[Unit] = Ser.fromEither(Left(failure))
+  final def serializerFromTry[T](f: Try[T], failMessage: String): Deser[T] = Deser.fromEither(f.toEither.left.map(failure => SerializationFailure(failMessage, Some(failure))))
 
   final def storeString(value: String): Ser[StoreStringResult] =
     for {
