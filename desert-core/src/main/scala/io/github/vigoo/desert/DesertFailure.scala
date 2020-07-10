@@ -3,8 +3,20 @@ package io.github.vigoo.desert
 import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 
+/**
+ * Desert failure type
+ *
+ * Every failure has a human-readable 'message' and an optional exception cause.
+ */
 sealed trait DesertFailure {
+  /**
+   * Human readable failure message
+   */
   def message: String
+
+  /**
+   * Exception related to the failure, if any
+   */
   def cause: Option[Throwable] = None
 }
 case class FailedToReadInput(reason: Throwable) extends DesertFailure {
@@ -18,6 +30,7 @@ case class FailedToWriteOutput(reason: Throwable) extends DesertFailure {
   override def message: String = "Failed to write output"
   override def cause: Option[Throwable] = Some(reason)
 }
+case class SerializationFailure(override val message: String, override val cause: Option[Throwable]) extends DesertFailure
 case class DeserializationFailure(override val message: String, override val cause: Option[Throwable]) extends DesertFailure
 case class DeserializingNonExistingChunk(chunk: Byte) extends DesertFailure {
   override def message: String = s"Trying to deserialize a non-existing chunk ($chunk)"
@@ -60,7 +73,12 @@ case class InvalidRefId(id: RefId) extends DesertFailure {
   override def message: String = s"Invalid reference identifier ($id)"
 }
 
-
+/**
+ * Exception form of [[DesertFailure]] to be used in places where failure must be encoded
+ * by an exception (Future, Cats Effect IO, etc).
+ *
+ * @param failure The failure to represent in the exception
+ */
 class DesertException(failure: DesertFailure) extends Exception(failure.message) {
   failure.cause.foreach(initCause)
 }
