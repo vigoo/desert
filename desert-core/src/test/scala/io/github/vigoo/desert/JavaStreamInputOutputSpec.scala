@@ -13,20 +13,37 @@ class JavaStreamInputOutputSpec extends DefaultRunnableSpec {
     suite("JavaStream input/output")(
       testM("properly writes and reads back variable int")(
         check(Gen.anyInt, Gen.boolean) { (value, optForPositive) =>
-          val outStream = new ByteArrayOutputStream()
-          val output = new JavaStreamBinaryOutput(outStream)
-          output.writeVarInt(value, optForPositive)
-          outStream.flush()
-          val data = outStream.toByteArray
-
-          val inStream = new ByteArrayInputStream(data)
-          val input = new JavaStreamBinaryInput(inStream)
-          val readValue = input.readVarInt(optForPositive)
-
-          assert(readValue)(isRight(equalTo(value)))
+          testWriteAndRead(
+            _.writeVarInt(value, optForPositive),
+            _.readVarInt(optForPositive),
+            value
+          )
         }
-      )
+      ),
+
+      test("array slice support works") {
+        val data = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        testWriteAndRead(
+          _.writeBytes(data, 2, 4),
+          _.readBytes(4),
+          Array[Byte](2, 3, 4, 5)
+        )
+      }
     )
+
+  private def testWriteAndRead[T](write: BinaryOutput => (), read: BinaryInput => Either[DesertFailure, T], expected: T): TestResult = {
+    val outStream = new ByteArrayOutputStream()
+    val output = new JavaStreamBinaryOutput(outStream)
+    write(output)
+    outStream.flush()
+    val data = outStream.toByteArray
+
+    val inStream = new ByteArrayInputStream(data)
+    val input = new JavaStreamBinaryInput(inStream)
+    val readValue = read(input)
+
+    assert(readValue)(isRight(equalTo(expected)))
+  }
 }
 
 object JavaStreamInputOutputSpec extends JavaStreamInputOutputSpec
