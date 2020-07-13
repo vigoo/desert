@@ -11,10 +11,13 @@ import codecs._
 class TransientSpec extends DefaultRunnableSpec with SerializationProperties {
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
+  case class TypeWithoutCodec(value: Int)
+
   case class TransientTest(a: Int,
                            @TransientField("def") b: String,
                            @TransientField(None) c: Option[Int],
-                           d: Boolean)
+                           d: Boolean,
+                           @TransientField(TypeWithoutCodec(0)) e: TypeWithoutCodec) // derive must not require an implicit codec for transient fields!
   object TransientTest {
     implicit val codec: BinaryCodec[TransientTest] = BinaryCodec.derive(
       FieldAdded("c", None)
@@ -25,8 +28,8 @@ class TransientSpec extends DefaultRunnableSpec with SerializationProperties {
     suite("Support for transient fields")(
       test("does not serialize a transient field") {
         canBeSerializedAndReadBack(
-          TransientTest(1, "2", Some(3), d = true),
-          TransientTest(1, "def", None, d = true)
+          TransientTest(1, "2", Some(3), d = true, TypeWithoutCodec(100)),
+          TransientTest(1, "def", None, d = true, TypeWithoutCodec(0))
         )
       }
     )
