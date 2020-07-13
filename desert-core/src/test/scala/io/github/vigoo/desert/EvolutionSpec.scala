@@ -51,6 +51,19 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     val gen: Gen[Random with Sized, ProdV4] = DeriveGen[ProdV4]
   }
 
+  case class ProdV5(@TransientField("unset") fieldA: String,
+                    newField1: Boolean)
+
+  object ProdV5 {
+    implicit val codec: BinaryCodec[ProdV5] = BinaryCodec.derive(
+      FieldAdded("newField1", true),
+      FieldMadeOptional("fieldB"),
+      FieldRemoved("fieldB"),
+      FieldMadeTransient("fieldA")
+    )
+    val gen: Gen[Random with Sized, ProdV5] = DeriveGen[ProdV5]
+  }
+
   import EvolutionSpec.TestId
 
   override def spec: ZSpec[TestEnvironment, Any] =
@@ -193,6 +206,43 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
           )
         )
       ),
+      suite("making a field transient")(
+        testM("product with field made transient is serializable")(
+          canBeSerialized(ProdV5.gen,
+            Some((a: ProdV5) =>
+              hasField[ProdV5, Boolean]("newField1", _.newField1, equalTo(a.newField1)) &&
+              hasField[ProdV5, String]("fieldA", _.fieldA, equalTo("unset"))))
+        ),
+        test("can read v1 value by skipping the field and using the provided default")(
+          canBeSerializedAndReadBack(
+            ProdV1("hello", 200),
+            ProdV5("unset", newField1 = true)
+          )
+        ),
+        test("can read v2 value by skipping the field and using the provided default")(
+          canBeSerializedAndReadBack(
+            ProdV2("hello", newField1 = false, 200),
+            ProdV5("unset", newField1 = false)
+          )
+        ),
+        test("can read v3 value by skipping the field and using the provided default")(
+          canBeSerializedAndReadBack(
+            ProdV3("hello", newField1 = false, Some(200)),
+            ProdV5("unset", newField1 = false)
+          )
+        ),
+        test("can read v5 value by skipping the field and using the provided default")(
+          canBeSerializedAndReadBack(
+            ProdV4("hello", newField1 = false),
+            ProdV5("unset", newField1 = false)
+          )
+        ),
+        test("cannot read as v4 because of missing field")(
+          cannotBeSerializedAndReadBack[ProdV5, ProdV4](
+            ProdV5("hello", newField1 = false),
+          )
+        ),
+      )
     )
 }
 

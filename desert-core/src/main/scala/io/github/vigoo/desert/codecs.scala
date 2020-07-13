@@ -1,6 +1,7 @@
 package io.github.vigoo.desert
 
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 import cats.Order
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
@@ -17,6 +18,9 @@ import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Module containing implicit binary codecs for a lot of base types
+ */
 object codecs {
 
   implicit val byteCodec: BinaryCodec[Byte] = BinaryCodec.define[Byte](value => writeByte(value))(readByte())
@@ -67,6 +71,16 @@ object codecs {
       } yield result
     }
   }
+
+  implicit val uuidCodec: BinaryCodec[UUID] = BinaryCodec.define(
+    (uuid: UUID) => for {
+      _ <- writeLong(uuid.getMostSignificantBits)
+      _ <- writeLong(uuid.getLeastSignificantBits)
+    } yield ()
+  )(for {
+    msb <- readLong()
+    lsb <- readLong()
+  } yield new UUID(msb, lsb))
 
   implicit def optionCodec[T : BinaryCodec]: BinaryCodec[Option[T]] = new BinaryCodec[Option[T]] {
     override def deserialize(): Deser[Option[T]] = {

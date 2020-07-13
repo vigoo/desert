@@ -13,6 +13,8 @@ import io.github.vigoo.desert.GenericBinaryCodec._
 import io.github.vigoo.desert.codecs._
 import shapeless._
 import shapeless.labelled._
+import shapeless.ops.hlist
+import shapeless.ops.hlist._
 
 import scala.reflect.ClassTag
 
@@ -46,6 +48,40 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
                                                                  headCodec: Lazy[BinaryCodec[H]],
                                                                  tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, H] :+: T]
 
+  trait Symbols[H] {
+    type Result <: HList
+
+    def apply(): Result
+  }
+
+  object Symbols {
+    type Aux[H, R <: HList] = Symbols[H] { type Result = R }
+
+    implicit val hnilSymbols: Symbols.Aux[HNil, HNil] = new Symbols[HNil] {
+      override type Result = HNil
+      override def apply(): Result = HNil
+    }
+
+    implicit def hlistSymbols[K <: Symbol, H, T <: HList, TR <: HList](implicit witness: Witness.Aux[K],
+                                                                       tailSymbols: Symbols.Aux[T, TR]): Symbols.Aux[FieldType[K, H] :: T, Symbol :: TR] =
+      new Symbols[FieldType[K, H] :: T] {
+        override type Result = Symbol :: TR
+        override def apply(): Result = witness.value :: tailSymbols()
+      }
+
+    implicit val cnilSymbols: Symbols.Aux[CNil, HNil] = new Symbols[CNil] {
+      override type Result = HNil
+      override def apply(): Result = HNil
+    }
+
+    implicit def clistSymbols[K <: Symbol, H, T <: Coproduct, TR <: HList](implicit witness: Witness.Aux[K],
+                                                                           tailSymbols: Symbols.Aux[T, TR]): Symbols.Aux[FieldType[K, H] :+: T, Symbol :: TR] =
+      new Symbols[FieldType[K, H] :+: T] {
+        override type Result = Symbol :: TR
+        override def apply(): Result = witness.value :: tailSymbols()
+      }
+  }
+
   trait ToConstructorMap[T] { val constructors: Vector[String] }
   object ToConstructorMap {
     implicit val cnil: ToConstructorMap[CNil] = new ToConstructorMap[CNil] { val constructors: Vector[String] = Vector.empty }
@@ -58,11 +94,16 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     implicit def hlist[H <: HList]: ToConstructorMap[H] = new ToConstructorMap[H] { val constructors: Vector[String] = Vector.empty }
   }
 
-  def derive[T, H](implicit gen: LabelledGeneric.Aux[T, H],
-                   hlistSerializer: Lazy[ChunkedBinarySerializer[H]],
-                   hlistDeserializer: Lazy[ChunkedBinaryDeserializer[H]],
-                   toConstructorMap: Lazy[ToConstructorMap[H]],
-                   classTag: ClassTag[T]): BinaryCodec[T]
+  def derive[T, H, Ks <: HList, Trs <: HList, KsTrs <: HList]
+    (implicit gen: LabelledGeneric.Aux[T, H],
+     keys: Lazy[Symbols.Aux[H, Ks]],
+     transientAnnotations: Annotations.Aux[TransientField, T, Trs],
+     zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
+     toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
+     hlistSerializer: Lazy[ChunkedBinarySerializer[H]],
+     hlistDeserializer: Lazy[ChunkedBinaryDeserializer[H]],
+     toConstructorMap: Lazy[ToConstructorMap[H]],
+     classTag: ClassTag[T]): BinaryCodec[T]
 }
 
 class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDerivationApi {
@@ -111,14 +152,22 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       for {
         chunkedOutput <- ChunkedSerOps.getChunkedOutput
         fieldName = witness.value.name
-        chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        output = chunkedOutput.outputFor(chunk)
-        _ <- ChunkedSerOps.fromSer(
-          headCodec.value.serialize(headValue),
-          output
-        )
-        _ <- ChunkedSerOps.recordFieldIndex(fieldName, chunk)
-        _ <- tailCodec.serialize(tailValues)
+        transient <- ChunkedSerOps.getChunkedState.map(_.transientFields.get(witness.value))
+        _ <- transient match {
+          case Some(_) =>
+            tailCodec.serialize(tailValues)
+          case _ =>
+            val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
+            val output = chunkedOutput.outputFor(chunk)
+            for {
+              _ <- ChunkedSerOps.fromSer(
+                headCodec.value.serialize(headValue),
+                output
+              )
+              _ <- ChunkedSerOps.recordFieldIndex(fieldName, chunk)
+              _ <- tailCodec.serialize(tailValues)
+            } yield ()
+        }
       } yield ()
   }
 
@@ -126,43 +175,50 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
                                           (implicit headCodec: Lazy[BinaryCodec[H]],
                                            optHeadCodec: Lazy[BinaryCodec[Option[H]]]): ChunkedDeser[Option[H]] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.pure(None)
-      } else {
-        val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
-
-        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-          if (chunkedInput.storedVersion < chunk) {
-            // This field was not serialized
-            fieldDefaults.get(fieldName) match {
-              case Some(value) =>
-                if (optSince <= chunk) {
-                  // It was originally Option[H]
-                  ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
-                } else {
-                  // It was made optional after it was added
-                  ChunkedDeserOps.pure(Some(value.asInstanceOf[H]))
-                }
-              case None =>
-                ChunkedDeserOps.failWith(DeserializationFailure(s"Field $fieldName is not in the stream and does not have default value", None))
-
-            }
-          } else {
-            // This field was serialized
-            if (chunkedInput.storedVersion < optSince) {
-              // Expect H in the input stream and wrap with Some()
-              for {
-                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-              } yield Some(headValue)
+      ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
+        chunkedState.transientFields.get(Symbol(fieldName)) match {
+          case Some(value) =>
+            ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
+          case None =>
+            if (chunkedInput.removedFields.contains(fieldName)) {
+              ChunkedDeserOps.pure(None)
             } else {
-              // Expect Option[H] in the input stream
-              for {
-                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.value.deserialize(), input)
-              } yield headValue
-            }
+              val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
+              val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
+
+              ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
+                if (chunkedInput.storedVersion < chunk) {
+                  // This field was not serialized
+                  fieldDefaults.get(fieldName) match {
+                    case Some(value) =>
+                      if (optSince <= chunk) {
+                        // It was originally Option[H]
+                        ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
+                      } else {
+                        // It was made optional after it was added
+                        ChunkedDeserOps.pure(Some(value.asInstanceOf[H]))
+                      }
+                    case None =>
+                      ChunkedDeserOps.failWith(DeserializationFailure(s"Field $fieldName is not in the stream and does not have default value", None))
+
+                  }
+                } else {
+                  // This field was serialized
+                  if (chunkedInput.storedVersion < optSince) {
+                    // Expect H in the input stream and wrap with Some()
+                    for {
+                      input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                      headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+                    } yield Some(headValue)
+                  } else {
+                    // Expect Option[H] in the input stream
+                    for {
+                      input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                      headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.value.deserialize(), input)
+                    } yield headValue
+                  }
+                }
+              }
           }
         }
       }
@@ -172,41 +228,48 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   private def readFieldIfExists[H](fieldName: String)
                                   (implicit headCodec: Lazy[BinaryCodec[H]]): ChunkedDeser[H] = {
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      // Check if field was removed
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
-      } else {
-        val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-          if (chunkedInput.storedVersion < chunk) {
-            // Field was not serialized
-            fieldDefaults.get(fieldName) match {
-              case Some(value) =>
-                ChunkedDeserOps.pure(value.asInstanceOf[H])
-              case None =>
-                ChunkedDeserOps.failWith(FieldWithoutDefaultValueIsMissing(fieldName))
-            }
-          } else {
-            // Field was serialized
-
-            if (chunkedInput.madeOptionalAt.contains(fieldPosition)) {
-              // The field was made optional in by a newer version, reading as Option[H]
-              for {
-                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
-                headValue <- if (isDefined) {
-                  ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-                } else {
-                  ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
-                }
-              } yield headValue
+      ChunkedDeserOps.getChunkedState.flatMap { chunkedState =>
+        chunkedState.transientFields.get(Symbol(fieldName)) match {
+          case Some(value) =>
+            ChunkedDeserOps.pure(value.asInstanceOf[H])
+          case None =>
+            // Check if field was removed
+            if (chunkedInput.removedFields.contains(fieldName)) {
+              ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
             } else {
-              // Default case, reading the field from the given chunk
-              for {
-                input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
-              } yield headValue
-            }
+              val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
+              ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
+                if (chunkedInput.storedVersion < chunk) {
+                  // Field was not serialized
+                  fieldDefaults.get(fieldName) match {
+                    case Some(value) =>
+                      ChunkedDeserOps.pure(value.asInstanceOf[H])
+                    case None =>
+                      ChunkedDeserOps.failWith(FieldWithoutDefaultValueIsMissing(fieldName))
+                  }
+                } else {
+                  // Field was serialized
+
+                  if (chunkedInput.madeOptionalAt.contains(fieldPosition)) {
+                    // The field was made optional in by a newer version, reading as Option[H]
+                    for {
+                      input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                      isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
+                      headValue <- if (isDefined) {
+                        ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+                      } else {
+                        ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
+                      }
+                    } yield headValue
+                  } else {
+                    // Default case, reading the field from the given chunk
+                    for {
+                      input <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
+                      headValue <- ChunkedDeserOps.fromDeser(headCodec.value.deserialize(), input)
+                    } yield headValue
+                  }
+                }
+              }
           }
         }
       }
@@ -269,14 +332,22 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       }
     } yield result
 
-  def derive[T, H](implicit gen: LabelledGeneric.Aux[T, H],
-                   hlistSerializer: Lazy[ChunkedBinarySerializer[H]],
-                   hlistDeserializer: Lazy[ChunkedBinaryDeserializer[H]],
-                   toConstructorMap: Lazy[ToConstructorMap[H]],
-                   classTag: ClassTag[T]): BinaryCodec[T] = {
+  def derive[T, H, Ks <: HList, Trs <: HList, KsTrs <: HList]
+    (implicit gen: LabelledGeneric.Aux[T, H],
+     keys: Lazy[Symbols.Aux[H, Ks]],
+     transientAnnotations: Annotations.Aux[TransientField, T, Trs],
+     zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
+     toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
+     hlistSerializer: Lazy[ChunkedBinarySerializer[H]],
+     hlistDeserializer: Lazy[ChunkedBinaryDeserializer[H]],
+     toConstructorMap: Lazy[ToConstructorMap[H]],
+     classTag: ClassTag[T]): BinaryCodec[T] = {
     val constructorMap = toConstructorMap.value.constructors
     val constructorNameToId = constructorMap.zipWithIndex.toMap
     val constructorIdToName = constructorMap.zipWithIndex.map { case (name, id) => (id, name) }.toMap
+    val trs = zip(keys.value() :: transientAnnotations() :: HNil)
+    val transientFields = toList(trs).collect { case (key, Some(TransientField(defaultValue))) => (key, defaultValue) }.toMap
+
     BinaryCodec.define[T] {
       value =>
         for {
@@ -294,7 +365,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             constructorNameToId,
             constructorIdToName,
             typeDescription = classTag.runtimeClass.getName,
-            readConstructorName = None
+            readConstructorName = None,
+            transientFields
           )
           result <- Ser.fromEither(
             hlistSerializer.value.serialize(genericValue)
@@ -320,7 +392,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           constructorNameToId,
           constructorIdToName,
           typeDescription = classTag.runtimeClass.getName,
-          readConstructorName = None)
+          readConstructorName = None,
+          transientFields)
         result <- Deser.fromEither(hlistDeserializer.value.deserialize()
           .run(chunkedInput)
           .run(initialState))
@@ -522,7 +595,8 @@ object GenericBinaryCodec {
                              constructorNameToId: Map[String, Int],
                              constructorIdToName: Map[Int, String],
                              typeDescription: String,
-                             readConstructorName: Option[String]
+                             readConstructorName: Option[String],
+                             transientFields: Map[Symbol, Any]
                             )
 
   type ChunkedSer[T] = ReaderT[StateT[Either[DesertFailure, *], ChunkedSerState, *], ChunkedOutput, T]
@@ -650,5 +724,4 @@ object GenericBinaryCodec {
   trait ChunkedBinaryDeserializer[T] {
     def deserialize(): ChunkedDeser[T]
   }
-
 }

@@ -30,6 +30,7 @@ val double = serializeToArray(3.14)
 val bool = serializeToArray(true)
 val unit = serializeToArray(())
 val str = serializeToArray("Hello")
+val uuid = serializeToArray(java.util.UUID.randomUUID())
 ``` 
 
 ### Option, Either, Validated, Try
@@ -159,6 +160,25 @@ object Drink {
 val a = serializeToArray[Drink](Beer("X"))
 val b = serializeToArray[Drink](Water)
 ```
+
+### Transient fields in generic codecs
+It is possible to mark some fields of a _case class_ as **transient**:
+
+```scala mdoc
+case class Point2(x: Int, y: Int, z: Int, @TransientField(None) cachedDistance: Option[Double])
+object Point2 {
+  implicit val codec: BinaryCodec[Point2] = BinaryCodec.derive()
+}
+
+val pt2 = for {
+  data <- serializeToArray(Point2(1, 2, 3, Some(3.7416)))
+  result <- deserializeFromArray[Point2](data)
+} yield result
+```
+
+Transient fields are not being serialized and they get a default value contained by the annotation
+during deserialization. Note that the default value is not type checked during compilation, if
+it does not match the field type it causes runtime error. 
 
 ### Generic codecs for value type wrappers
 It is a good practice to use zero-cost value type wrappers around primitive types to represent
