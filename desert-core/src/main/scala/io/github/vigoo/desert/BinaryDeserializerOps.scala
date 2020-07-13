@@ -23,6 +23,7 @@ trait BinaryDeserializerOps {
   final def readFloat(): Deser[Float] = getInput.flatMap(input => Deser.fromEither(input.readFloat()))
   final def readDouble(): Deser[Double] = getInput.flatMap(input => Deser.fromEither(input.readDouble()))
   final def readBytes(count: Int): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readBytes(count)))
+  final def readCompressedByteArray(): Deser[Array[Byte]] = getInput.flatMap(input => Deser.fromEither(input.readCompressedByteArray()))
   final def read[T: BinaryDeserializer](): Deser[T] = implicitly[BinaryDeserializer[T]].deserialize()
 
   final def readUnknown(): Deser[Any] =
