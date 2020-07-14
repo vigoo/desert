@@ -127,8 +127,8 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
       }
 
     implicit def coprodTagTransientsTransient[K <: Symbol, H, T <: Coproduct, TT <: Coproduct, AT, AC <: HList]
-    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :+: T, AT, Some[TransientConstructor.type] :: AC, FieldType[K, MarkedAsTransient[H]] :+: TT] =
-      new TagTransients[FieldType[K, H] :+: T, AT, Some[TransientConstructor.type] :: AC] {
+    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :+: T, AT, Some[TransientConstructor] :: AC, FieldType[K, MarkedAsTransient[H]] :+: TT] =
+      new TagTransients[FieldType[K, H] :+: T, AT, Some[TransientConstructor] :: AC] {
         override type Result = FieldType[K, MarkedAsTransient[H]] :+: TT
         override def tag(value: FieldType[K, H] :+: T): Result = value match {
           case Inl(head) =>
@@ -202,7 +202,7 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     (implicit gen: LabelledGeneric.Aux[T, H],
      keys: Lazy[Symbols.Aux[H, Ks]],
      transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-     transientConstructorAnnotations: Annotations.Aux[TransientConstructor.type, T, Trcs],
+     transientConstructorAnnotations: Annotations.Aux[TransientConstructor, T, Trcs],
      taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
      zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
@@ -455,7 +455,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   (implicit gen: LabelledGeneric.Aux[T, H],
    keys: Lazy[Symbols.Aux[H, Ks]],
    transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-   transientConstructorAnnotations: Annotations.Aux[TransientConstructor.type, T, Trcs],
+   transientConstructorAnnotations: Annotations.Aux[TransientConstructor, T, Trcs],
    taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
    zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
    toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],

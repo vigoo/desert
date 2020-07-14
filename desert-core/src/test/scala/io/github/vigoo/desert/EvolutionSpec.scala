@@ -66,6 +66,32 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
 
   import EvolutionSpec.TestId
 
+  sealed trait Coprod1
+
+  case class Case11(a: Int) extends Coprod1
+
+  case class Case21(x: String) extends Coprod1
+
+  object Coprod1 {
+    implicit val case1Codec: BinaryCodec[Case11] = BinaryCodec.derive()
+    implicit val case2Codec: BinaryCodec[Case21] = BinaryCodec.derive()
+    implicit val codec: BinaryCodec[Coprod1] = BinaryCodec.derive()
+  }
+
+  sealed trait Coprod2
+
+  case class Case12(a: Int) extends Coprod2
+
+  @TransientConstructor case class TransientCons() extends Coprod2
+
+  case class Case22(x: String) extends Coprod2
+
+  object Coprod2 {
+    implicit val case1Codec: BinaryCodec[Case12] = BinaryCodec.derive()
+    implicit val case2Codec: BinaryCodec[Case22] = BinaryCodec.derive()
+    implicit val codec: BinaryCodec[Coprod2] = BinaryCodec.derive()
+  }
+
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Evolution")(
       suite("tuples vs products")(
@@ -100,7 +126,7 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         test("vector to list")(
           canBeSerializedAndReadBack(
             Vector(1, 2, 3, 4, 5),
-              List(1, 2, 3, 4, 5)
+            List(1, 2, 3, 4, 5)
           )
         ),
         test("list to set")(
@@ -211,7 +237,7 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
           canBeSerialized(ProdV5.gen,
             Some((a: ProdV5) =>
               hasField[ProdV5, Boolean]("newField1", _.newField1, equalTo(a.newField1)) &&
-              hasField[ProdV5, String]("fieldA", _.fieldA, equalTo("unset"))))
+                hasField[ProdV5, String]("fieldA", _.fieldA, equalTo("unset"))))
         ),
         test("can read v1 value by skipping the field and using the provided default")(
           canBeSerializedAndReadBack(
@@ -242,13 +268,36 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
             ProdV5("hello", newField1 = false),
           )
         ),
+      ),
+      suite("adding new transient constructors")(
+        test("adding a new transient constructor keeps binary compatibility")(
+          canBeSerializedAndReadBack(
+            Case11(5),
+            Case12(5)
+          ) &&
+            canBeSerializedAndReadBack(
+              Case12(5),
+              Case11(5)
+            ) &&
+            canBeSerializedAndReadBack(
+              Case21("test"),
+              Case22("test")
+            ) &&
+            canBeSerializedAndReadBack(
+              Case22("test"),
+              Case21("test")
+            )
+        )
       )
     )
 }
 
 @nowarn object EvolutionSpec extends EvolutionSpec {
+
   case class TestId(value: String) extends AnyVal
+
   object TestId {
     implicit val codec: BinaryCodec[TestId] = BinaryCodec.deriveForWrapper
   }
+
 }
