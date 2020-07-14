@@ -218,6 +218,10 @@ list to maintain <em>constructor ID order</em>. For the same reason it is curren
 a constructor either. Each constructor can be evolved separately with the above methods as they have 
 their own evolution steps.</p>
 
+<h3 id="adding-a-new-transient-constructor">Adding a new transient constructor</h3>
+<p>Constructors marked with <code class="highlighter-rouge">TransientConstructor</code> are not getting an associated <em>constructor ID</em> so they can
+be inserted or get removed freely.</p>
+
 <h3 id="type-registry-placeholders">Type registry placeholders</h3>
 <p>When using <em>type identifiers</em> with the <a href="type-registry">type registry</a> and a previously registered
 type has been removed from the code, it’s place can be kept assigned by using <code class="highlighter-rouge">registerPlaceholder</code>

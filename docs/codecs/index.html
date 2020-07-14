@@ -47,7 +47,24 @@ ga('send', 'pageview');
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
 <span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(-31, -56, -90, -12, 21, -22, 78, 8, -70, -6, -96, 99, 34, 8, 20, -125)</span>
+<span class="c1">//   Array(</span>
+<span class="c1">//     -20,</span>
+<span class="c1">//     -62,</span>
+<span class="c1">//     18,</span>
+<span class="c1">//     -112,</span>
+<span class="c1">//     96,</span>
+<span class="c1">//     96,</span>
+<span class="c1">//     69,</span>
+<span class="c1">//     41,</span>
+<span class="c1">//     -68,</span>
+<span class="c1">//     -109,</span>
+<span class="c1">//     66,</span>
+<span class="c1">//     121,</span>
+<span class="c1">//     -102,</span>
+<span class="c1">//     42,</span>
+<span class="c1">//     -111,</span>
+<span class="c1">//     38</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -277,6 +294,30 @@ with <code class="highlighter-rouge">derive</code>:</p>
 <p>Transient fields are not being serialized and they get a default value contained by the annotation
 during deserialization. Note that the default value is not type checked during compilation, if
 it does not match the field type it causes runtime error.</p>
+
+<h3 id="transient-constructors-in-generic-codecs">Transient constructors in generic codecs</h3>
+<p>It is possible to mark whole constructors as <strong>transient</strong>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Cases</span>
+<span class="nd">@TransientConstructor</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Case1</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Cases</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Case2</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Cases</span>
+
+<span class="k">object</span> <span class="nc">Cases</span> <span class="o">{</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">case2Codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">Case2</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">()</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="nv">codec</span><span class="k">:</span> <span class="kt">BinaryCodec</span><span class="o">[</span><span class="kt">Cases</span><span class="o">]</span> <span class="k">=</span> <span class="nv">BinaryCodec</span><span class="o">.</span><span class="py">derive</span><span class="o">()</span>
+<span class="o">}</span>
+
+<span class="k">val</span> <span class="nv">cs1</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case1</span><span class="o">())</span>
+<span class="c1">// cs1: Either[DesertFailure, Array[Byte]] = Left(</span>
+<span class="c1">//   SerializingTransientConstructor("Case1")</span>
+<span class="c1">// )</span>
+<span class="k">val</span> <span class="nv">cs2</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case2</span><span class="o">())</span>
+<span class="c1">// cs2: Either[DesertFailure, Array[Byte]] = Right(Array(0, 0, 0))</span>
+</code></pre></div></div>
+
+<p>Transient constructors cannot be serialized. A common use case is for remote accessible actors where 
+some actor messages are known to be local only. By marking them as transient they can hold non-serializable data
+without breaking the serialization of the other, remote messages.</p>
 
 <h3 id="generic-codecs-for-value-type-wrappers">Generic codecs for value type wrappers</h3>
 <p>It is a good practice to use zero-cost value type wrappers around primitive types to represent
