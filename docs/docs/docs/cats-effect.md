@@ -10,7 +10,7 @@ The cats-effect module simply wraps the top-level serialization functions into e
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-cats-effect" % "v0.1.0"
+libraryDependencies += "io.github.vigoo" %% "desert-cats-effect" % "v0.1.1"
 ```
 
 then import 
