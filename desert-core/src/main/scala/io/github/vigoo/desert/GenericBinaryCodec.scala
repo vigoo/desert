@@ -25,6 +25,13 @@ trait LowerPriorityGenericDerivationApi {
   implicit def hlistDeserializer[K <: Symbol, H, T <: HList](implicit witness: Witness.Aux[K],
                                                              headCodec: Lazy[BinaryCodec[H]],
                                                              tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, H] :: T]
+  implicit def clistSerializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                               headCodec: Lazy[BinaryCodec[H]],
+                                                               tailCodec: ChunkedBinarySerializer[T]): ChunkedBinarySerializer[FieldType[K, H] :+: T]
+
+  implicit def clistDeserializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                 headCodec: Lazy[BinaryCodec[H]],
+                                                                 tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, H] :+: T]
 }
 
 trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
@@ -45,15 +52,13 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
   implicit def hlistTransientDeserializer[K <: Symbol, H, T <: HList](implicit witness: Witness.Aux[K],
                                                                       tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, MarkedAsTransient[H]] :: T]
 
-  implicit def clistSerializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
-                                                               headCodec: Lazy[BinaryCodec[H]],
-                                                               tailCodec: ChunkedBinarySerializer[T]): ChunkedBinarySerializer[FieldType[K, H] :+: T]
+  implicit def clistTransientSerializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                        tailCodec: ChunkedBinarySerializer[T]): ChunkedBinarySerializer[FieldType[K, MarkedAsTransient[H]] :+: T]
 
-  implicit def clistDeserializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
-                                                                 headCodec: Lazy[BinaryCodec[H]],
-                                                                 tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, H] :+: T]
+  implicit def clistTransientDeserializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                          tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, MarkedAsTransient[H]] :+: T]
 
-  trait TagTransients[H, A] {
+  trait TagTransients[H, AF, AC] {
     type Result
 
     def tag(value: H): Result
@@ -61,23 +66,23 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
   }
 
   object TagTransients {
-    type Aux[H, A, R] = TagTransients[H, A] { type Result = R }
+    type Aux[H, AF, AC, R] = TagTransients[H, AF, AC] { type Result = R }
 
-    implicit val hnilTagTransients: TagTransients.Aux[HNil, HNil, HNil] = new TagTransients[HNil, HNil] {
+    implicit def hnilTagTransients[AC]: TagTransients.Aux[HNil, HNil, AC, HNil] = new TagTransients[HNil, HNil, AC] {
       override type Result = HNil
       override def tag(value: HNil): Result = HNil
       override def untag(value: HNil): HNil = HNil
     }
 
-    implicit def cnilTagTransients[AT]: TagTransients.Aux[CNil, AT, CNil] = new TagTransients[CNil, AT] {
+    implicit def cnilTagTransients[AT]: TagTransients.Aux[CNil, AT, HNil, CNil] = new TagTransients[CNil, AT, HNil] {
       override type Result = CNil
       override def tag(value: CNil): Result = ???
       override def untag(value: CNil): CNil = ???
     }
 
-    implicit def prodTagTransientsTransient[K <: Symbol, H, T <: HList, TT <: HList, AT <: HList]
-    (implicit tailTagger: TagTransients.Aux[T, AT, TT]): TagTransients.Aux[FieldType[K, H] :: T, Some[TransientField] :: AT, FieldType[K, MarkedAsTransient[H]] :: TT] =
-      new TagTransients[FieldType[K, H] :: T, Some[TransientField] :: AT] {
+    implicit def prodTagTransientsTransient[K <: Symbol, H, T <: HList, TT <: HList, AT <: HList, AC]
+    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :: T, Some[TransientField] :: AT, AC, FieldType[K, MarkedAsTransient[H]] :: TT] =
+      new TagTransients[FieldType[K, H] :: T, Some[TransientField] :: AT, AC] {
         override type Result = FieldType[K, MarkedAsTransient[H]] :: TT
         override def tag(value: FieldType[K, H] :: T): Result = value match {
           case head :: tail =>
@@ -89,9 +94,9 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
         }
       }
 
-    implicit def prodTagTransientsPersistent[K <: Symbol, H, T <: HList, TT <: HList, AT <: HList]
-    (implicit tailTagger: TagTransients.Aux[T, AT, TT]): TagTransients.Aux[FieldType[K, H] :: T, None.type :: AT, FieldType[K, H] :: TT] =
-      new TagTransients[FieldType[K, H] :: T, None.type :: AT] {
+    implicit def prodTagTransientsPersistent[K <: Symbol, H, T <: HList, TT <: HList, AT <: HList, AC]
+    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :: T, None.type :: AT, AC, FieldType[K, H] :: TT] =
+      new TagTransients[FieldType[K, H] :: T, None.type :: AT, AC] {
         override type Result = FieldType[K, H] :: TT
         override def tag(value: FieldType[K, H] :: T): Result = value match {
           case head :: tail =>
@@ -103,9 +108,9 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
         }
       }
 
-    implicit def coprodTagTransients[K <: Symbol, H, T <: Coproduct, TT <: Coproduct, AT]
-    (implicit tailTagger: TagTransients.Aux[T, AT, TT]): TagTransients.Aux[FieldType[K, H] :+: T, AT, FieldType[K, H] :+: TT] =
-      new TagTransients[FieldType[K, H] :+: T, AT] {
+    implicit def coprodTagTransientsPersistent[K <: Symbol, H, T <: Coproduct, TT <: Coproduct, AT, AC <: HList]
+    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :+: T, AT, None.type :: AC, FieldType[K, H] :+: TT] =
+      new TagTransients[FieldType[K, H] :+: T, AT, None.type :: AC] {
         override type Result = FieldType[K, H] :+: TT
         override def tag(value: FieldType[K, H] :+: T): Result = value match {
           case Inl(head) =>
@@ -116,6 +121,24 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
         override def untag(value: FieldType[K, H] :+: TT): FieldType[K, H] :+: T = value match {
           case Inl(head) =>
             Inl(head)
+          case Inr(tail) =>
+            Inr(tailTagger.untag(tail))
+        }
+      }
+
+    implicit def coprodTagTransientsTransient[K <: Symbol, H, T <: Coproduct, TT <: Coproduct, AT, AC <: HList]
+    (implicit tailTagger: TagTransients.Aux[T, AT, AC, TT]): TagTransients.Aux[FieldType[K, H] :+: T, AT, Some[TransientConstructor.type] :: AC, FieldType[K, MarkedAsTransient[H]] :+: TT] =
+      new TagTransients[FieldType[K, H] :+: T, AT, Some[TransientConstructor.type] :: AC] {
+        override type Result = FieldType[K, MarkedAsTransient[H]] :+: TT
+        override def tag(value: FieldType[K, H] :+: T): Result = value match {
+          case Inl(head) =>
+            Inl(head.asInstanceOf[FieldType[K, MarkedAsTransient[H]]])
+          case Inr(tail) =>
+            Inr(tailTagger.tag(tail))
+        }
+        override def untag(value: FieldType[K, MarkedAsTransient[H]] :+: TT): FieldType[K, H] :+: T = value match {
+          case Inl(head) =>
+            Inl(head.asInstanceOf[FieldType[K, H]])
           case Inr(tail) =>
             Inr(tailTagger.untag(tail))
         }
@@ -157,27 +180,35 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
   }
 
   trait ToConstructorMap[T] { val constructors: Vector[String] }
-  object ToConstructorMap {
-    implicit val cnil: ToConstructorMap[CNil] = new ToConstructorMap[CNil] { val constructors: Vector[String] = Vector.empty }
+  trait ToConstructorMapLowPriority {
     implicit def clist[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
                                                        tail: ToConstructorMap[T]): ToConstructorMap[FieldType[K, H] :+: T] =
       new ToConstructorMap[FieldType[K, H] :+: T] {
         val constructors: Vector[String] = witness.value.name +: tail.constructors
       }
+  }
+  object ToConstructorMap extends ToConstructorMapLowPriority {
+    implicit val cnil: ToConstructorMap[CNil] = new ToConstructorMap[CNil] { val constructors: Vector[String] = Vector.empty }
+    implicit def clistTransient[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                tail: ToConstructorMap[T]): ToConstructorMap[FieldType[K, MarkedAsTransient[H]] :+: T] =
+      new ToConstructorMap[FieldType[K, MarkedAsTransient[H]] :+: T] {
+        val constructors: Vector[String] = tail.constructors
+      }
     implicit val hnil: ToConstructorMap[HNil] = new ToConstructorMap[HNil] { val constructors: Vector[String] = Vector.empty }
     implicit def hlist[H <: HList]: ToConstructorMap[H] = new ToConstructorMap[H] { val constructors: Vector[String] = Vector.empty }
   }
 
-  def derive[T, H, Ks <: HList, Trs <: HList, KsTrs <: HList, TH]
+  def derive[T, H, Ks <: HList, Trs <: HList, Trcs <: HList, KsTrs <: HList, TH]
     (implicit gen: LabelledGeneric.Aux[T, H],
      keys: Lazy[Symbols.Aux[H, Ks]],
      transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-     taggedTransients: TagTransients.Aux[H, Trs, TH],
+     transientConstructorAnnotations: Annotations.Aux[TransientConstructor.type, T, Trcs],
+     taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
      zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
      hlistSerializer: Lazy[ChunkedBinarySerializer[TH]],
      hlistDeserializer: Lazy[ChunkedBinaryDeserializer[TH]],
-     toConstructorMap: Lazy[ToConstructorMap[H]],
+     toConstructorMap: Lazy[ToConstructorMap[TH]],
      classTag: ClassTag[T]): BinaryCodec[T]
 }
 
@@ -394,6 +425,14 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       tailCodec.serialize(tail)
   }
 
+  implicit def clistTransientSerializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                        tailCodec: ChunkedBinarySerializer[T]): ChunkedBinarySerializer[FieldType[K, MarkedAsTransient[H]] :+: T] = {
+    case Inl(_) =>
+      ChunkedSerOps.failWith(SerializingTransientConstructor(witness.value.name))
+    case Inr(tail) =>
+      tailCodec.serialize(tail)
+  }
+
   implicit def clistDeserializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
                                                                  headCodec: Lazy[BinaryCodec[H]],
                                                                  tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, H] :+: T] =
@@ -408,16 +447,21 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       }
     } yield result
 
-  def derive[T, H, Ks <: HList, Trs <: HList, KsTrs <: HList, TH]
+  implicit def clistTransientDeserializer[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
+                                                                          tailCodec: ChunkedBinaryDeserializer[T]): ChunkedBinaryDeserializer[FieldType[K, MarkedAsTransient[H]] :+: T] =
+    () => tailCodec.deserialize().map(Inr.apply)
+
+  def derive[T, H, Ks <: HList, Trs <: HList, Trcs <: HList, KsTrs <: HList, TH]
   (implicit gen: LabelledGeneric.Aux[T, H],
    keys: Lazy[Symbols.Aux[H, Ks]],
    transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-   taggedTransients: TagTransients.Aux[H, Trs, TH],
+   transientConstructorAnnotations: Annotations.Aux[TransientConstructor.type, T, Trcs],
+   taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
    zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
    toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
    hlistSerializer: Lazy[ChunkedBinarySerializer[TH]],
    hlistDeserializer: Lazy[ChunkedBinaryDeserializer[TH]],
-   toConstructorMap: Lazy[ToConstructorMap[H]],
+   toConstructorMap: Lazy[ToConstructorMap[TH]],
    classTag: ClassTag[T]): BinaryCodec[T] = {
     val constructorMap = toConstructorMap.value.constructors
     val constructorNameToId = constructorMap.zipWithIndex.toMap
@@ -689,6 +733,7 @@ object GenericBinaryCodec {
     final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ReaderT.liftF(StateT.liftF(value))
     final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
     final def unit: ChunkedSer[Unit] = pure(())
+    final def failWith[T](failure: DesertFailure): ChunkedSer[T] = fromEither(Left(failure))
 
     final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
       for {

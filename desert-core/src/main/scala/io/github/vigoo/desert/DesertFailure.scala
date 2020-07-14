@@ -72,6 +72,9 @@ case class InvalidConstructorId(id: Int, typ: String) extends DesertFailure {
 case class InvalidRefId(id: RefId) extends DesertFailure {
   override def message: String = s"Invalid reference identifier ($id)"
 }
+case class SerializingTransientConstructor(name: String) extends DesertFailure {
+  override def message: String = s"Trying to serialize a constructor marked as transient: $name"
+}
 
 /**
  * Exception form of [[DesertFailure]] to be used in places where failure must be encoded
