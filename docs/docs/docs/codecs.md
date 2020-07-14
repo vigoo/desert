@@ -180,6 +180,27 @@ Transient fields are not being serialized and they get a default value contained
 during deserialization. Note that the default value is not type checked during compilation, if
 it does not match the field type it causes runtime error. 
 
+### Transient constructors in generic codecs
+It is possible to mark whole constructors as **transient**:
+
+```scala mdoc
+sealed trait Cases
+@TransientConstructor case class Case1() extends Cases
+case class Case2() extends Cases
+
+object Cases {
+  implicit val case2Codec: BinaryCodec[Case2] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Cases] = BinaryCodec.derive()
+}
+
+val cs1 = serializeToArray[Cases](Case1())
+val cs2 = serializeToArray[Cases](Case2())
+```
+
+Transient constructors cannot be serialized. A common use case is for remote accessible actors where 
+some actor messages are known to be local only. By marking them as transient they can hold non-serializable data
+without breaking the serialization of the other, remote messages.
+
 ### Generic codecs for value type wrappers
 It is a good practice to use zero-cost value type wrappers around primitive types to represent
 the intention in the type system. `desert` can derive binary codecs for these too:

@@ -191,6 +191,10 @@ list to maintain _constructor ID order_. For the same reason it is currently not
 a constructor either. Each constructor can be evolved separately with the above methods as they have 
 their own evolution steps.  
 
+### Adding a new transient constructor
+Constructors marked with `TransientConstructor` are not getting an associated _constructor ID_ so they can
+be inserted or get removed freely.
+
 ### Type registry placeholders
 When using _type identifiers_ with the [type registry](type-registry) and a previously registered
 type has been removed from the code, it's place can be kept assigned by using `registerPlaceholder`
