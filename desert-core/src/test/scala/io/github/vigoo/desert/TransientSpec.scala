@@ -24,13 +24,40 @@ class TransientSpec extends DefaultRunnableSpec with SerializationProperties {
     )
   }
 
+  sealed trait SumWithTransientCons
+  case class Case1(a: Int) extends SumWithTransientCons
+  @TransientConstructor case class Case2(data: TypeWithoutCodec) extends SumWithTransientCons
+  case class Case3(x: String) extends SumWithTransientCons
+
+  object SumWithTransientCons {
+    implicit val case1Codec: BinaryCodec[Case1] = BinaryCodec.derive()
+    // Derive must not require implicit codec for the transient Case2
+    implicit val case3Codec: BinaryCodec[Case3] = BinaryCodec.derive()
+    implicit val codec: BinaryCodec[SumWithTransientCons] = BinaryCodec.derive()
+  }
+
   override def spec: ZSpec[TestEnvironment, Any] =
-    suite("Support for transient fields")(
+    suite("Support for transient modifiers")(
       test("does not serialize a transient field") {
         canBeSerializedAndReadBack(
           TransientTest(1, "2", Some(3), d = true, TypeWithoutCodec(100)),
           TransientTest(1, "def", None, d = true, TypeWithoutCodec(0))
         )
+      },
+
+      test("correctly serializes types with transient constructors") {
+        canBeSerializedAndReadBack(
+          Case1(25),
+          Case1(25)
+        ) &&
+        canBeSerializedAndReadBack(
+          Case3("hello"),
+          Case3("hello")
+        )
+      },
+
+      test("serializing a transient constructor fails") {
+        cannotBeSerializedAndReadBack[SumWithTransientCons, SumWithTransientCons](Case2(TypeWithoutCodec(1)))
       }
     )
 }
