@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://vigoo.github.io/desert/docs/akka/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/cats-effect/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/codecs/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/evolution/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/input-output/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/release-notes/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/type-registry/</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/zio/</loc>
+</url>
+</urlset>
