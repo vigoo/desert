@@ -152,7 +152,10 @@ lazy val docs = project
       micrositeTheme := "light",
       micrositeHighlightLanguages ++= Seq("scala", "sbt"),
       micrositeConfigYaml := ConfigYml(
-        yamlCustomProperties = Map("plugins" -> List("jemoji"))
+        yamlCustomProperties = Map(
+          "url" -> "https://vigoo.github.io",
+          "plugins" -> List("jemoji", "jekyll-sitemap")
+        )
       ),
       micrositeFooterText := Some("<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project"),
       micrositeAnalyticsToken := "UA-56320875-2"
