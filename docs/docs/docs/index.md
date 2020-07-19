@@ -14,15 +14,15 @@ It is suitable for use cases such as Akka _remoting_ and _persistence_sbt.
 First add `desert` as a dependency:
 
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-core" % "v0.1.1"
+libraryDependencies += "io.github.vigoo" %% "desert-core" % "0.1.1"
 ```
 
 and optionally some extra bindings:
 
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-akka" % "v0.1.1"
-libraryDependencies += "io.github.vigoo" %% "desert-cats-effect" % "v0.1.1"
-libraryDependencies += "io.github.vigoo" %% "desert-zio" % "v0.1.1"
+libraryDependencies += "io.github.vigoo" %% "desert-akka" % "0.1.1"
+libraryDependencies += "io.github.vigoo" %% "desert-cats-effect" % "0.1.1"
+libraryDependencies += "io.github.vigoo" %% "desert-zio" % "0.1.1"
 ```
 
 The most simple use case is to serialize a known type to an array of bytes and read it back:
