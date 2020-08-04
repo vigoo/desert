@@ -9,7 +9,7 @@ permalink: docs/
 Desert is a _binary serialization library_ for Scala, focusing on creating small binaries 
 while still enabling binary compatible evolution of the data model.
  
-It is suitable for use cases such as Akka _remoting_ and _persistence_sbt.     
+It is suitable for use cases such as Akka _remoting_ and _persistence_.
 
 First add `desert` as a dependency:
 
