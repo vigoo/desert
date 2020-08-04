@@ -94,13 +94,22 @@ val nes = serializeToArray(NonEmptySet.of(1, 2, 3, 4))
 ### String deduplication
 For strings the library have a simple deduplication system, without sacrificing any extra
 bytes for cases when strings are not duplicate. In general, the strings are encoded by a variable length
-int representing the length of the string in bytes, followed by its UTF-8 encoding. But each serialized 
+int representing the length of the string in bytes, followed by its UTF-8 encoding. 
+When deduplication is enabled, each serialized 
 string gets an ID and if it is serialized once more in the same stream, a negative number in place of the 
 length identifies it.   
 
 ```scala mdoc
-val twoStrings = serializeToArray(List("Hello", "Hello"))
+val twoStrings1 = serializeToArray(List("Hello", "Hello"))
+
+val twoStrings2 = serializeToArray(List(DeduplicatedString("Hello"), DeduplicatedString("Hello")))
 ```
+
+It is not turned on by default because it breaks backward compatibility when evolving data structures.
+If a new string field is added, old versions of the application will skip it and would not assign the
+same ID to the string if it is first seen. 
+
+It is enabled internally in desert for some cases, and can be used in _custom serializers_ freely. 
 
 ### Tuples
 The elements of tuples are serialized flat and the whole tuple gets prefixed by `0`, which makes them

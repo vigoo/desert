@@ -810,7 +810,7 @@ object GenericBinaryCodec {
       BinaryCodec.define[SerializedEvolutionStep] {
         case FieldAddedToNewChunk(size) => writeVarInt(size, optimizeForPositive = false)
         case FieldMadeOptional(position) => writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) >> write(position)
-        case FieldRemoved(fieldName) => writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) >> write(fieldName)
+        case FieldRemoved(fieldName) => writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) >> write(DeduplicatedString(fieldName))
         case UnknownEvolutionStep => writeVarInt(Codes.Unknown, optimizeForPositive = false)
       } {
         for {
@@ -818,7 +818,7 @@ object GenericBinaryCodec {
           result <- code match {
             case Codes.Unknown => finishDeserializerWith(UnknownEvolutionStep)
             case Codes.FieldMadeOptionalCode => read[FieldPosition]().map(FieldMadeOptional.apply)
-            case Codes.FieldRemovedCode => read[String]().map(FieldRemoved.apply)
+            case Codes.FieldRemovedCode => read[DeduplicatedString]().map(_.string).map(FieldRemoved.apply)
             case size if size > 0 => finishDeserializerWith(FieldAddedToNewChunk(size))
             case _ => failDeserializerWith(UnknownSerializedEvolutionStep(code))
           }

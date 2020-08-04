@@ -22,24 +22,44 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
   val s2 = "and another one"
   val s3 = "and another one"
 
+  case class DataV1()
+  object DataV1 {
+    implicit val codec: BinaryCodec[DataV1] = BinaryCodec.derive()
+  }
+
+  case class DataV2(newField: String)
+  object DataV2 {
+    implicit val codec: BinaryCodec[DataV2] = BinaryCodec.derive(FieldAdded[String]("newField", "unknown"))
+  }
+
+  case class OuterV1(data: DataV1, other: String)
+  object OuterV1 {
+    implicit val codec: BinaryCodec[OuterV1] = BinaryCodec.derive()
+  }
+
+  case class OuterV2(data: DataV2, other: String)
+  object OuterV2 {
+    implicit val codec: BinaryCodec[OuterV2] = BinaryCodec.derive()
+  }
+
   private val testSer: Ser[Unit] = for {
-    _ <- write(s1)
-    _ <- write(s2)
-    _ <- write(s3)
-    _ <- write(s1)
-    _ <- write(s2)
-    _ <- write(s3)
+    _ <- write(DeduplicatedString(s1))
+    _ <- write(DeduplicatedString(s2))
+    _ <- write(DeduplicatedString(s3))
+    _ <- write(DeduplicatedString(s1))
+    _ <- write(DeduplicatedString(s2))
+    _ <- write(DeduplicatedString(s3))
   } yield ()
 
   private val testDeser: Deser[List[String]] =
     for {
-      a <- read[String]()
-      b <- read[String]()
-      c <- read[String]()
-      d <- read[String]()
-      e <- read[String]()
-      f <- read[String]()
-    } yield List(a, b, c, d, e, f)
+      a <- read[DeduplicatedString]()
+      b <- read[DeduplicatedString]()
+      c <- read[DeduplicatedString]()
+      d <- read[DeduplicatedString]()
+      e <- read[DeduplicatedString]()
+      f <- read[DeduplicatedString]()
+    } yield List(a, b, c, d, e, f).map(_.string)
 
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("String deduplication")(
@@ -64,6 +84,13 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
         }
 
         assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
+      },
+      test("default string serialization does not breaks data evolution") {
+        implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
+        canBeSerializedAndReadBack(
+          OuterV2(DataV2("hello world"), "hello world"),
+          OuterV1(DataV1(), "hello world")
+        )
       }
     )
 }
