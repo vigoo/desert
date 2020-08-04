@@ -38,19 +38,39 @@ object codecs {
     private val charset = StandardCharsets.UTF_8
 
     override def serialize(value: String): Ser[Unit] = {
-      storeString(value).flatMap {
-        case StringAlreadyStored(id) =>
-          writeVarInt(-id.value, optimizeForPositive = false)
-        case StringIsNew(id) =>
-          val raw = value.getBytes(charset)
-          for {
-            _ <- writeVarInt(raw.size, optimizeForPositive = false)
-            _ <- writeBytes(raw)
-          } yield ()
-      }
+      val raw = value.getBytes(charset)
+      for {
+        _ <- writeVarInt(raw.size, optimizeForPositive = false)
+        _ <- writeBytes(raw)
+      } yield ()
     }
 
     override def deserialize(): Deser[String] = {
+      for {
+        count <- readVarInt(optimizeForPositive = false)
+        bytes <- readBytes(count)
+        string <- Deser.fromEither(Try(new String(bytes, charset))
+          .toEither
+          .left.map(reason => DeserializationFailure("Failed to decode string", Some(reason))))
+      } yield string
+    }
+  }
+
+  case class DeduplicatedString(string: String) extends AnyVal
+
+  implicit val deduplicatedStringCodec: BinaryCodec[DeduplicatedString] = new BinaryCodec[DeduplicatedString] {
+    private val charset = StandardCharsets.UTF_8
+
+    override def serialize(value: DeduplicatedString): Ser[Unit] = {
+      storeString(value.string).flatMap {
+        case StringAlreadyStored(id) =>
+          writeVarInt(-id.value, optimizeForPositive = false)
+        case StringIsNew(id) =>
+          stringCodec.serialize(value.string)
+      }
+    }
+
+    override def deserialize(): Deser[DeduplicatedString] = {
       for {
         countOrId <- readVarInt(optimizeForPositive = false)
         result <- if (countOrId < 0) {
@@ -68,7 +88,7 @@ object codecs {
             _ <- storeReadString(string)
           } yield string
         }
-      } yield result
+      } yield DeduplicatedString(result)
     }
   }
 
