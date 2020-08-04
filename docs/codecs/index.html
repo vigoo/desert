@@ -47,7 +47,24 @@ ga('send', 'pageview');
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
 <span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(-84, -91, 38, -30, -106, 28, 78, 98, -91, 10, 1, 125, 12, 16, 4, 18)</span>
+<span class="c1">//   Array(</span>
+<span class="c1">//     25,</span>
+<span class="c1">//     47,</span>
+<span class="c1">//     69,</span>
+<span class="c1">//     97,</span>
+<span class="c1">//     85,</span>
+<span class="c1">//     -57,</span>
+<span class="c1">//     71,</span>
+<span class="c1">//     -21,</span>
+<span class="c1">//     -114,</span>
+<span class="c1">//     42,</span>
+<span class="c1">//     -123,</span>
+<span class="c1">//     31,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     -88,</span>
+<span class="c1">//     -128,</span>
+<span class="c1">//     -117</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -177,15 +194,27 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 <h3 id="string-deduplication">String deduplication</h3>
 <p>For strings the library have a simple deduplication system, without sacrificing any extra
 bytes for cases when strings are not duplicate. In general, the strings are encoded by a variable length
-int representing the length of the string in bytes, followed by its UTF-8 encoding. But each serialized 
+int representing the length of the string in bytes, followed by its UTF-8 encoding. 
+When deduplication is enabled, each serialized 
 string gets an ID and if it is serialized once more in the same stream, a negative number in place of the 
 length identifies it.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">twoStrings</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"Hello"</span><span class="o">))</span>
-<span class="c1">// twoStrings: Either[DesertFailure, Array[Byte]] = Right(</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">twoStrings1</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"Hello"</span><span class="o">))</span>
+<span class="c1">// twoStrings1: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 10, 72, 101, 108, 108, 111, 0)</span>
+<span class="c1">// )</span>
+
+<span class="k">val</span> <span class="nv">twoStrings2</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">),</span> <span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">)))</span>
+<span class="c1">// twoStrings2: Either[DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 1, 0)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
+
+<p>It is not turned on by default because it breaks backward compatibility when evolving data structures.
+If a new string field is added, old versions of the application will skip it and would not assign the
+same ID to the string if it is first seen.</p>
+
+<p>It is enabled internally in desert for some cases, and can be used in <em>custom serializers</em> freely.</p>
 
 <h3 id="tuples">Tuples</h3>
 <p>The elements of tuples are serialized flat and the whole tuple gets prefixed by <code class="highlighter-rouge">0</code>, which makes them
@@ -394,7 +423,7 @@ which is not used by the generic codecs but can be used in scenarios like this.<
 
 <span class="k">val</span> <span class="nv">result</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Root</span><span class="o">(</span><span class="n">nodeA</span><span class="o">))</span>
 <span class="c1">// result: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 2, 97, 1, 0, 1, 1, 0, 1, 1, 1)</span>
+<span class="c1">//   Array(0, 2, 97, 1, 0, 2, 97, 1, 0, 2, 97, 1, 1)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="https://vigoo.github.io/desert/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/sbt.min.js"></script><script>
