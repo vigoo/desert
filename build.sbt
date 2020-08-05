@@ -89,7 +89,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-effect" % "2.1.4",
-      "dev.zio" %% "zio-interop-cats" % "2.1.3.0-RC16" % Test
+      "dev.zio" %% "zio-interop-cats" % "2.1.4.0" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
