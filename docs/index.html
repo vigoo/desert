@@ -15,14 +15,14 @@ while still enabling binary compatible evolution of the data model.</p>
 
 <p>First add <code class="highlighter-rouge">desert</code> as a dependency:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-core"</span> <span class="o">%</span> <span class="s">"0.1.1"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-core"</span> <span class="o">%</span> <span class="s">"0.1.2"</span>
 </code></pre></div></div>
 
 <p>and optionally some extra bindings:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-akka"</span> <span class="o">%</span> <span class="s">"0.1.1"</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-cats-effect"</span> <span class="o">%</span> <span class="s">"0.1.1"</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-zio"</span> <span class="o">%</span> <span class="s">"0.1.1"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-akka"</span> <span class="o">%</span> <span class="s">"0.1.2"</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-cats-effect"</span> <span class="o">%</span> <span class="s">"0.1.2"</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.github.vigoo"</span> <span class="o">%%</span> <span class="s">"desert-zio"</span> <span class="o">%</span> <span class="s">"0.1.2"</span>
 </code></pre></div></div>
 
 <p>The most simple use case is to serialize a known type to an array of bytes and read it back:</p>
