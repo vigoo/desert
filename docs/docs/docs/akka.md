@@ -9,7 +9,7 @@ The akka module adds some extra codecs and an _akka serializer_.
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-akka" % "0.1.1"
+libraryDependencies += "io.github.vigoo" %% "desert-akka" % "0.1.2"
 ``` 
 
 ### Codecs
