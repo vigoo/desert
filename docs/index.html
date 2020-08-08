@@ -35,11 +35,11 @@ while still enabling binary compatible evolution of the data model.</p>
 </code></pre></div></div>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">dataOrFailure</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">x</span><span class="o">)</span>
 <span class="c1">// dataOrFailure: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(22, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100)</span>
+<span class="c1">//   value = Array(22, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100)</span>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">y</span> <span class="k">=</span> <span class="nv">dataOrFailure</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="n">data</span> <span class="k">=&gt;</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">String</span><span class="o">](</span><span class="n">data</span><span class="o">))</span>
-<span class="c1">// y: Either[DesertFailure, String] = Right("Hello world")</span>
+<span class="c1">// y: Either[DesertFailure, String] = Right(value = "Hello world")</span>
 </code></pre></div></div>
 
 <h3 id="codecs">Codecs</h3>

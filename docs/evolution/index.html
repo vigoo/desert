@@ -34,7 +34,7 @@ the serialization format:</p>
   <span class="n">tup2</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[(</span><span class="kt">Int</span>, <span class="kt">Int</span><span class="o">)](</span><span class="n">data2</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">pt1</span><span class="o">,</span> <span class="n">tup2</span><span class="o">)</span>
 <span class="c1">// ex1: Either[DesertFailure, (Point, (Int, Int))] = Right(</span>
-<span class="c1">//   (Point(5, 6), (5, 6))</span>
+<span class="c1">//   value = (Point(x = 5, y = 6), (5, 6))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -53,7 +53,7 @@ type, so it is fully safe to evolve the date model to make use of more and more 
   <span class="n">data2</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="n">id1</span><span class="o">)</span>
   <span class="n">raw1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="n">data2</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">id1</span><span class="o">,</span> <span class="n">raw1</span><span class="o">)</span>
-<span class="c1">// ex2: Either[DesertFailure, (Id, Int)] = Right((Id(3), 3))</span>
+<span class="c1">// ex2: Either[DesertFailure, (Id, Int)] = Right(value = (Id(id = 3), 3))</span>
 </code></pre></div></div>
 
 <h3 id="collections">Collections</h3>
@@ -67,7 +67,7 @@ replaced:</p>
   <span class="n">vec1</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Vector</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="n">data2</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">set1</span><span class="o">,</span> <span class="n">vec1</span><span class="o">)</span>
 <span class="c1">// ex3: Either[DesertFailure, (Set[Int], Vector[Int])] = Right(</span>
-<span class="c1">//   (Set(1, 2, 3), Vector(1, 2, 3))</span>
+<span class="c1">//   value = (Set(1, 2, 3), Vector(1, 2, 3))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -98,7 +98,7 @@ used when deserializing an old data. With this the old and the new data model re
   <span class="n">oldPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV1</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">oldPt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
 <span class="c1">// ex4: Either[DesertFailure, (PointV1, PointV2)] = Right(</span>
-<span class="c1">//   (PointV1(10, 20), PointV2(10, 20, 1))</span>
+<span class="c1">//   value = (PointV1(x = 10, y = 20), PointV2(x = 10, y = 20, z = 1))</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -130,7 +130,10 @@ the following capabilities:</p>
   <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">v2Pt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
 <span class="c1">// ex5: Either[DesertFailure, (PointV2, PointV3)] = Right(</span>
-<span class="c1">//   (PointV2(10, 20, 1), PointV3(10, 20, Some(1)))</span>
+<span class="c1">//   value = (</span>
+<span class="c1">//     PointV2(x = 10, y = 20, z = 1),</span>
+<span class="c1">//     PointV3(x = 10, y = 20, z = Some(value = 1))</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">ex5fail</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
@@ -138,7 +141,7 @@ the following capabilities:</p>
   <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">v3Data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">v2Pt</span>
 <span class="c1">// ex5fail: Either[DesertFailure, PointV2] = Left(</span>
-<span class="c1">//   NonOptionalFieldSerializedAsNone("z")</span>
+<span class="c1">//   value = NonOptionalFieldSerializedAsNone(fieldName = "z")</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -168,7 +171,7 @@ the following capabilities:</p>
   <span class="n">v3Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV3</span><span class="o">](</span><span class="n">newData</span><span class="o">)</span>
 <span class="o">}</span> <span class="nf">yield</span> <span class="o">(</span><span class="n">v3Pt</span><span class="o">,</span> <span class="n">newPt</span><span class="o">)</span>
 <span class="c1">// ex6: Either[DesertFailure, (PointV3, PointV4)] = Right(</span>
-<span class="c1">//   (PointV3(10, 20, None), PointV4(10, 20))</span>
+<span class="c1">//   value = (PointV3(x = 10, y = 20, z = None), PointV4(x = 10, y = 20))</span>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">ex6fail</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
@@ -176,7 +179,7 @@ the following capabilities:</p>
   <span class="n">v2Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV2</span><span class="o">](</span><span class="n">v4Data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">v2Pt</span>
 <span class="c1">// ex6fail: Either[DesertFailure, PointV2] = Left(</span>
-<span class="c1">//   FieldRemovedInSerializedVersion("z")</span>
+<span class="c1">//   value = FieldRemovedInSerializedVersion(fieldName = "z")</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -201,14 +204,14 @@ as for field removal.</p>
   <span class="n">v4Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV4</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">))</span>
   <span class="n">newPt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV5</span><span class="o">](</span><span class="n">v4Data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">newPt</span>
-<span class="c1">// ex7: Either[DesertFailure, PointV5] = Right(PointV5(10, 0))</span>
+<span class="c1">// ex7: Either[DesertFailure, PointV5] = Right(value = PointV5(x = 10, y = 0))</span>
 
 <span class="k">val</span> <span class="nv">ex7fail</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
   <span class="n">v5Data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV5</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="mi">20</span><span class="o">))</span>
   <span class="n">v4Pt</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">PointV4</span><span class="o">](</span><span class="n">v5Data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">v4Pt</span>
 <span class="c1">// ex7fail: Either[DesertFailure, PointV4] = Left(</span>
-<span class="c1">//   FieldRemovedInSerializedVersion("y")</span>
+<span class="c1">//   value = FieldRemovedInSerializedVersion(fieldName = "y")</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -241,7 +244,7 @@ binary representation of case classes.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v1</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV1</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">))</span>
 <span class="c1">// v1: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 0, 0, 0, 100, 0, 0, 0, -56)</span>
+<span class="c1">//   value = Array(0, 0, 0, 0, 100, 0, 0, 0, -56)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -255,7 +258,7 @@ binary representation of case classes.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v2</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV2</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">,</span> <span class="mi">300</span><span class="o">))</span>
 <span class="c1">// v2: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 16, 8, 0, 0, 0, 100, 0, 0, 0, -56, 0, 0, 1, 44)</span>
+<span class="c1">//   value = Array(1, 16, 8, 0, 0, 0, 100, 0, 0, 0, -56, 0, 0, 1, 44)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -272,7 +275,7 @@ binary representation of case classes.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v3</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV3</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">300</span><span class="o">)))</span>
 <span class="c1">// v3: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(2, 16, 10, 1, 1, 0, 0, 0, 100, 0, 0, 0, -56, 1, 0, 0, 1, 44)</span>
+<span class="c1">//   value = Array(2, 16, 10, 1, 1, 0, 0, 0, 100, 0, 0, 0, -56, 1, 0, 0, 1, 44)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -297,7 +300,7 @@ always followed by a serialized <em>field position</em>, which is again a variab
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">v4</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">PointV4</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="mi">200</span><span class="o">))</span>
 <span class="c1">// v4: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(3, 16, 0, 1, -128, 3, 2, 122, 0, 0, 0, 100, 0, 0, 0, -56)</span>
+<span class="c1">//   value = Array(3, 16, 0, 1, -128, 3, 2, 122, 0, 0, 0, 100, 0, 0, 0, -56)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 

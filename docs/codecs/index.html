@@ -22,48 +22,50 @@ ga('send', 'pageview');
 <span class="k">import</span> <span class="nn">io.github.vigoo.desert.syntax._</span>
 
 <span class="k">val</span> <span class="nv">byte</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">100.</span><span class="n">toByte</span><span class="o">)</span>
-<span class="c1">// byte: Either[DesertFailure, Array[Byte]] = Right(Array(100))</span>
+<span class="c1">// byte: Either[DesertFailure, Array[Byte]] = Right(value = Array(100))</span>
 <span class="k">val</span> <span class="nv">short</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">100.</span><span class="n">toShort</span><span class="o">)</span>
-<span class="c1">// short: Either[DesertFailure, Array[Byte]] = Right(Array(0, 100))</span>
+<span class="c1">// short: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 100))</span>
 <span class="k">val</span> <span class="nv">int</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mi">100</span><span class="o">)</span>
-<span class="c1">// int: Either[DesertFailure, Array[Byte]] = Right(Array(0, 0, 0, 100))</span>
+<span class="c1">// int: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0, 100))</span>
 <span class="k">val</span> <span class="nv">long</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mi">100L</span><span class="o">)</span>
 <span class="c1">// long: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
+<span class="c1">//   value = Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">float</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">3.14</span><span class="o">.</span><span class="py">toFloat</span><span class="o">)</span>
-<span class="c1">// float: Either[DesertFailure, Array[Byte]] = Right(Array(64, 72, -11, -61))</span>
+<span class="c1">// float: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(64, 72, -11, -61)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">double</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">3.14</span><span class="o">)</span>
 <span class="c1">// double: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(64, 9, 30, -72, 81, -21, -123, 31)</span>
+<span class="c1">//   value = Array(64, 9, 30, -72, 81, -21, -123, 31)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">bool</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
-<span class="c1">// bool: Either[DesertFailure, Array[Byte]] = Right(Array(1))</span>
+<span class="c1">// bool: Either[DesertFailure, Array[Byte]] = Right(value = Array(1))</span>
 <span class="k">val</span> <span class="nv">unit</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(())</span>
-<span class="c1">// unit: Either[DesertFailure, Array[Byte]] = Right(Array())</span>
+<span class="c1">// unit: Either[DesertFailure, Array[Byte]] = Right(value = Array())</span>
 <span class="k">val</span> <span class="nv">str</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">)</span>
 <span class="c1">// str: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(10, 72, 101, 108, 108, 111)</span>
+<span class="c1">//   value = Array(10, 72, 101, 108, 108, 111)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
 <span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(</span>
-<span class="c1">//     -30,</span>
-<span class="c1">//     79,</span>
-<span class="c1">//     19,</span>
-<span class="c1">//     100,</span>
-<span class="c1">//     -79,</span>
-<span class="c1">//     120,</span>
-<span class="c1">//     69,</span>
-<span class="c1">//     62,</span>
-<span class="c1">//     -127,</span>
-<span class="c1">//     113,</span>
-<span class="c1">//     -39,</span>
-<span class="c1">//     121,</span>
-<span class="c1">//     112,</span>
-<span class="c1">//     -18,</span>
-<span class="c1">//     53,</span>
-<span class="c1">//     111</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     -29,</span>
+<span class="c1">//     -118,</span>
+<span class="c1">//     105,</span>
+<span class="c1">//     -71,</span>
+<span class="c1">//     -50,</span>
+<span class="c1">//     -38,</span>
+<span class="c1">//     77,</span>
+<span class="c1">//     -45,</span>
+<span class="c1">//     -85,</span>
+<span class="c1">//     -23,</span>
+<span class="c1">//     -66,</span>
+<span class="c1">//     -11,</span>
+<span class="c1">//     119,</span>
+<span class="c1">//     22,</span>
+<span class="c1">//     -121,</span>
+<span class="c1">//     -80</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -79,18 +81,24 @@ than trying to recreate the same exception via reflection.</p>
 <span class="k">import</span> <span class="nn">scala.util._</span>
 
 <span class="k">val</span> <span class="nv">none</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">None</span><span class="o">)</span>
-<span class="c1">// none: Either[DesertFailure, Array[Byte]] = Right(Array(0))</span>
+<span class="c1">// none: Either[DesertFailure, Array[Byte]] = Right(value = Array(0))</span>
 <span class="k">val</span> <span class="nv">some</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">Some</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// some: Either[DesertFailure, Array[Byte]] = Right(Array(1, 0, 0, 0, 100))</span>
+<span class="c1">// some: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">left</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Boolean</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nc">Left</span><span class="o">(</span><span class="kc">true</span><span class="o">))</span>
-<span class="c1">// left: Either[DesertFailure, Array[Byte]] = Right(Array(0, 1))</span>
+<span class="c1">// left: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 1))</span>
 <span class="k">val</span> <span class="nv">right</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Boolean</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nc">Right</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// right: Either[DesertFailure, Array[Byte]] = Right(Array(1, 0, 0, 0, 100))</span>
+<span class="c1">// right: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validated</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validated</span><span class="o">.</span><span class="py">Valid</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// valid: Either[DesertFailure, Array[Byte]] = Right(Array(1, 0, 0, 0, 100))</span>
+<span class="c1">// valid: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">invalid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validated</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validated</span><span class="o">.</span><span class="py">Invalid</span><span class="o">(</span><span class="s">"error"</span><span class="o">))</span>
 <span class="c1">// invalid: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 10, 101, 114, 114, 111, 114)</span>
+<span class="c1">//   value = Array(0, 10, 101, 114, 114, 111, 114)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -99,11 +107,11 @@ than trying to recreate the same exception via reflection.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">failDeser</span> <span class="k">=</span> <span class="nv">fail</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="n">data</span> <span class="k">=&gt;</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Try</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="n">data</span><span class="o">))</span>
 <span class="c1">// failDeser: Either[DesertFailure, Try[Int]] = Right(</span>
-<span class="c1">//   Failure(</span>
-<span class="c1">//     PersistedThrowable(</span>
-<span class="c1">//       "java.lang.RuntimeException",</span>
-<span class="c1">//       "Test exception",</span>
-<span class="c1">//       Array(</span>
+<span class="c1">//   value = Failure(</span>
+<span class="c1">//     exception = PersistedThrowable(</span>
+<span class="c1">//       className = "java.lang.RuntimeException",</span>
+<span class="c1">//       message = "Test exception",</span>
+<span class="c1">//       stackTrace = Array(</span>
 <span class="c1">//         repl.MdocSession$App.&lt;init&gt;(codecs.md:80),</span>
 <span class="c1">//         repl.MdocSession$.app(codecs.md:3),</span>
 <span class="c1">//         mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:82),</span>
@@ -115,11 +123,11 @@ than trying to recreate the same exception via reflection.</p>
 <span class="c1">//         scala.util.DynamicVariable.withValue(DynamicVariable.scala:59),</span>
 <span class="c1">//         scala.Console$.withOut(Console.scala:164),</span>
 <span class="c1">//         mdoc.internal.document.DocumentBuilder$$doc$.build(DocumentBuilder.scala:81),</span>
-<span class="c1">//         mdoc.internal.markdown.MarkdownCompiler$.buildDocument(MarkdownCompiler.scala:61),</span>
+<span class="c1">//         mdoc.internal.markdown.MarkdownBuilder$.buildDocument(MarkdownBuilder.scala:44),</span>
 <span class="c1">//         mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:183),</span>
 <span class="c1">//         mdoc.internal.markdown.Processor.processScalaInputs(Processor.scala:150),</span>
 <span class="c1">//         mdoc.internal.markdown.Processor.processDocument(Processor.scala:52),</span>
-<span class="c1">//         mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:126),</span>
+<span class="c1">//         mdoc.internal.markdown.Markdown$.toMarkdown(Markdown.scala:132),</span>
 <span class="c1">//         mdoc.internal.cli.MainOps.handleMarkdown(MainOps.scala:81),</span>
 <span class="c1">//         mdoc.internal.cli.MainOps.handleFile(MainOps.scala:109),</span>
 <span class="c1">//         mdoc.internal.cli.MainOps.$anonfun$generateCompleteSite$1(MainOps.scala:156),</span>
@@ -140,7 +148,9 @@ than trying to recreate the same exception via reflection.</p>
 <span class="c1">//         sbt.Run.invokeMain(Run.scala:115),</span>
 <span class="c1">// ...</span>
 <span class="k">val</span> <span class="nv">success</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Try</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">Success</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// success: Either[DesertFailure, Array[Byte]] = Right(Array(1, 0, 0, 0, 100))</span>
+<span class="c1">// success: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <h3 id="collections">Collections</h3>
@@ -156,11 +166,34 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">vec</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Vector</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// vec: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
+<span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">lst</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// lst: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 2, 1, 0, 0, 0, 3, 1, 0, 0, 0, 4, 0)</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     3,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     4,</span>
+<span class="c1">//     0</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -171,23 +204,92 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 
 <span class="k">val</span> <span class="nv">arr</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Array</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// arr: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
+<span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">set</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// set: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
+<span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">sortedSet</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">SortedSet</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// sortedSet: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 2, 1, 0, 0, 0, 3, 1, 0, 0, 0, 4, 0)</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     3,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     4,</span>
+<span class="c1">//     0</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">nel</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptyList</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// nel: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 2, 1, 0, 0, 0, 3, 1, 0, 0, 0, 4, 0)</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     3,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     4,</span>
+<span class="c1">//     0</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">nes</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptySet</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 <span class="c1">// nes: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 2, 1, 0, 0, 0, 3, 1, 0, 0, 0, 4, 0)</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     2,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     3,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     4,</span>
+<span class="c1">//     0</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -201,12 +303,29 @@ length identifies it.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">twoStrings1</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"Hello"</span><span class="o">))</span>
 <span class="c1">// twoStrings1: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 10, 72, 101, 108, 108, 111, 0)</span>
+<span class="c1">//   value = Array(</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     10,</span>
+<span class="c1">//     72,</span>
+<span class="c1">//     101,</span>
+<span class="c1">//     108,</span>
+<span class="c1">//     108,</span>
+<span class="c1">//     111,</span>
+<span class="c1">//     1,</span>
+<span class="c1">//     10,</span>
+<span class="c1">//     72,</span>
+<span class="c1">//     101,</span>
+<span class="c1">//     108,</span>
+<span class="c1">//     108,</span>
+<span class="c1">//     111,</span>
+<span class="c1">//     0</span>
+<span class="c1">//   )</span>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">twoStrings2</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">),</span> <span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">)))</span>
 <span class="c1">// twoStrings2: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 1, 0)</span>
+<span class="c1">//   value = Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 1, 0)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -222,7 +341,7 @@ compatible with simple <em>case classes</em>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">tup</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">((</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span> 
 <span class="c1">// tup: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
+<span class="c1">//   value = Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -235,15 +354,15 @@ for serializing an iteration of key-value pairs:</p>
 
 <span class="k">val</span> <span class="nv">map</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
 <span class="c1">// map: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
+<span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">sortedmap</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">SortedMap</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
 <span class="c1">// sortedmap: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
+<span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">nem</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptyMap</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
 <span class="c1">// nem: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
+<span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -260,7 +379,7 @@ during the lifecycle of the application.</p>
 
 <span class="k">val</span> <span class="nv">pt</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Point</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span>
 <span class="c1">// pt: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
+<span class="c1">//   value = Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -283,9 +402,9 @@ with <code class="highlighter-rouge">derive</code>:</p>
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Drink</span><span class="o">](</span><span class="nc">Beer</span><span class="o">(</span><span class="s">"X"</span><span class="o">))</span>
-<span class="c1">// a: Either[DesertFailure, Array[Byte]] = Right(Array(0, 0, 0, 2, 88))</span>
+<span class="c1">// a: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0, 2, 88))</span>
 <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Drink</span><span class="o">](</span><span class="nc">Water</span><span class="o">)</span>
-<span class="c1">// b: Either[DesertFailure, Array[Byte]] = Right(Array(0, 1, 0))</span>
+<span class="c1">// b: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 1, 0))</span>
 </code></pre></div></div>
 
 <h3 id="transient-fields-in-generic-codecs">Transient fields in generic codecs</h3>
@@ -300,7 +419,9 @@ with <code class="highlighter-rouge">derive</code>:</p>
   <span class="n">data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Point2</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">3.7416</span><span class="o">)))</span>
   <span class="n">result</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Point2</span><span class="o">](</span><span class="n">data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">result</span>
-<span class="c1">// pt2: Either[DesertFailure, Point2] = Right(Point2(1, 2, 3, None))</span>
+<span class="c1">// pt2: Either[DesertFailure, Point2] = Right(</span>
+<span class="c1">//   value = Point2(x = 1, y = 2, z = 3, cachedDistance = None)</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>Transient fields are not being serialized and they get a default value contained by the annotation
@@ -321,10 +442,10 @@ it does not match the field type it causes runtime error.</p>
 
 <span class="k">val</span> <span class="nv">cs1</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case1</span><span class="o">())</span>
 <span class="c1">// cs1: Either[DesertFailure, Array[Byte]] = Left(</span>
-<span class="c1">//   SerializingTransientConstructor("Case1")</span>
+<span class="c1">//   value = SerializingTransientConstructor(name = "Case1")</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">cs2</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case2</span><span class="o">())</span>
-<span class="c1">// cs2: Either[DesertFailure, Array[Byte]] = Right(Array(0, 0, 0))</span>
+<span class="c1">// cs2: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0))</span>
 </code></pre></div></div>
 
 <p>Transient constructors cannot be serialized. A common use case is for remote accessible actors where 
@@ -342,7 +463,7 @@ the intention in the type system. <code class="highlighter-rouge">desert</code> 
 
 <span class="k">val</span> <span class="nv">id</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">DocumentId</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
 <span class="c1">// id: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
+<span class="c1">//   value = Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -423,7 +544,7 @@ which is not used by the generic codecs but can be used in scenarios like this.<
 
 <span class="k">val</span> <span class="nv">result</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Root</span><span class="o">(</span><span class="n">nodeA</span><span class="o">))</span>
 <span class="c1">// result: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   Array(0, 2, 97, 1, 0, 2, 97, 1, 0, 2, 97, 1, 1)</span>
+<span class="c1">//   value = Array(0, 2, 97, 1, 0, 2, 97, 1, 0, 2, 97, 1, 1)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="https://vigoo.github.io/desert/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/sbt.min.js"></script><script>
