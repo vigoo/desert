@@ -1,10 +1,9 @@
 package io.github.vigoo.desert
 
-import cats.Eval
-import cats.data.{EitherT, ReaderT, StateT}
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import shapeless.Lazy
+import zio.prelude.fx._
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -21,10 +20,11 @@ trait BinarySerializer[T] { self =>
 object BinarySerializer {
   final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry)
 
-  type Ser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv, T]
+  type Ser[T] = ZPure[SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
 
   object Ser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
+    final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] =
+      ZPure.succeed(value).absolve
   }
 }
 
@@ -39,10 +39,11 @@ trait BinaryDeserializer[T] { self =>
 object BinaryDeserializer {
   final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry)
 
-  type Deser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv, T]
+  type Deser[T] = ZPure[SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
 
   object Deser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
+    final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] =
+      ZPure.succeed(value).absolve
   }
 }
 

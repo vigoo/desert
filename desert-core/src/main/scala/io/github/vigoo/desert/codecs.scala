@@ -3,14 +3,13 @@ package io.github.vigoo.desert
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import cats.{Eval, Foldable, Monad, Order, Traverse}
-import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
-import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
+import zio.{Chunk, NonEmptyChunk}
+import zio.prelude.{NonEmptyList, Validation, ZSet}
 
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
@@ -111,7 +110,7 @@ object codecs {
 
     override def serialize(value: Option[T]): Ser[Unit] = {
       value match {
-        case Some(value) => write(true) >> write(value)
+        case Some(value) => write(true) *> write(value)
         case None => write(false)
       }
     }
@@ -192,8 +191,8 @@ object codecs {
     private def serializeWithUnknownSize(value: T): Ser[Unit] = {
       for {
         _ <- writeVarInt(-1, optimizeForPositive = false)
-        _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
-          case (elem, rest) => write(true) >> write(elem) >> rest
+        _ <- value.foldRight(finishSerializer()) {
+          case (elem, rest) => write(true) *> write(elem) *> rest
         }
         _ <- write(false)
       } yield ()
@@ -202,8 +201,8 @@ object codecs {
     private def serializeWithKnownSize(value: T, size: Int): Ser[Unit] = {
       for {
         _ <- writeVarInt(size, optimizeForPositive = false)
-        _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
-          case (elem, rest) => write(elem) >> rest
+        _ <- value.foldRight(finishSerializer()) {
+          case (elem, rest) => write(elem) *> rest
         }
       } yield ()
     }
@@ -257,8 +256,8 @@ object codecs {
 
     override def serialize(value: Either[L, R]): Ser[Unit] = {
       value match {
-        case Left(value) => write(false) >> write(value)
-        case Right(value) => write(true) >> write(value)
+        case Left(value) => write(false) *> write(value)
+        case Right(value) => write(true) *> write(value)
       }
     }
   }
@@ -273,26 +272,43 @@ object codecs {
 
     override def serialize(value: Try[A]): Ser[Unit] = {
       value match {
-        case Failure(reason) => write(false) >> write(reason)
-        case Success(value) => write(true) >> write(value)
+        case Failure(reason) => write(false) *> write(reason)
+        case Success(value) => write(true) *> write(value)
       }
     }
   }
 
-  // Cats specific codecs
+  // ZIO prelude specific codecs
 
-  implicit def validatedCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validated[E, A]] = new BinaryCodec[Validated[E, A]] {
-    override def deserialize(): Deser[Validated[E, A]] = {
+  implicit def nonEmptyChunkCodec[A : BinaryCodec]: BinaryCodec[NonEmptyChunk[A]] = {
+      val inner = iterableCodec[A, Chunk[A]]
+      BinaryCodec.from(
+        inner.contramap(_.toChunk),
+        () => inner.deserialize().flatMap { chunk =>
+          NonEmptyChunk.fromChunk(chunk) match {
+            case Some(nonEmptyChunk) => finishDeserializerWith(nonEmptyChunk)
+            case None => failDeserializerWith(DeserializationFailure("Non empty chunk is serialized as empty", None))
+          }
+        }
+      )
+    }
+
+  implicit def validationCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validation[E, A]] = new BinaryCodec[Validation[E, A]] {
+    override def deserialize(): Deser[Validation[E, A]] = {
       for {
         isValid <- read[Boolean]()
-        result <- if (isValid) read[A]().map(Validated.Valid.apply) else read[E]().map(Validated.Invalid.apply)
+        result <-
+          if (isValid)
+            read[A]().map(Validation.Success.apply)
+          else
+            read[NonEmptyChunk[E]]().map(Validation.Failure.apply)
       } yield result
     }
 
-    override def serialize(value: Validated[E, A]): Ser[Unit] = {
+    override def serialize(value: Validation[E, A]): Ser[Unit] = {
       value match {
-        case Validated.Invalid(value) => write(false) >> write(value)
-        case Validated.Valid(value) => write(true) >> write(value)
+        case Validation.Failure(value) => write(false) *> write(value)
+        case Validation.Success(value) => write(true) *> write(value)
       }
     }
   }
@@ -301,38 +317,18 @@ object codecs {
     val inner = listCodec[A]
     BinaryCodec.from(
       inner.contramap(_.toList),
-      () => inner.deserialize().flatMap { list =>
-        NonEmptyList.fromList(list) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty list is serialized as empty", None))
-        }
+      () => inner.deserialize().flatMap {
+        case x :: xs => finishDeserializerWith(NonEmptyList.fromIterable(x, xs))
+        case Nil => failDeserializerWith(DeserializationFailure("Non empty list is serialized as empty", None))
       }
     )
   }
 
-  implicit def nonEmptySetCodec[A: BinaryCodec : Ordering]: BinaryCodec[NonEmptySet[A]] = {
-    val inner = sortedSetCodec[A]
+  implicit def zsetCodec[A: BinaryCodec, B : BinaryCodec]: BinaryCodec[ZSet[A, B]] = {
+    val inner = mapCodec[A, B]
     BinaryCodec.from(
-      inner.contramap(_.toSortedSet),
-      () => inner.deserialize().flatMap { set =>
-        NonEmptySet.fromSet(set) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty set is serialized as empty", None))
-        }
-      }
-    )
-  }
-
-  implicit def nonEmptyMapCodec[K: BinaryCodec : Ordering : Order, V: BinaryCodec]: BinaryCodec[NonEmptyMap[K, V]] = {
-    val innner = sortedMapCodec[K, V]
-    BinaryCodec.from(
-      innner.contramap(_.toSortedMap),
-      () => innner.deserialize().flatMap { map =>
-        NonEmptyMap.fromMap(map) match {
-          case Some(value) => finishDeserializerWith(value)
-          case None => failDeserializerWith(DeserializationFailure("Non empty map is serialized as empty", None))
-        }
-      }
+      inner.contramap(_.toMap),
+      inner.map(ZSet.fromMap)
     )
   }
 }

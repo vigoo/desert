@@ -2,9 +2,6 @@ package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import cats.Eval
-import cats.data.{EitherT, ReaderT, StateT}
-import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
@@ -15,6 +12,7 @@ import shapeless.labelled._
 import shapeless.ops.hlist._
 import shapeless.tag._
 import shapeless.{:+:, _}
+import zio.prelude.fx._
 
 import scala.reflect.ClassTag
 
@@ -535,7 +533,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         output = chunkedOutput.outputFor(0)
         constructorId <- ChunkedSerOps.getConstructorId(typeName)
         _ <- ChunkedSerOps.fromSer(
-          writeVarInt(constructorId, optimizeForPositive = true) >>
+          writeVarInt(constructorId, optimizeForPositive = true) *>
           headCodec.value.serialize(headValue),
           output
         )
@@ -608,13 +606,11 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             readConstructorName = None,
             transientFields
           )
-          result <- Ser.fromEither(
+          finalState <- Ser.fromEither(
             serializer.value.serialize(taggedTransients.tag(genericValue))
-              .run(chunkedOutput)
-              .run(initialState)
-              .value
-              .value)
-          (finalState, _) = result
+              .provide(chunkedOutput)
+              .runEither(initialState))
+              .map(_._1) // state
           _ <- chunkedOutput.writeEvolutionHeader(finalState.fieldIndices)
           _ <- chunkedOutput.writeOrderedChunks()
           _ <- setSerializerState(finalState.serializerState)
@@ -637,10 +633,8 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           readConstructorName = None,
           transientFields)
         result <- Deser.fromEither(deserializer.value.deserialize()
-          .run(chunkedInput)
-          .run(initialState)
-          .value
-          .value)
+          .provide(chunkedInput)
+          .runEither(initialState))
         (finalState, hlist) = result
         _ <- setDeserializerState(finalState.serializerState)
       } yield gen.from(taggedTransients.untag(hlist))
@@ -697,16 +691,16 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
             }
             serializedEvolutionStep match {
               case Left(failure) =>
-                s >> failSerializerWith(failure)
+                s *> failSerializerWith(failure)
               case Right(step) =>
-                s >> write[SerializedEvolutionStep](step)
+                s *> write[SerializedEvolutionStep](step)
             }
           }
         }
 
         override def writeOrderedChunks(): Ser[Unit] = {
           streams.foldLeft(finishSerializer()) {
-            case (m, stream) => m >> writeBytes({
+            case (m, stream) => m *> writeBytes({
               stream.flush()
               stream.toByteArray
             })
@@ -813,8 +807,8 @@ object GenericBinaryCodec {
     implicit val codec: BinaryCodec[SerializedEvolutionStep] =
       BinaryCodec.define[SerializedEvolutionStep] {
         case FieldAddedToNewChunk(size) => writeVarInt(size, optimizeForPositive = false)
-        case FieldMadeOptional(position) => writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) >> write(position)
-        case FieldRemoved(fieldName) => writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) >> write(DeduplicatedString(fieldName))
+        case FieldMadeOptional(position) => writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) *> write(position)
+        case FieldRemoved(fieldName) => writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) *> write(DeduplicatedString(fieldName))
         case UnknownEvolutionStep => writeVarInt(Codes.Unknown, optimizeForPositive = false)
       } {
         for {
@@ -849,14 +843,14 @@ object GenericBinaryCodec {
                              transientFields: Map[Symbol, Any]
                             )
 
-  type ChunkedSer[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], ChunkedSerState, *], ChunkedOutput, T]
+  type ChunkedSer[T] = ZPure[ChunkedSerState, ChunkedSerState, ChunkedOutput, DesertFailure, T]
 
   object ChunkedSerOps {
-    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], ChunkedSerState, *], ChunkedOutput]
-    final def getChunkedState: ChunkedSer[ChunkedSerState] = ReaderT.liftF(StateT.get[EitherT[Eval, DesertFailure, *], ChunkedSerState])
-    final def setChunkedState(newState: ChunkedSerState): ChunkedSer[Unit] = ReaderT.liftF(StateT.set[EitherT[Eval, DesertFailure, *], ChunkedSerState](newState))
+    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ZPure.environment
+    final def getChunkedState: ChunkedSer[ChunkedSerState] = ZPure.get
+    final def setChunkedState(newState: ChunkedSerState): ChunkedSer[Unit] = ZPure.set(newState)
 
-    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
+    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ZPure.succeed(value).absolve
     final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
     final def unit: ChunkedSer[Unit] = pure(())
     final def failWith[T](failure: DesertFailure): ChunkedSer[T] = fromEither(Left(failure))
@@ -864,29 +858,30 @@ object GenericBinaryCodec {
     final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
       for {
         chunkedState <- getChunkedState
-        runResult <- fromEither(value.run(SerializationEnv(output, chunkedState.typeRegistry)).run(chunkedState.serializerState).value.value)
+        runResult <- fromEither(value
+          .provide(SerializationEnv(output, chunkedState.typeRegistry))
+          .runEither(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result
 
-    final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedSer[Unit] =
-      ReaderT.liftF {
-        StateT.modify { state =>
-          state.lastIndexPerChunk.get(chunk) match {
-            case Some(lastIndex) =>
-              val newIndex: Byte = (lastIndex + 1).toByte
-              state.copy(
-                lastIndexPerChunk = state.lastIndexPerChunk.updated(chunk, newIndex),
-                fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, newIndex))
-              )
-            case None =>
-              state.copy(
-                lastIndexPerChunk = state.lastIndexPerChunk + (chunk -> 0),
-                fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, 0))
-              )
-          }
+    final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedSer[Unit] = {
+      ZPure.modify { state =>
+        state.lastIndexPerChunk.get(chunk) match {
+          case Some(lastIndex) =>
+            val newIndex: Byte = (lastIndex + 1).toByte
+            (state.copy(
+              lastIndexPerChunk = state.lastIndexPerChunk.updated(chunk, newIndex),
+              fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, newIndex))
+            ), ())
+          case None =>
+            (state.copy(
+              lastIndexPerChunk = state.lastIndexPerChunk + (chunk -> 0),
+              fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, 0))
+            ), ())
         }
       }
+    }
 
     def getConstructorId(typeName: String): ChunkedSer[Int] =
       for {
@@ -910,21 +905,23 @@ object GenericBinaryCodec {
     def inputFor(version: Byte): Either[DesertFailure, BinaryInput]
   }
 
-  type ChunkedDeser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], ChunkedSerState, *], ChunkedInput, T]
+  type ChunkedDeser[T] = ZPure[ChunkedSerState, ChunkedSerState, ChunkedInput, DesertFailure, T]
 
   object ChunkedDeserOps {
-    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], ChunkedSerState, *], ChunkedInput]
-    final def getChunkedState: ChunkedDeser[ChunkedSerState] = ReaderT.liftF(StateT.get[EitherT[Eval, DesertFailure, *], ChunkedSerState])
-    final def setChunkedState(newState: ChunkedSerState): ChunkedDeser[Unit] = ReaderT.liftF(StateT.set[EitherT[Eval, DesertFailure, *], ChunkedSerState](newState))
+    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ZPure.environment
+    final def getChunkedState: ChunkedDeser[ChunkedSerState] = ZPure.get
+    final def setChunkedState(newState: ChunkedSerState): ChunkedDeser[Unit] = ZPure.set(newState)
 
-    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
+    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ZPure.succeed(value).absolve
     final def pure[T](value: T): ChunkedDeser[T] = fromEither(Right[DesertFailure, T](value))
     final def failWith[T](failure: DesertFailure): ChunkedDeser[T] = fromEither(Left(failure))
 
     final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
       for {
         chunkedState <- getChunkedState
-        runResult <- fromEither(value.run(DeserializationEnv(input, chunkedState.typeRegistry)).run(chunkedState.serializerState).value.value)
+        runResult <- fromEither(value
+          .provide(DeserializationEnv(input, chunkedState.typeRegistry))
+          .runEither(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result

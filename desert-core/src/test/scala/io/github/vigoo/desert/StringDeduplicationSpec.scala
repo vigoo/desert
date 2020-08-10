@@ -1,4 +1,5 @@
 package io.github.vigoo.desert
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
@@ -64,22 +65,31 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
       test("reads back duplicated strings correctly") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val result = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).value.flatMap { _ =>
+        val result = testSer
+          .provide(SerializationEnv(output, TypeRegistry.empty))
+          .either
+          .runResult(SerializerState.initial).flatMap { _ =>
           stream.flush()
           val inStream = new ByteArrayInputStream(stream.toByteArray)
           val input = new JavaStreamBinaryInput(inStream)
-          testDeser.run(DeserializationEnv(input, TypeRegistry.empty)).runA(SerializerState.initial).value
-        }.value
+          testDeser
+            .provide(DeserializationEnv(input, TypeRegistry.empty))
+            .either
+            .runResult(SerializerState.initial)
+        }
 
         assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
       },
       test("reduces the serialized size") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val size = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).map { _ =>
+        val size = testSer
+          .provide(SerializationEnv(output, TypeRegistry.empty))
+          .either
+          .runResult(SerializerState.initial).map { _ =>
           stream.flush()
           stream.toByteArray.length
-        }.value.value
+        }
 
         assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
       },

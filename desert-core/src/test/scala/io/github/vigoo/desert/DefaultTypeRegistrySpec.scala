@@ -1,4 +1,5 @@
 package io.github.vigoo.desert
+
 import org.junit.runner.RunWith
 import zio.test._
 import zio.test.Assertion._

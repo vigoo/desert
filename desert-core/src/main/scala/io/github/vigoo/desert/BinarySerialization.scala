@@ -2,23 +2,35 @@ package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
+import BinarySerializerOps._
+import BinaryDeserializerOps._
 import io.github.vigoo.desert.BinaryDeserializer.DeserializationEnv
-import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.SerializationEnv
-import io.github.vigoo.desert.BinarySerializerOps._
 
 trait BinarySerialization {
   def serialize[T : BinarySerializer](value: T, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
-    write[T](value).run(SerializationEnv(output, typeRegistry)).runA(SerializerState.initial).value.value
+    write[T](value)
+      .provide(SerializationEnv(output, typeRegistry))
+      .either
+      .runResult(SerializerState.initial)
 
   def serializeUnknown(value: Any, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
-    writeUnknown(value).run(SerializationEnv(output, typeRegistry)).runA(SerializerState.initial).value.value
+    writeUnknown(value)
+      .provide(SerializationEnv(output, typeRegistry))
+      .either
+      .runResult(SerializerState.initial)
 
   def deserialize[T: BinaryDeserializer](input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, T] =
-    read[T]().run(DeserializationEnv(input, typeRegistry)).runA(SerializerState.initial).value.value
+    read[T]()
+      .provide(DeserializationEnv(input, typeRegistry))
+      .either
+      .runResult(SerializerState.initial)
 
   def deserializeUnknown(input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Any] =
-    readUnknown().run(DeserializationEnv(input, typeRegistry)).runA(SerializerState.initial).value.value
+    readUnknown()
+      .provide(DeserializationEnv(input, typeRegistry))
+      .either
+      .runResult(SerializerState.initial)
 
   def serializeToArray[T: BinarySerializer](value: T, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Array[Byte]] = {
     val stream = new ByteArrayOutputStream()

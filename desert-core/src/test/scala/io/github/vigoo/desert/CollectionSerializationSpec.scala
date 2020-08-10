@@ -1,9 +1,10 @@
 package io.github.vigoo.desert
 
-import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import zio.test.environment.TestEnvironment
 import io.github.vigoo.desert.codecs._
 import org.junit.runner.RunWith
+import zio.NonEmptyChunk
+import zio.prelude.{NonEmptyList, Validation, ZSet}
 import zio.test._
 
 import scala.annotation.nowarn
@@ -22,10 +23,9 @@ class CollectionSerializationSpec extends DefaultRunnableSpec with Serialization
       testM("string -> int map")(canBeSerialized(Gen.mapOf(Gen.anyString, Gen.anyInt))),
       testM("option")(canBeSerialized(Gen.option(Gen.anyString))),
       testM("either")(canBeSerialized(Gen.either(Gen.anyInt, Gen.anyString))),
-      testM("validated")(canBeSerialized(Gen.either(Gen.anyInt, Gen.anyString).map(Validated.fromEither))),
-      testM("non-empty list")(canBeSerialized(Gen.listOf1(Gen.anyString).map(NonEmptyList.fromList))),
-      testM("non-empty set")(canBeSerialized(Gen.setOf1(Gen.anyString).map(set => NonEmptySet.fromSet(SortedSet.from(set))))),
-      testM("non-empty map")(canBeSerialized(Gen.mapOf1(Gen.anyString, Gen.anyInt).map(map => NonEmptyMap.fromMap(SortedMap.from[String, Int](map))))),
+      testM("validation")(canBeSerialized(Gen.either(Gen.listOf1(Gen.anyInt).map(l => NonEmptyChunk.fromIterable(l.head, l.tail)), Gen.anyString).map(Validation.fromEither))),
+      testM("non-empty list")(canBeSerialized(Gen.listOf1(Gen.anyString).map(l => NonEmptyList.fromIterable(l.head, l.tail)))),
+      testM("zset")(canBeSerialized(Gen.mapOf(Gen.anyString, Gen.anyInt).map(ZSet.fromMap))),
 
       testM("try")(canBeSerialized(Gen.either(Gen.throwable, Gen.anyString).map(_.toTry), Some({ source: Try[String] =>
         import Assertion._
