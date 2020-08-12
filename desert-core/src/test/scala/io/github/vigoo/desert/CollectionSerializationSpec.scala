@@ -38,6 +38,17 @@ class CollectionSerializationSpec extends DefaultRunnableSpec with Serialization
             isSuccess(equalTo(value))
         }
       }))),
+
+      test("unknown sized collection serializer is stack safe") {
+        implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
+        val bigList = (0 to 100000).toList
+        canBeSerializedAndReadBack(bigList, bigList)
+      },
+      test("known sized collection serializer is stack safe") {
+        implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
+        val bigVector = (0 to 100000).toVector
+        canBeSerializedAndReadBack(bigVector, bigVector)
+      },
     )
 }
 

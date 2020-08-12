@@ -1,6 +1,7 @@
 package io.github.vigoo.desert
 
-import cats.data.{ReaderT, StateT}
+import cats.Eval
+import cats.data.{EitherT, ReaderT, StateT}
 import cats.instances.either._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
@@ -21,10 +22,10 @@ trait BinarySerializer[T] { self =>
 object BinarySerializer {
   final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry)
 
-  type Ser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv, T]
+  type Ser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv, T]
 
   object Ser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] = ReaderT.liftF(StateT.liftF(value))
+    final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
   }
 }
 
@@ -39,10 +40,10 @@ trait BinaryDeserializer[T] { self =>
 object BinaryDeserializer {
   final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry)
 
-  type Deser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv, T]
+  type Deser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv, T]
 
   object Deser {
-    final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] = ReaderT.liftF(StateT.liftF(value))
+    final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] = ReaderT.liftF(StateT.liftF(EitherT.fromEither(value)))
   }
 }
 

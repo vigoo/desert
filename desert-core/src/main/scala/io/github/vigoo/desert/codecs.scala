@@ -3,7 +3,7 @@ package io.github.vigoo.desert
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import cats.Order
+import cats.{Eval, Foldable, Monad, Order, Traverse}
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import cats.instances.either._
 import cats.syntax.flatMap._
@@ -193,9 +193,21 @@ object codecs {
     private def serializeWithUnknownSize(value: T): Ser[Unit] = {
       for {
         _ <- writeVarInt(-1, optimizeForPositive = false)
-        _ <- value.foldRight(finishSerializer()) {
+        _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
           case (elem, rest) => write(true) >> write(elem) >> rest
         }
+//        _ <- Monad[Ser].tailRecM[Iterator[A], Unit](value.iterator) { iterator =>
+//          if (iterator.hasNext) {
+//            val elem = iterator.next()
+//            for {
+//              _ <- write(true)
+//              _ <- write(elem)
+//            } yield Left(iterator)
+//          } else {
+//            finishSerializerWith(Right(()))
+//
+//          }
+//        }
         _ <- write(false)
       } yield ()
     }
@@ -203,9 +215,17 @@ object codecs {
     private def serializeWithKnownSize(value: T, size: Int): Ser[Unit] = {
       for {
         _ <- writeVarInt(size, optimizeForPositive = false)
-        _ <- value.foldRight(finishSerializer()) {
+        _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
           case (elem, rest) => write(elem) >> rest
         }
+//        _ <- Monad[Ser].tailRecM[Iterator[A], Unit](value.iterator) { iterator =>
+//          if (iterator.hasNext) {
+//            val elem = iterator.next()
+//            write(elem).map(Left(iterator))
+//          } else {
+//            finishSerializerWith(Right(()))
+//          }
+//        }
       } yield ()
     }
   }

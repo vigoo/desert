@@ -2,8 +2,8 @@ package io.github.vigoo.desert
 
 import java.util.zip.Deflater
 
-import cats.data.{ReaderT, StateT}
-import cats.instances.either._
+import cats.Eval
+import cats.data.{EitherT, ReaderT, StateT}
 import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
@@ -13,10 +13,10 @@ import shapeless.Lazy
 import scala.util.Try
 
 trait BinarySerializerOps {
-  final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv].map(_.output)
-  final def getOutputTypeRegistry: Ser[TypeRegistry] = ReaderT.ask[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv].map(_.typeRegistry)
-  final def getSerializerState: Ser[SerializerState] = ReaderT.liftF(StateT.get[Either[DesertFailure, *], SerializerState])
-  final def setSerializerState(state: SerializerState): Ser[Unit] = ReaderT.liftF(StateT.set[Either[DesertFailure, *], SerializerState](state))
+  final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv].map(_.output)
+  final def getOutputTypeRegistry: Ser[TypeRegistry] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv].map(_.typeRegistry)
+  final def getSerializerState: Ser[SerializerState] = ReaderT.liftF(StateT.get[EitherT[Eval, DesertFailure, *], SerializerState])
+  final def setSerializerState(state: SerializerState): Ser[Unit] = ReaderT.liftF(StateT.set[EitherT[Eval, DesertFailure, *], SerializerState](state))
 
   final def writeByte(value: Byte): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeByte(value)))
   final def writeShort(value: Short): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeShort(value)))

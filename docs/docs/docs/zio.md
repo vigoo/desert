@@ -11,7 +11,7 @@ in ZIO effects.
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-zio" % "0.1.2"
+libraryDependencies += "io.github.vigoo" %% "desert-zio" % "0.1.3"
 ```
 
 ### Syntax
