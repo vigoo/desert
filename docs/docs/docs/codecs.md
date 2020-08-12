@@ -238,8 +238,8 @@ def deserialize(): Deser[T]
 where 
 
 ```scala
-type Ser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], SerializationEnv, T]
-type Deser[T] = ReaderT[StateT[Either[DesertFailure, *], SerializerState, *], DeserializationEnv, T]
+type Ser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv, T]
+type Deser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv, T]
 ```
 
 With the `BinaryCodec.define` function it is possible to define a fully custom codec. In the following

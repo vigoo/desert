@@ -66,12 +66,12 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
       test("reads back duplicated strings correctly") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val result = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).flatMap { _ =>
+        val result = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).value.flatMap { _ =>
           stream.flush()
           val inStream = new ByteArrayInputStream(stream.toByteArray)
           val input = new JavaStreamBinaryInput(inStream)
-          testDeser.run(DeserializationEnv(input, TypeRegistry.empty)).runA(SerializerState.initial)
-        }
+          testDeser.run(DeserializationEnv(input, TypeRegistry.empty)).runA(SerializerState.initial).value
+        }.value
 
         assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
       },
@@ -81,7 +81,7 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
         val size = testSer.run(SerializationEnv(output, TypeRegistry.empty)).runA(SerializerState.initial).map { _ =>
           stream.flush()
           stream.toByteArray.length
-        }
+        }.value.value
 
         assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
       },
