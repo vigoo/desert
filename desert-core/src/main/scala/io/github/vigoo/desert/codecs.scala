@@ -196,18 +196,6 @@ object codecs {
         _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
           case (elem, rest) => write(true) >> write(elem) >> rest
         }
-//        _ <- Monad[Ser].tailRecM[Iterator[A], Unit](value.iterator) { iterator =>
-//          if (iterator.hasNext) {
-//            val elem = iterator.next()
-//            for {
-//              _ <- write(true)
-//              _ <- write(elem)
-//            } yield Left(iterator)
-//          } else {
-//            finishSerializerWith(Right(()))
-//
-//          }
-//        }
         _ <- write(false)
       } yield ()
     }
@@ -218,14 +206,6 @@ object codecs {
         _ <- Foldable.iterateRightDefer(value, finishSerializer()) {
           case (elem, rest) => write(elem) >> rest
         }
-//        _ <- Monad[Ser].tailRecM[Iterator[A], Unit](value.iterator) { iterator =>
-//          if (iterator.hasNext) {
-//            val elem = iterator.next()
-//            write(elem).map(Left(iterator))
-//          } else {
-//            finishSerializerWith(Right(()))
-//          }
-//        }
       } yield ()
     }
   }
