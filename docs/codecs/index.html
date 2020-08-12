@@ -50,22 +50,22 @@ ga('send', 'pageview');
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
 <span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
-<span class="c1">//     -29,</span>
-<span class="c1">//     -118,</span>
-<span class="c1">//     105,</span>
-<span class="c1">//     -71,</span>
-<span class="c1">//     -50,</span>
-<span class="c1">//     -38,</span>
-<span class="c1">//     77,</span>
-<span class="c1">//     -45,</span>
-<span class="c1">//     -85,</span>
-<span class="c1">//     -23,</span>
-<span class="c1">//     -66,</span>
-<span class="c1">//     -11,</span>
-<span class="c1">//     119,</span>
-<span class="c1">//     22,</span>
-<span class="c1">//     -121,</span>
-<span class="c1">//     -80</span>
+<span class="c1">//     -36,</span>
+<span class="c1">//     59,</span>
+<span class="c1">//     25,</span>
+<span class="c1">//     88,</span>
+<span class="c1">//     -2,</span>
+<span class="c1">//     -114,</span>
+<span class="c1">//     64,</span>
+<span class="c1">//     -12,</span>
+<span class="c1">//     -120,</span>
+<span class="c1">//     -123,</span>
+<span class="c1">//     -67,</span>
+<span class="c1">//     31,</span>
+<span class="c1">//     30,</span>
+<span class="c1">//     29,</span>
+<span class="c1">//     -126,</span>
+<span class="c1">//     25</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -479,8 +479,8 @@ the intention in the type system. <code class="highlighter-rouge">desert</code> 
 
 <p>where</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="kt">Ser</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">ReaderT</span><span class="o">[</span><span class="kt">StateT</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">DesertFailure</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializerState</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializationEnv</span>, <span class="kt">T</span><span class="o">]</span>
-<span class="k">type</span> <span class="kt">Deser</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">ReaderT</span><span class="o">[</span><span class="kt">StateT</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">DesertFailure</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializerState</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">DeserializationEnv</span>, <span class="kt">T</span><span class="o">]</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="kt">Ser</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">ReaderT</span><span class="o">[</span><span class="kt">StateT</span><span class="o">[</span><span class="kt">EitherT</span><span class="o">[</span><span class="kt">Eval</span>, <span class="kt">DesertFailure</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializerState</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializationEnv</span>, <span class="kt">T</span><span class="o">]</span>
+<span class="k">type</span> <span class="kt">Deser</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span> <span class="nc">ReaderT</span><span class="o">[</span><span class="kt">StateT</span><span class="o">[</span><span class="kt">EitherT</span><span class="o">[</span><span class="kt">Eval</span>, <span class="kt">DesertFailure</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">SerializerState</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">DeserializationEnv</span>, <span class="kt">T</span><span class="o">]</span>
 </code></pre></div></div>
 
 <p>With the <code class="highlighter-rouge">BinaryCodec.define</code> function it is possible to define a fully custom codec. In the following
