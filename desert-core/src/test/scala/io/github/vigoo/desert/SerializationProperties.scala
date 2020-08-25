@@ -6,7 +6,7 @@ import zio.test.Assertion._
 import zio.test._
 
 trait SerializationProperties {
-  def canBeSerialized[R, A: BinaryCodec](rv: Gen[R, A], test: Option[A => Assertion[A]] = None): URIO[R, TestResult] =
+  def canBeSerialized[R <: TestConfig, A: BinaryCodec](rv: Gen[R, A], test: Option[A => Assertion[A]] = None): URIO[R, TestResult] =
     check(rv) { value =>
       val resultValue =
         for {
