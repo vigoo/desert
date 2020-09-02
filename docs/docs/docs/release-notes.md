@@ -6,6 +6,9 @@ permalink: docs/release-notes/
 
 # Release notes
 
+## 0.1.4
+- Fixed the akka serialization base class
+
 ## 0.1.3
 - Fixed stack safety
 
