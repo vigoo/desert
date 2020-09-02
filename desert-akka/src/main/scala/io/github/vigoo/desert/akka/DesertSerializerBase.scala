@@ -18,6 +18,9 @@ abstract class DesertSerializerBase extends Serializer {
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
-    deserializeUnknownFromArray(bytes, typeRegistry)
+    deserializeUnknownFromArray(bytes, typeRegistry) match {
+      case Left(failure) => throw new DesertException(failure)
+      case Right(value) => value.asInstanceOf[AnyRef]
+    }
   }
 }
