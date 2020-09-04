@@ -1,6 +1,4 @@
 package io.github.vigoo.desert
-
-import cats.instances.either._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}

@@ -1,6 +1,4 @@
 package io.github.vigoo.desert.zio
-
-import cats.instances.either._
 import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import zio.Chunk
