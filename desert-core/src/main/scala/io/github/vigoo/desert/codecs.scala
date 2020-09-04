@@ -5,7 +5,6 @@ import java.util.UUID
 
 import cats.{Eval, Foldable, Monad, Order, Traverse}
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
-import cats.instances.either._
 import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinaryDeserializerOps._

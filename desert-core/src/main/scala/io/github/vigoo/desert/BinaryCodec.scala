@@ -2,7 +2,6 @@ package io.github.vigoo.desert
 
 import cats.Eval
 import cats.data.{EitherT, ReaderT, StateT}
-import cats.instances.either._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import shapeless.Lazy

@@ -1,7 +1,6 @@
 package io.github.vigoo.desert
 
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
-import cats.instances.string._
 import zio.test.environment.TestEnvironment
 import io.github.vigoo.desert.codecs._
 import org.junit.runner.RunWith
