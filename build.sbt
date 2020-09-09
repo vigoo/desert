@@ -10,7 +10,7 @@ dynverSonatypeSnapshots in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization := "io.github.vigoo",
-  scalaVersion := "2.13.2",
+  scalaVersion := "2.13.3",
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
@@ -32,7 +32,6 @@ lazy val commonSettings = Seq(
   // Publishing
   publishMavenStyle := true,
   licenses := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  publishTo := sonatypePublishTo.value,
   sonatypeProjectHosting := Some(GitHubHosting("vigoo", "desert", "daniel.vigovszky@gmail.com")),
   developers := List(
     Developer(id = "vigoo", name = "Daniel Vigovszky", email = "daniel.vigovszky@gmail.com", url = url("https://vigoo.github.io"))
