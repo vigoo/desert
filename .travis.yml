@@ -3,8 +3,7 @@ scala:
 - 2.13.3
 before_install:
 - git fetch --tags
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash
-  -x scripts/decrypt_keys.sh; fi
+- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -x scripts/decrypt_keys.sh; fi
 - export PATH=${PATH}:./vendor/bundle
 
 stages:
@@ -19,7 +18,7 @@ script:
 
 jobs:
   include:
-      scala: 2.13.3
+    - scala: 2.13.3
     - stage: release
       name: "Release"
       script: sbt ci-release
