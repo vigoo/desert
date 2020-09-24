@@ -26,7 +26,7 @@ trait BinarySerializerOps {
   final def writeFloat(value: Float): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeFloat(value)))
   final def writeDouble(value: Double): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeDouble(value)))
   final def writeBytes(value: Array[Byte]): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeBytes(value)))
-  final def writeCompressedBytes(value: Array[Byte], level: Int = Deflater.DEFAULT_COMPRESSION): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeCompressedByteArray(value, level)))
+  final def writeCompressedBytes(value: Array[Byte], level: Int = Deflater.BEST_SPEED): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeCompressedByteArray(value, level)))
 
   final def writeUnknown(value: Any): Ser[Unit] =
     getOutputTypeRegistry.flatMap { typeRegistry =>

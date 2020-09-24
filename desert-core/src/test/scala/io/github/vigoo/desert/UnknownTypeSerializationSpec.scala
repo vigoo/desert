@@ -1,16 +1,10 @@
 package io.github.vigoo.desert
 
-import codecs._
-
-import org.junit.runner.RunWith
+import io.github.vigoo.desert.codecs._
 import zio.test._
-import zio.test.Assertion._
 import zio.test.environment.TestEnvironment
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class UnknownTypeSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
+object UnknownTypeSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
 
   trait CommonInterface
   object CommonInterface {
@@ -54,5 +48,3 @@ class UnknownTypeSerializationSpec extends DefaultRunnableSpec with Serializatio
       }
     )
 }
-
-@nowarn object UnknownTypeSerializationSpec extends UnknownTypeSerializationSpec

@@ -1,17 +1,14 @@
 package io.github.vigoo.desert
 
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
-import zio.test.environment.TestEnvironment
 import io.github.vigoo.desert.codecs._
-import org.junit.runner.RunWith
 import zio.test._
+import zio.test.environment.TestEnvironment
 
-import scala.annotation.nowarn
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.util.{Failure, Success, Try}
 
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class CollectionSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
+object CollectionSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Collections can be serialized and read back")(
       testM("array of strings")(canBeSerialized(Gen.listOf(Gen.anyString).map(_.toArray))),
@@ -50,5 +47,3 @@ class CollectionSerializationSpec extends DefaultRunnableSpec with Serialization
       },
     )
 }
-
-@nowarn object CollectionSerializationSpec extends CollectionSerializationSpec

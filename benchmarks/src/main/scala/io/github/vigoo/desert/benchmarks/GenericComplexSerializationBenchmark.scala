@@ -10,7 +10,7 @@ import zio.BootstrapRuntime
 
 import scala.util.Random
 
-@BenchmarkMode(Array(Mode.AverageTime))
+@BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 class GenericComplexSerializationBenchmark extends BootstrapRuntime {

@@ -1,19 +1,17 @@
 package io.github.vigoo.desert
-import org.junit.runner.RunWith
-import zio.test._
-import zio.test.Assertion._
-import zio.test.environment.TestEnvironment
+
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
+import io.github.vigoo.desert.codecs._
+import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.TestEnvironment
 
-import scala.annotation.nowarn
 
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class DefaultTypeRegistrySpec extends DefaultRunnableSpec {
+object DefaultTypeRegistrySpec extends DefaultRunnableSpec {
 
   case class TestProd(x: Double, y: Double)
 
   object TestProd {
-    import codecs._
     implicit val codec: BinaryCodec[TestProd] = BinaryCodec.derive()
   }
 
@@ -89,4 +87,3 @@ class DefaultTypeRegistrySpec extends DefaultRunnableSpec {
     )
 }
 
-@nowarn object DefaultTypeRegistrySpec extends DefaultTypeRegistrySpec
