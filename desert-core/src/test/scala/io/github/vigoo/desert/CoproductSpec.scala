@@ -1,17 +1,12 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
-
-import org.junit.runner.RunWith
 import zio.random.Random
 import zio.test._
-import zio.test.magnolia.DeriveGen
 import zio.test.environment.TestEnvironment
+import zio.test.magnolia.DeriveGen
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
+object CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
   sealed trait TypeV1
   final case object Cons1V1 extends TypeV1
   final case class Cons2V1(value: String) extends TypeV1
@@ -36,7 +31,7 @@ class CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
     val gen: Gen[Random with Sized, TypeV2] = DeriveGen[TypeV2]
   }
 
-  private implicit val typeRegistry = TypeRegistry.empty
+  private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Coproduct codec derivation")(
@@ -52,5 +47,3 @@ class CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
       )
     )
 }
-
-@nowarn object CoproductSpec extends CoproductSpec

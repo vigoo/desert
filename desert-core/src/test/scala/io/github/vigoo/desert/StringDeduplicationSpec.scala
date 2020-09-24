@@ -1,20 +1,17 @@
 package io.github.vigoo.desert
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import org.junit.runner.RunWith
+import io.github.vigoo.desert.BinarySerializerOps._
+import io.github.vigoo.desert.codecs._
+import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.test.Assertion._
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProperties {
+object StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProperties {
 
   val s1 = "this is a test string"
   val s2 = "and another one"
@@ -92,5 +89,3 @@ class StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProp
       }
     )
 }
-
-@nowarn object StringDeduplicationSpec extends StringDeduplicationSpec

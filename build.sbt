@@ -18,7 +18,6 @@ lazy val commonSettings = Seq(
     "dev.zio" %% "zio" % "1.0.1" % "test",
     "dev.zio" %% "zio-test" % "1.0.1" % "test",
     "dev.zio" %% "zio-test-sbt" % "1.0.1" % "test",
-    "dev.zio" %% "zio-test-junit" % "1.0.1" % "test",
     "dev.zio" %% "zio-test-magnolia" % "1.0.1" % "test",
   ),
 
@@ -111,6 +110,7 @@ lazy val benchmarks = project.in(file("benchmarks"))
   .settings(commonSettings)
   .settings(
     publishArtifact := false,
+    coverageEnabled := false,
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-test" % "1.0.1",
       "dev.zio" %% "zio-test-magnolia" % "1.0.1",

@@ -3,13 +3,9 @@ package io.github.vigoo.desert
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.codecs._
-import org.junit.runner.RunWith
 import zio.test._
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class PrimitiveSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
+object PrimitiveSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
   override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =
     suite("Primitive values can be serialized and read back")(
       testM("boolean")(canBeSerialized(Gen.boolean)),
@@ -35,5 +31,3 @@ class PrimitiveSerializationSpec extends DefaultRunnableSpec with SerializationP
       )
     )
 }
-
-@nowarn object PrimitiveSerializationSpec extends PrimitiveSerializationSpec

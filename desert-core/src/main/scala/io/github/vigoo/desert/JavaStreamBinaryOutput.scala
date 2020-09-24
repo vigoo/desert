@@ -4,19 +4,25 @@ import java.io.{DataOutputStream, OutputStream}
 
 import scala.util.{Failure, Success, Try}
 
-class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
+final class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
+  private val buffer: Array[Byte] = new Array[Byte](4)
   private val dataStream = new DataOutputStream(stream)
 
-  override final def writeByte(value: Byte): Either[DesertFailure, Unit] =
+  override def writeByte(value: Byte): Either[DesertFailure, Unit] =
     handleFailures(dataStream.writeByte(value))
 
-  override final def writeShort(value: Short): Either[DesertFailure, Unit] =
+  override def writeShort(value: Short): Either[DesertFailure, Unit] =
     handleFailures(dataStream.writeShort(value))
 
-  override final def writeInt(value: Int): Either[DesertFailure, Unit] =
-    handleFailures(dataStream.writeInt(value))
+  override def writeInt(value: Int): Either[DesertFailure, Unit] = {
+    buffer(0) = ((value >>> 24) & 0xFF).toByte
+    buffer(1) = ((value >>> 16) & 0xFF).toByte
+    buffer(2) = ((value >>>  8) & 0xFF).toByte
+    buffer(3) = ((value >>>  0) & 0xFF).toByte
+    handleFailures(dataStream.write(buffer))
+  }
 
-  override final def writeLong(value: Long): Either[DesertFailure, Unit] =
+  override def writeLong(value: Long): Either[DesertFailure, Unit] =
     handleFailures(dataStream.writeLong(value))
 
   override def writeFloat(value: Float): Either[DesertFailure, Unit] =
@@ -25,7 +31,7 @@ class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
   override def writeDouble(value: Double): Either[DesertFailure, Unit] =
     handleFailures(dataStream.writeDouble(value))
 
-  override final def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit] =
+  override def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit] =
     handleFailures(dataStream.write(value))
   
   override def writeBytes(value: Array[Byte], start: Int, count: Int): Either[DesertFailure, Unit] =

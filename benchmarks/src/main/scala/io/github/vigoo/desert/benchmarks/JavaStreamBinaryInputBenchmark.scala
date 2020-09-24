@@ -1,10 +1,12 @@
 package io.github.vigoo.desert.benchmarks
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util.concurrent.TimeUnit
 
-import io.github.vigoo.desert.{BinaryOutput, JavaStreamBinaryOutput}
-import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Level, Measurement, Mode, OperationsPerInvocation, OutputTimeUnit, Scope, Setup, State, Warmup}
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.syntax._
+import org.openjdk.jmh.annotations._
 import zio.BootstrapRuntime
 
 import scala.util.Random
@@ -12,51 +14,19 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 10, time = 200, timeUnit = TimeUnit.MILLISECONDS)
-class JavaStreamBinaryOutputBenchmark extends BootstrapRuntime {
+@Warmup(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+class JavaStreamBinaryInputBenchmark extends BootstrapRuntime {
 
-  val array: Array[Byte] = Random.nextBytes(4096)
-  var output: BinaryOutput = _
-
-  @Setup(Level.Iteration)
-  def setup(): Unit = {
-    output = new JavaStreamBinaryOutput(new ByteArrayOutputStream())
-  }
-
-  @Benchmark
-  def writeByte(): Unit = {
-    output.writeByte(100)
-  }
-
-  @Benchmark
-  def writeShort(): Unit = {
-    output.writeShort(100)
-  }
-
-  @Benchmark
-  def writeInt(): Unit = {
-    output.writeInt(100000)
-  }
-
-  @Benchmark
-  def writeLong(): Unit = {
-    output.writeLong(1000000000L)
-  }
-
-  @Benchmark
-  def writeDouble(): Unit = {
-    output.writeDouble(1234.1234)
-  }
-
-  @Benchmark
-  def writeBytes(): Unit = {
-    output.writeBytes(array)
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(8)
-  def writeVarInt(): Unit = {
+  val inputByte: Array[Byte] = serializeToArray(100.toByte).toOption.get
+  val inputShort: Array[Byte] = serializeToArray(100.toShort).toOption.get
+  val inputInt: Array[Byte] = serializeToArray(100000.toInt).toOption.get
+  val inputLong: Array[Byte] = serializeToArray(1000000000L).toOption.get
+  val inputFloat: Array[Byte] = serializeToArray(Math.PI.toFloat).toOption.get
+  val inputDouble: Array[Byte] = serializeToArray(Math.PI).toOption.get
+  val inputVarInt: Array[Byte] = {
+    val stream = new ByteArrayOutputStream()
+    val output = new JavaStreamBinaryOutput(stream)
     output.writeVarInt(1)
     output.writeVarInt(1000)
     output.writeVarInt(100000)
@@ -65,5 +35,56 @@ class JavaStreamBinaryOutputBenchmark extends BootstrapRuntime {
     output.writeVarInt(-1000)
     output.writeVarInt(-100000)
     output.writeVarInt(-10000000)
+    stream.close()
+    stream.toByteArray
+  }
+
+  @Benchmark
+  def readByte(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputByte)).readByte()
+  }
+
+  @Benchmark
+  def readShort(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputShort)).readShort()
+  }
+
+  @Benchmark
+  def readInt(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputInt)).readInt()
+  }
+
+  @Benchmark
+  def readLong(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputLong)).readLong()
+  }
+
+  @Benchmark
+  def readFloat(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputFloat)).readFloat()
+  }
+
+  @Benchmark
+  def readDouble(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(inputDouble)).readDouble()
+  }
+
+  @Benchmark
+  def readBytes(): Unit = {
+    new JavaStreamBinaryInput(new ByteArrayInputStream(new Array(4096))).readBytes(4096)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(8)
+  def readVarInt(): Unit = {
+    val input = new JavaStreamBinaryInput(new ByteArrayInputStream(inputVarInt))
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
+    input.readVarInt(optimizeForPositive = false)
   }
 }

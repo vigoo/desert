@@ -1,17 +1,13 @@
 package io.github.vigoo.desert
 
-import codecs._
-import org.junit.runner.RunWith
+import io.github.vigoo.desert.codecs._
 import zio.random.Random
-import zio.test.environment.TestEnvironment
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.TestEnvironment
 import zio.test.magnolia.DeriveGen
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
+object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class ProdV1(fieldA: String, fieldB: Int)
@@ -63,8 +59,6 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     )
     val gen: Gen[Random with Sized, ProdV5] = DeriveGen[ProdV5]
   }
-
-  import EvolutionSpec.TestId
 
   sealed trait Coprod1
 
@@ -290,9 +284,6 @@ class EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         )
       )
     )
-}
-
-@nowarn object EvolutionSpec extends EvolutionSpec {
 
   case class TestId(value: String) extends AnyVal
 

@@ -2,13 +2,11 @@ package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import org.junit.runner.RunWith
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
 import zio.test.environment.TestEnvironment
 
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class JavaStreamInputOutputSpec extends DefaultRunnableSpec {
+object JavaStreamInputOutputSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("JavaStream input/output")(
       testM("properly writes and reads back variable int")(
@@ -31,13 +29,15 @@ class JavaStreamInputOutputSpec extends DefaultRunnableSpec {
       },
 
       testM("compressed byte array support")(
-        check(Gen.vectorOf(Gen.anyByte)) { bytes =>
-          testWriteAndRead(
-            _.writeCompressedByteArray(bytes.toArray),
-            _.readCompressedByteArray().map(_.toVector),
-            bytes
-          )
-        }
+        Sized.withSize(500)(
+          check(Gen.vectorOf(Gen.anyByte)) { bytes =>
+            testWriteAndRead(
+              _.writeCompressedByteArray(bytes.toArray),
+              _.readCompressedByteArray().map(_.toVector),
+              bytes
+            )
+          }
+        )
       )
     )
 
@@ -55,5 +55,3 @@ class JavaStreamInputOutputSpec extends DefaultRunnableSpec {
     assert(readValue)(isRight(equalTo(expected)))
   }
 }
-
-object JavaStreamInputOutputSpec extends JavaStreamInputOutputSpec
