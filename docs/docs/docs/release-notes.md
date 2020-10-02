@@ -6,6 +6,9 @@ permalink: docs/release-notes/
 
 # Release notes
 
+## 0.1.5
+- Performance improvements
+
 ## 0.1.4
 - Fixed the akka serialization base class
 
