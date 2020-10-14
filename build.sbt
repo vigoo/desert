@@ -180,7 +180,7 @@ lazy val docs = project
       micrositeAnalyticsToken := "UA-56320875-2",
       includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg",
     )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm)
 
 // Temporary fix to avoid including mdoc in the published POM
 
