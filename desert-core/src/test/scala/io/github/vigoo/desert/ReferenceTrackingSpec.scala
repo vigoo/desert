@@ -2,15 +2,11 @@ package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
-import org.junit.runner.RunWith
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
 import zio.test.environment.TestEnvironment
 
-import scala.annotation.nowarn
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class ReferenceTrackingSpec extends DefaultRunnableSpec with SerializationProperties {
+object ReferenceTrackingSpec extends DefaultRunnableSpec with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class Root(node: Node)
@@ -71,5 +67,3 @@ class ReferenceTrackingSpec extends DefaultRunnableSpec with SerializationProper
       }
     )
 }
-
-@nowarn object ReferenceTrackingSpec extends ReferenceTrackingSpec

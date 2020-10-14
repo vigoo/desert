@@ -18,7 +18,6 @@ lazy val commonSettings = Seq(
     "dev.zio" %% "zio" % "1.0.3" % "test",
     "dev.zio" %% "zio-test" % "1.0.3" % "test",
     "dev.zio" %% "zio-test-sbt" % "1.0.3" % "test",
-    "dev.zio" %% "zio-test-junit" % "1.0.3" % "test",
     "dev.zio" %% "zio-test-magnolia" % "1.0.3" % "test",
   ),
 
@@ -81,8 +80,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
 lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
   description := "Akka serialization bindings for desert",
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.6.9",
-    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.9",
+    "com.typesafe.akka" %% "akka-actor" % "2.6.10",
+    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.10",
   )
 ).dependsOn(core.jvm)
 
@@ -108,7 +107,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-effect" % "2.2.0",
-      "dev.zio" %% "zio-interop-cats" % "2.1.4.0" % Test
+      "dev.zio" %% "zio-interop-cats" % "2.2.0.1" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -131,6 +130,7 @@ lazy val benchmarks = project.in(file("benchmarks"))
   .settings(commonSettings)
   .settings(
     publishArtifact := false,
+    coverageEnabled := false,
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-test" % "1.0.3",
       "dev.zio" %% "zio-test-magnolia" % "1.0.3",

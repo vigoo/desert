@@ -1,14 +1,10 @@
 package io.github.vigoo.desert
 
-import org.junit.runner.RunWith
-import zio.test.environment.TestEnvironment
+import io.github.vigoo.desert.codecs._
 import zio.test._
-import zio.test.Assertion._
+import zio.test.environment.TestEnvironment
 
-import codecs._
-
-@RunWith(classOf[zio.test.junit.ZTestJUnitRunner])
-class TransientSpec extends DefaultRunnableSpec with SerializationProperties {
+object TransientSpec extends DefaultRunnableSpec with SerializationProperties {
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class TypeWithoutCodec(value: Int)
@@ -61,5 +57,3 @@ class TransientSpec extends DefaultRunnableSpec with SerializationProperties {
       }
     )
 }
-
-object TransientSpec extends TransientSpec

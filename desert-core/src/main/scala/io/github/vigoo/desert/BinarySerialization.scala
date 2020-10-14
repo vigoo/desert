@@ -33,7 +33,7 @@ trait BinarySerialization {
       .runResult(SerializerState.initial)
 
   def serializeToArray[T: BinarySerializer](value: T, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Array[Byte]] = {
-    val stream = new ByteArrayOutputStream()
+    val stream = new ByteArrayOutputStream(4096)
     val output = new JavaStreamBinaryOutput(stream)
     serialize(value, output, typeRegistry).map { _ =>
       stream.flush()
@@ -42,7 +42,7 @@ trait BinarySerialization {
   }
 
   def serializeUnknownToArray(value: Any, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Array[Byte]] = {
-    val stream = new ByteArrayOutputStream()
+    val stream = new ByteArrayOutputStream(4096)
     val output = new JavaStreamBinaryOutput(stream)
     serializeUnknown(value, output, typeRegistry).map { _ =>
       stream.flush()

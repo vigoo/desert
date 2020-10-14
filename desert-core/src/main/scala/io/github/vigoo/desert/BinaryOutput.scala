@@ -1,5 +1,7 @@
 package io.github.vigoo.desert
 
+import cats.syntax.either._
+
 import java.io.ByteArrayOutputStream
 import java.util.zip.{Deflater, DeflaterOutputStream}
 
@@ -15,6 +17,8 @@ import scala.util.control.NonFatal
  * which have a default implementation based on the primitives.
  */
 trait BinaryOutput {
+  private val buffer: Array[Byte] = new Array[Byte](16)
+
   /**
    * Writes one byte
    * @param value The value to write
@@ -79,31 +83,27 @@ trait BinaryOutput {
     if (adjustedValue >>> 7 == 0) {
       writeByte(adjustedValue.toByte)
     } else if (adjustedValue >>> 14 == 0) {
-      for {
-        _ <- writeByte(((adjustedValue & 0x7F) | 0x80).toByte)
-        _ <- writeByte((adjustedValue >>> 7).toByte)
-      } yield ()
+      buffer(0) = ((adjustedValue & 0x7F) | 0x80).toByte
+      buffer(1) = (adjustedValue >>> 7).toByte
+      writeBytes(buffer, 0, 2)
     } else if (adjustedValue >>> 21 == 0) {
-      for {
-        _ <- writeByte(((adjustedValue & 0x7F) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 7) | 0x80).toByte)
-        _ <- writeByte((adjustedValue >>> 14).toByte)
-      } yield ()
+      buffer(0) = ((adjustedValue & 0x7F) | 0x80).toByte
+      buffer(1) = ((adjustedValue >>> 7) | 0x80).toByte
+      buffer(2) = (adjustedValue >>> 14).toByte
+      writeBytes(buffer, 0, 3)
     } else if (adjustedValue >>> 28 == 0) {
-      for {
-        _ <- writeByte(((adjustedValue & 0x7F) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 7) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 14) | 0x80).toByte)
-        _ <- writeByte((adjustedValue >>> 21).toByte)
-      } yield ()
+      buffer(0) = ((adjustedValue & 0x7F) | 0x80).toByte
+      buffer(1) = ((adjustedValue >>> 7) | 0x80).toByte
+      buffer(2) = ((adjustedValue >>> 14) | 0x80).toByte
+      buffer(3) = (adjustedValue >>> 21).toByte
+      writeBytes(buffer, 0, 4)
     } else {
-      for {
-        _ <- writeByte(((adjustedValue & 0x7F) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 7) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 14) | 0x80).toByte)
-        _ <- writeByte(((adjustedValue >>> 21) | 0x80).toByte)
-        _ <- writeByte((adjustedValue >>> 28).toByte)
-      } yield ()
+      buffer(0) = ((adjustedValue & 0x7F) | 0x80).toByte
+      buffer(1) = ((adjustedValue >>> 7) | 0x80).toByte
+      buffer(2) = ((adjustedValue >>> 14) | 0x80).toByte
+      buffer(3) = ((adjustedValue >>> 21) | 0x80).toByte
+      buffer(4) = (adjustedValue >>> 28).toByte
+      writeBytes(buffer, 0, 5)
     }
   }
 
@@ -118,7 +118,7 @@ trait BinaryOutput {
    * @param uncompressedData Uncompressed data
    * @param level Compression level. Use constants from the [[Deflater]] class
    */
-  def writeCompressedByteArray(uncompressedData: Array[Byte], level: Int = Deflater.DEFAULT_COMPRESSION): Either[DesertFailure, Unit] = {
+  def writeCompressedByteArray(uncompressedData: Array[Byte], level: Int = Deflater.BEST_SPEED): Either[DesertFailure, Unit] = {
     if (uncompressedData.length == 0) {
       writeVarInt(0, optimizeForPositive = true)
     } else {
@@ -127,12 +127,12 @@ trait BinaryOutput {
         deflater.setInput(uncompressedData)
         deflater.finish()
 
-        val compressedData = new ArrayBuffer[Byte](uncompressedData.length)
+        val compressedData = new ArrayBuffer[Array[Byte]](4)
         val buffer = new Array[Byte](uncompressedData.length)
         var compressedLength = 0
         while (!deflater.finished()) {
           val length = deflater.deflate(buffer)
-          compressedData.addAll(buffer.slice(0, length))
+          compressedData.addOne(buffer.slice(0, length))
           compressedLength += length
         }
 
@@ -140,7 +140,9 @@ trait BinaryOutput {
         for {
           _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
           _ <- writeVarInt(compressedLength, optimizeForPositive = true)
-          _ <- writeBytes(compressedData.toArray, 0, compressedLength)
+          _ <- compressedData.foldLeft(().asRight[DesertFailure]) { case (r, bs) =>
+            r.flatMap(_ => writeBytes(bs))
+          }
         } yield ()
       } catch {
         case NonFatal(failure) => Left(SerializationFailure("Failed to compress data", Some(failure)))
