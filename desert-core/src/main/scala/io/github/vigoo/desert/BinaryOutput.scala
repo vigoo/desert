@@ -1,9 +1,6 @@
 package io.github.vigoo.desert
 
-import cats.syntax.either._
-
-import java.io.ByteArrayOutputStream
-import java.util.zip.{Deflater, DeflaterOutputStream}
+import java.util.zip.Deflater
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
@@ -140,7 +137,7 @@ trait BinaryOutput {
         for {
           _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
           _ <- writeVarInt(compressedLength, optimizeForPositive = true)
-          _ <- compressedData.foldLeft(().asRight[DesertFailure]) { case (r, bs) =>
+          _ <- compressedData.foldLeft[Either[DesertFailure, Unit]](Right(())) { case (r, bs) =>
             r.flatMap(_ => writeBytes(bs))
           }
         } yield ()

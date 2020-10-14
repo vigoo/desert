@@ -1,14 +1,11 @@
 package io.github.vigoo.desert
 
-import zio.test.environment.TestEnvironment
 import io.github.vigoo.desert.codecs._
-import org.junit.runner.RunWith
 import zio.NonEmptyChunk
 import zio.prelude.{NonEmptyList, Validation, ZSet}
 import zio.test._
 import zio.test.environment.TestEnvironment
 
-import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.util.{Failure, Success, Try}
 
 object CollectionSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
