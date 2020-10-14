@@ -15,11 +15,11 @@ lazy val commonSettings = Seq(
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio" % "1.0.1" % "test",
-    "dev.zio" %% "zio-test" % "1.0.1" % "test",
-    "dev.zio" %% "zio-test-sbt" % "1.0.1" % "test",
-    "dev.zio" %% "zio-test-junit" % "1.0.1" % "test",
-    "dev.zio" %% "zio-test-magnolia" % "1.0.1" % "test",
+    "dev.zio" %% "zio" % "1.0.3" % "test",
+    "dev.zio" %% "zio-test" % "1.0.3" % "test",
+    "dev.zio" %% "zio-test-sbt" % "1.0.3" % "test",
+    "dev.zio" %% "zio-test-junit" % "1.0.3" % "test",
+    "dev.zio" %% "zio-test-magnolia" % "1.0.3" % "test",
   ),
 
   coverageEnabled in(Test, compile) := true,
@@ -70,11 +70,9 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .settings(commonSettings)
   .settings(
     description := "A Scala binary serialization library",
-    resolvers +=
-      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "dev.zio" %% "zio-prelude" % "0.0.0+274-61481ece-SNAPSHOT",
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC1",
       "com.chuusai" %% "shapeless" % "2.3.3",
     ),
   )
@@ -123,7 +121,7 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .settings(
     description := "ZIO API and codecs for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.1"
+      "dev.zio" %% "zio" % "1.0.3"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -134,8 +132,8 @@ lazy val benchmarks = project.in(file("benchmarks"))
   .settings(
     publishArtifact := false,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test" % "1.0.1",
-      "dev.zio" %% "zio-test-magnolia" % "1.0.1",
+      "dev.zio" %% "zio-test" % "1.0.3",
+      "dev.zio" %% "zio-test-magnolia" % "1.0.3",
     )
   )
   .enablePlugins(JmhPlugin)
