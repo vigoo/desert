@@ -17,7 +17,7 @@ The `io.github.vigoo.desert.codecs` module defines a lot of implicit binary code
 The following code examples demonstrate this and also shows how the binary representation looks like.
 
 ```scala mdoc
-import io.github.vigoo.desert.{BinaryCodec, TransientConstructor, TransientField, serializeToArray}
+import io.github.vigoo.desert.{BinaryCodec, TransientConstructor, TransientField}
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 
