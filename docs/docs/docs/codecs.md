@@ -17,7 +17,7 @@ The `io.github.vigoo.desert.codecs` module defines a lot of implicit binary code
 The following code examples demonstrate this and also shows how the binary representation looks like.
 
 ```scala mdoc
-import io.github.vigoo.desert._
+import io.github.vigoo.desert.{BinaryCodec, TransientConstructor, TransientField, serializeToArray}
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 
@@ -38,10 +38,6 @@ Common types such as `Option` and `Either` are also supported out of the box. Fo
 also has a codec for arbitrary `Throwable` instances, although deserializing it does not recreate
 the original throwable just a `PersistedThrowable` instance. In practice this is a much safer approach
 than trying to recreate the same exception via reflection.
-
-```scala mdoc:invisible
-import _root_.zio
-```
 
 ```scala mdoc
 import scala.collection.immutable.SortedSet
