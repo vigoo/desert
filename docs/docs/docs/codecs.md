@@ -39,6 +39,10 @@ also has a codec for arbitrary `Throwable` instances, although deserializing it 
 the original throwable just a `PersistedThrowable` instance. In practice this is a much safer approach
 than trying to recreate the same exception via reflection.
 
+```scala mdoc:invisible
+import _root_.zio
+```
+
 ```scala mdoc
 import scala.collection.immutable.SortedSet
 import scala.util._
