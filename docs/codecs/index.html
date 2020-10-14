@@ -6,7 +6,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 
 ga('create', 'UA-56320875-2' , 'auto');
 ga('send', 'pageview');
-      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/desert/" class="brand"><div class="brand-wrapper"></div><span>desert</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/desert/index" title="Home" class="">Home</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/" title="Getting started" class="">Getting started</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/input-output" title="Input/output" class="">Input/output</a></div> <div class="sidebar-nav-item active "><a href="/desert/docs/codecs" title="Codecs" class="active">Codecs</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/evolution" title="Evolution" class="">Evolution</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/type-registry" title="Type Registry" class="">Type Registry</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/zio" title="Integrations: ZIO" class="">Integrations: ZIO</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats-effect" title="Integrations: Cats Effect" class="">Integrations: Cats Effect</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/akka" title="Integrations: Akka" class="">Integrations: Akka</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/release-notes" title="Release notes" class="">Release notes</a></div> <div class="sidebar-nav-item  "><a href="/desert/api/io/github/vigoo/desert/" title="API reference" class="">API reference</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vigoo" data-github-repo="desert"><div class="content-wrapper"><section><h1 id="codecs">Codecs</h1>
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/desert/" class="brand"><div class="brand-wrapper"></div><span>desert</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/desert/index" title="Home" class="">Home</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/" title="Getting started" class="">Getting started</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/input-output" title="Input/output" class="">Input/output</a></div> <div class="sidebar-nav-item active "><a href="/desert/docs/codecs" title="Codecs" class="active">Codecs</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/evolution" title="Evolution" class="">Evolution</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/type-registry" title="Type Registry" class="">Type Registry</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/zio" title="Integrations: ZIO" class="">Integrations: ZIO</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats" title="Integrations: Cats" class="">Integrations: Cats</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats-effect" title="Integrations: Cats Effect" class="">Integrations: Cats Effect</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/akka" title="Integrations: Akka" class="">Integrations: Akka</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/release-notes" title="Release notes" class="">Release notes</a></div> <div class="sidebar-nav-item  "><a href="/desert/api/io/github/vigoo/desert/" title="API reference" class="">API reference</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vigoo" data-github-repo="desert"><div class="content-wrapper"><section><h1 id="codecs">Codecs</h1>
 
 <p>A <code class="highlighter-rouge">BinaryCodec[T]</code> defines both the <em>serializer</em> and <em>deserializer</em> for a given type:</p>
 
@@ -17,88 +17,103 @@ ga('send', 'pageview');
 
 <p>The following code examples demonstrate this and also shows how the binary representation looks like.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.github.vigoo.desert._</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">io.github.vigoo.desert.</span><span class="o">{</span><span class="nc">BinaryCodec</span><span class="o">,</span> <span class="nc">TransientConstructor</span><span class="o">,</span> <span class="nc">TransientField</span><span class="o">}</span>
 <span class="k">import</span> <span class="nn">io.github.vigoo.desert.codecs._</span>
 <span class="k">import</span> <span class="nn">io.github.vigoo.desert.syntax._</span>
 
 <span class="k">val</span> <span class="nv">byte</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">100.</span><span class="n">toByte</span><span class="o">)</span>
-<span class="c1">// byte: Either[DesertFailure, Array[Byte]] = Right(value = Array(100))</span>
+<span class="c1">// byte: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">short</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">100.</span><span class="n">toShort</span><span class="o">)</span>
-<span class="c1">// short: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 100))</span>
+<span class="c1">// short: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">int</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mi">100</span><span class="o">)</span>
-<span class="c1">// int: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0, 100))</span>
+<span class="c1">// int: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 0, 0, 100)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">long</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mi">100L</span><span class="o">)</span>
-<span class="c1">// long: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// long: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">float</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">3.14</span><span class="o">.</span><span class="py">toFloat</span><span class="o">)</span>
-<span class="c1">// float: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// float: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(64, 72, -11, -61)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">double</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="mf">3.14</span><span class="o">)</span>
-<span class="c1">// double: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// double: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(64, 9, 30, -72, 81, -21, -123, 31)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">bool</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
-<span class="c1">// bool: Either[DesertFailure, Array[Byte]] = Right(value = Array(1))</span>
+<span class="c1">// bool: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(1)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">unit</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(())</span>
-<span class="c1">// unit: Either[DesertFailure, Array[Byte]] = Right(value = Array())</span>
+<span class="c1">// unit: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array()</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">str</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">)</span>
-<span class="c1">// str: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// str: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(10, 72, 101, 108, 108, 111)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
-<span class="c1">// uuid: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// uuid: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
-<span class="c1">//     -106,</span>
-<span class="c1">//     115,</span>
-<span class="c1">//     43,</span>
-<span class="c1">//     9,</span>
-<span class="c1">//     21,</span>
-<span class="c1">//     -94,</span>
-<span class="c1">//     71,</span>
-<span class="c1">//     77,</span>
-<span class="c1">//     -125,</span>
-<span class="c1">//     91,</span>
-<span class="c1">//     46,</span>
+<span class="c1">//     -71,</span>
+<span class="c1">//     -107,</span>
 <span class="c1">//     55,</span>
-<span class="c1">//     -97,</span>
-<span class="c1">//     8,</span>
-<span class="c1">//     -55,</span>
-<span class="c1">//     -58</span>
+<span class="c1">//     -67,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     -41,</span>
+<span class="c1">//     66,</span>
+<span class="c1">//     -108,</span>
+<span class="c1">//     -106,</span>
+<span class="c1">//     63,</span>
+<span class="c1">//     -11,</span>
+<span class="c1">//     -65,</span>
+<span class="c1">//     -119,</span>
+<span class="c1">//     26,</span>
+<span class="c1">//     122,</span>
+<span class="c1">//     -13</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
-<h3 id="option-either-validated-try">Option, Either, Validated, Try</h3>
+<h3 id="option-either-try-validation">Option, Either, Try, Validation</h3>
 <p>Common types such as <code class="highlighter-rouge">Option</code> and <code class="highlighter-rouge">Either</code> are also supported out of the box. For <code class="highlighter-rouge">Try</code> it
 also has a codec for arbitrary <code class="highlighter-rouge">Throwable</code> instances, although deserializing it does not recreate
 the original throwable just a <code class="highlighter-rouge">PersistedThrowable</code> instance. In practice this is a much safer approach
 than trying to recreate the same exception via reflection.</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.data.Validated</span>
-<span class="k">import</span> <span class="nn">scala.collection.immutable.SortedSet</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SortedSet</span>
 <span class="k">import</span> <span class="nn">scala.util._</span>
+<span class="k">import</span> <span class="nn">zio.NonEmptyChunk</span>
+<span class="k">import</span> <span class="nn">zio.prelude.Validation</span>
 
 <span class="k">val</span> <span class="nv">none</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">None</span><span class="o">)</span>
-<span class="c1">// none: Either[DesertFailure, Array[Byte]] = Right(value = Array(0))</span>
+<span class="c1">// none: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">some</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">Some</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// some: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// some: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">left</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Boolean</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nc">Left</span><span class="o">(</span><span class="kc">true</span><span class="o">))</span>
-<span class="c1">// left: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 1))</span>
+<span class="c1">// left: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 1)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">right</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Boolean</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nc">Right</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// right: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// right: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validated</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validated</span><span class="o">.</span><span class="py">Valid</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// valid: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="k">val</span> <span class="nv">valid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validation</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validation</span><span class="o">.</span><span class="py">Success</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
+<span class="c1">// valid: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">invalid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validated</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validated</span><span class="o">.</span><span class="py">Invalid</span><span class="o">(</span><span class="s">"error"</span><span class="o">))</span>
-<span class="c1">// invalid: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   value = Array(0, 10, 101, 114, 114, 111, 114)</span>
+<span class="k">val</span> <span class="nv">invalid</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Validation</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Int</span><span class="o">]](</span><span class="nv">Validation</span><span class="o">.</span><span class="py">Failure</span><span class="o">(</span><span class="nc">NonEmptyChunk</span><span class="o">(</span><span class="s">"error"</span><span class="o">)))</span>
+<span class="c1">// invalid: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 2, 10, 101, 114, 114, 111, 114)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
 
@@ -106,13 +121,13 @@ than trying to recreate the same exception via reflection.</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">failDeser</span> <span class="k">=</span> <span class="nv">fail</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="n">data</span> <span class="k">=&gt;</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Try</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="n">data</span><span class="o">))</span>
-<span class="c1">// failDeser: Either[DesertFailure, Try[Int]] = Right(</span>
+<span class="c1">// failDeser: Either[io.github.vigoo.desert.DesertFailure, Try[Int]] = Right(</span>
 <span class="c1">//   value = Failure(</span>
 <span class="c1">//     exception = PersistedThrowable(</span>
 <span class="c1">//       className = "java.lang.RuntimeException",</span>
 <span class="c1">//       message = "Test exception",</span>
 <span class="c1">//       stackTrace = Array(</span>
-<span class="c1">//         repl.MdocSession$App.&lt;init&gt;(codecs.md:80),</span>
+<span class="c1">//         repl.MdocSession$App.&lt;init&gt;(codecs.md:83),</span>
 <span class="c1">//         repl.MdocSession$.app(codecs.md:3),</span>
 <span class="c1">//         mdoc.internal.document.DocumentBuilder$$doc$.$anonfun$build$2(DocumentBuilder.scala:89),</span>
 <span class="c1">//         scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18),</span>
@@ -148,7 +163,7 @@ than trying to recreate the same exception via reflection.</p>
 <span class="c1">//         sbt.Run.invokeMain(Run.scala:133),</span>
 <span class="c1">// ...</span>
 <span class="k">val</span> <span class="nv">success</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Try</span><span class="o">[</span><span class="kt">Int</span><span class="o">]](</span><span class="nc">Success</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// success: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// success: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(1, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -165,11 +180,11 @@ then it is the number of elements followed by all the items in iteration order, 
 list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</code>. <code class="highlighter-rouge">Vector</code> and <code class="highlighter-rouge">List</code> are good examples for the two:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">vec</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Vector</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// vec: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// vec: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">lst</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// lst: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// lst: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     1,</span>
@@ -199,19 +214,20 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 
 <p>Other supported collection types in the <code class="highlighter-rouge">codecs</code> package:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.instances.int._</span>
-<span class="k">import</span> <span class="nn">cats.data.</span><span class="o">{</span><span class="nc">NonEmptyList</span><span class="o">,</span> <span class="nc">NonEmptySet</span><span class="o">}</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">zio.NonEmptyChunk</span>
+<span class="k">import</span> <span class="nn">zio.prelude.NonEmptyList</span>
+<span class="k">import</span> <span class="nn">zio.prelude.ZSet</span>
 
 <span class="k">val</span> <span class="nv">arr</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Array</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// arr: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// arr: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">set</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Set</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// set: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// set: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">sortedSet</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">SortedSet</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// sortedSet: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// sortedSet: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     1,</span>
@@ -237,8 +253,13 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 <span class="c1">//     0</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">nel</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptyList</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// nel: Either[DesertFailure, Array[Byte]] = Right(</span>
+
+<span class="k">val</span> <span class="nv">nec</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">NonEmptyChunk</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
+<span class="c1">// nec: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(8, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4)</span>
+<span class="c1">// )</span>
+<span class="k">val</span> <span class="nv">nel</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">NonEmptyList</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
+<span class="c1">// nel: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     1,</span>
@@ -264,31 +285,46 @@ list of all the elements wrapped in <code class="highlighter-rouge">Option[T]</c
 <span class="c1">//     0</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">nes</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptySet</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
-<span class="c1">// nes: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="k">val</span> <span class="nv">nes</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">ZSet</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
+<span class="c1">// nes: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
-<span class="c1">//     1,</span>
+<span class="c1">//     8,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     1,</span>
-<span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     2,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     1,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     3,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
 <span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
 <span class="c1">//     4,</span>
-<span class="c1">//     0</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     0,</span>
+<span class="c1">//     1</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -302,7 +338,7 @@ string gets an ID and if it is serialized once more in the same stream, a negati
 length identifies it.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">twoStrings1</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">,</span> <span class="s">"Hello"</span><span class="o">))</span>
-<span class="c1">// twoStrings1: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// twoStrings1: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
 <span class="c1">//     1,</span>
 <span class="c1">//     1,</span>
@@ -324,7 +360,7 @@ length identifies it.</p>
 <span class="c1">// )</span>
 
 <span class="k">val</span> <span class="nv">twoStrings2</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">),</span> <span class="nc">DeduplicatedString</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">)))</span>
-<span class="c1">// twoStrings2: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// twoStrings2: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(1, 1, 10, 72, 101, 108, 108, 111, 1, 1, 0)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -340,7 +376,7 @@ same ID to the string if it is first seen.</p>
 compatible with simple <em>case classes</em>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">tup</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">((</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span> 
-<span class="c1">// tup: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// tup: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -350,18 +386,13 @@ compatible with simple <em>case classes</em>:</p>
 for serializing an iteration of key-value pairs:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.collection.immutable.SortedMap</span>
-<span class="k">import</span> <span class="nn">cats.data.NonEmptyMap</span>
 
 <span class="k">val</span> <span class="nv">map</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
-<span class="c1">// map: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// map: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">sortedmap</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">SortedMap</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
-<span class="c1">// sortedmap: Either[DesertFailure, Array[Byte]] = Right(</span>
-<span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
-<span class="c1">// )</span>
-<span class="k">val</span> <span class="nv">nem</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">NonEmptyMap</span><span class="o">.</span><span class="py">of</span><span class="o">(</span><span class="mi">1</span> <span class="o">-&gt;</span> <span class="s">"x"</span><span class="o">,</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="s">"y"</span><span class="o">))</span>
-<span class="c1">// nem: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// sortedmap: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(4, 0, 0, 0, 0, 1, 2, 120, 0, 0, 0, 0, 2, 2, 121)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -378,7 +409,7 @@ during the lifecycle of the application.</p>
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">pt</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Point</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span>
-<span class="c1">// pt: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// pt: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -402,9 +433,13 @@ with <code class="highlighter-rouge">derive</code>:</p>
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">a</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Drink</span><span class="o">](</span><span class="nc">Beer</span><span class="o">(</span><span class="s">"X"</span><span class="o">))</span>
-<span class="c1">// a: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0, 2, 88))</span>
+<span class="c1">// a: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 0, 0, 2, 88)</span>
+<span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">b</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Drink</span><span class="o">](</span><span class="nc">Water</span><span class="o">)</span>
-<span class="c1">// b: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 1, 0))</span>
+<span class="c1">// b: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 1, 0)</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <h3 id="transient-fields-in-generic-codecs">Transient fields in generic codecs</h3>
@@ -419,7 +454,7 @@ with <code class="highlighter-rouge">derive</code>:</p>
   <span class="n">data</span> <span class="k">&lt;-</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Point2</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">3.7416</span><span class="o">)))</span>
   <span class="n">result</span> <span class="k">&lt;-</span> <span class="n">deserializeFromArray</span><span class="o">[</span><span class="kt">Point2</span><span class="o">](</span><span class="n">data</span><span class="o">)</span>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">result</span>
-<span class="c1">// pt2: Either[DesertFailure, Point2] = Right(</span>
+<span class="c1">// pt2: Either[io.github.vigoo.desert.DesertFailure, Point2] = Right(</span>
 <span class="c1">//   value = Point2(x = 1, y = 2, z = 3, cachedDistance = None)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -441,11 +476,13 @@ it does not match the field type it causes runtime error.</p>
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">cs1</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case1</span><span class="o">())</span>
-<span class="c1">// cs1: Either[DesertFailure, Array[Byte]] = Left(</span>
+<span class="c1">// cs1: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Left(</span>
 <span class="c1">//   value = SerializingTransientConstructor(name = "Case1")</span>
 <span class="c1">// )</span>
 <span class="k">val</span> <span class="nv">cs2</span> <span class="k">=</span> <span class="n">serializeToArray</span><span class="o">[</span><span class="kt">Cases</span><span class="o">](</span><span class="nc">Case2</span><span class="o">())</span>
-<span class="c1">// cs2: Either[DesertFailure, Array[Byte]] = Right(value = Array(0, 0, 0))</span>
+<span class="c1">// cs2: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">//   value = Array(0, 0, 0)</span>
+<span class="c1">// )</span>
 </code></pre></div></div>
 
 <p>Transient constructors cannot be serialized. A common use case is for remote accessible actors where 
@@ -462,7 +499,7 @@ the intention in the type system. <code class="highlighter-rouge">desert</code> 
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">id</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">DocumentId</span><span class="o">(</span><span class="mi">100</span><span class="o">))</span>
-<span class="c1">// id: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// id: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(0, 0, 0, 0, 0, 0, 0, 100)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
@@ -543,7 +580,7 @@ which is not used by the generic codecs but can be used in scenarios like this.<
 <span class="nv">nodeC</span><span class="o">.</span><span class="py">next</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="n">nodeA</span><span class="o">)</span>
 
 <span class="k">val</span> <span class="nv">result</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Root</span><span class="o">(</span><span class="n">nodeA</span><span class="o">))</span>
-<span class="c1">// result: Either[DesertFailure, Array[Byte]] = Right(</span>
+<span class="c1">// result: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(0, 2, 97, 1, 0, 2, 97, 1, 0, 2, 97, 1, 1)</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
