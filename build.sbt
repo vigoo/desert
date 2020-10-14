@@ -151,7 +151,7 @@ lazy val docs = project
       publishArtifact := false,
       siteSubdirName in ScalaUnidoc := "api",
       addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
-      unidocProjectFilter in ( ScalaUnidoc, unidoc ) := inAnyProject -- inProjects(core.js, catsEffect.js, zio.js, benchmarks),
+      unidocProjectFilter in ( ScalaUnidoc, unidoc ) := inAnyProject -- inProjects(core.js, catsEffect.js, zio.js, cats.js, benchmarks),
       git.remoteRepo := "git@github.com:vigoo/desert.git",
       micrositeUrl := "https://vigoo.github.io",
       micrositeBaseUrl := "/desert",
