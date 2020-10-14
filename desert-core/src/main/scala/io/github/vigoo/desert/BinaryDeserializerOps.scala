@@ -4,7 +4,7 @@ import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import shapeless.Lazy
-import zio.prelude.fx._
+import _root_.zio.prelude.fx._
 
 import scala.util.Try
 

@@ -8,8 +8,8 @@ import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
-import zio.{Chunk, NonEmptyChunk}
-import zio.prelude.{NonEmptyList, Validation, ZSet}
+import _root_.zio.{Chunk, NonEmptyChunk}
+import _root_.zio.prelude.{NonEmptyList, Validation, ZSet}
 
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}

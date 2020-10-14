@@ -6,7 +6,7 @@ import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
 import shapeless.Lazy
-import zio.prelude.fx._
+import _root_.zio.prelude.fx._
 
 import scala.util.Try
 

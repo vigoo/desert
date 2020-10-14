@@ -12,7 +12,7 @@ import shapeless.labelled._
 import shapeless.ops.hlist._
 import shapeless.tag._
 import shapeless.{:+:, _}
-import zio.prelude.fx._
+import _root_.zio.prelude.fx._
 
 import scala.reflect.ClassTag
 
