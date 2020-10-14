@@ -1,4 +1,5 @@
 package io.github.vigoo.desert.zio
+
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.zio.syntax._

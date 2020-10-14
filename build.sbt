@@ -55,7 +55,13 @@ lazy val root = Project("desert", file("."))
   publishArtifact := false,
   description := "A Scala binary serialization library",
   )
-  .aggregate(core.jvm, core.js, akka, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js, benchmarks)
+  .aggregate(
+    core.jvm, core.js,
+    akka,
+    cats.jvm, cats.js,
+    catsEffect.jvm, catsEffect.js,
+    zio.jvm, zio.js,
+    benchmarks)
 
 lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -65,7 +71,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.typelevel" %% "cats-core" % "2.2.0",
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC1",
       "com.chuusai" %% "shapeless" % "2.3.3",
     ),
   )
@@ -78,6 +84,20 @@ lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSetti
     "com.typesafe.akka" %% "akka-actor-typed" % "2.6.10",
   )
 ).dependsOn(core.jvm)
+
+lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    description := "Desert serializers for cats data types",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "2.2.0",
+      "dev.zio" %% "zio-interop-cats" % "2.1.4.0" % Test
+    )
+  )
+  .jsSettings(coverageEnabled := false)
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effect"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)

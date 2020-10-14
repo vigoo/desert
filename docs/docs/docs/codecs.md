@@ -33,23 +33,24 @@ val str = serializeToArray("Hello")
 val uuid = serializeToArray(java.util.UUID.randomUUID())
 ``` 
 
-### Option, Either, Validated, Try
+### Option, Either, Try, Validation
 Common types such as `Option` and `Either` are also supported out of the box. For `Try` it
 also has a codec for arbitrary `Throwable` instances, although deserializing it does not recreate
 the original throwable just a `PersistedThrowable` instance. In practice this is a much safer approach
 than trying to recreate the same exception via reflection.
 
 ```scala mdoc
-import cats.data.Validated
 import scala.collection.immutable.SortedSet
 import scala.util._
+import zio.NonEmptyChunk
+import zio.prelude.Validation
 
 val none = serializeToArray[Option[Int]](None)
 val some = serializeToArray[Option[Int]](Some(100))
 val left = serializeToArray[Either[Boolean, Int]](Left(true))
 val right = serializeToArray[Either[Boolean, Int]](Right(100))
-val valid = serializeToArray[Validated[String, Int]](Validated.Valid(100))
-val invalid = serializeToArray[Validated[String, Int]](Validated.Invalid("error"))
+val valid = serializeToArray[Validation[String, Int]](Validation.Success(100))
+val invalid = serializeToArray[Validation[String, Int]](Validation.Failure(NonEmptyChunk("error")))
 ```
 
 ```scala mdoc:silent
@@ -81,14 +82,17 @@ val lst = serializeToArray(List(1, 2, 3, 4))
 Other supported collection types in the `codecs` package:
 
 ```scala mdoc
-import cats.instances.int._
-import cats.data.{NonEmptyList, NonEmptySet}
+import zio.NonEmptyChunk
+import zio.prelude.NonEmptyList
+import zio.prelude.ZSet
 
 val arr = serializeToArray(Array(1, 2, 3, 4))
 val set = serializeToArray(Set(1, 2, 3, 4))
 val sortedSet = serializeToArray(SortedSet(1, 2, 3, 4))
-val nel = serializeToArray(NonEmptyList.of(1, 2, 3, 4))
-val nes = serializeToArray(NonEmptySet.of(1, 2, 3, 4))
+
+val nec = serializeToArray(NonEmptyChunk(1, 2, 3, 4))
+val nel = serializeToArray(NonEmptyList(1, 2, 3, 4))
+val nes = serializeToArray(ZSet(1, 2, 3, 4))
 ```
 
 ### String deduplication
@@ -125,11 +129,9 @@ for serializing an iteration of key-value pairs:
 
 ```scala mdoc
 import scala.collection.immutable.SortedMap
-import cats.data.NonEmptyMap
 
 val map = serializeToArray(Map(1 -> "x", 2 -> "y"))
 val sortedmap = serializeToArray(SortedMap(1 -> "x", 2 -> "y"))
-val nem = serializeToArray(NonEmptyMap.of(1 -> "x", 2 -> "y"))
 ```
 
 ### Generic codecs for ADTs

@@ -6,6 +6,10 @@ permalink: docs/release-notes/
 
 # Release notes
 
+## 0.2.0
+- Core migrated to `ZPure`
+- Codecs for cats data types moved to `desert-cats` module
+
 ## 0.1.5
 - Performance improvements
 

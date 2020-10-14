@@ -2,21 +2,19 @@ package io.github.vigoo.desert
 
 import java.util.zip.Deflater
 
-import cats.Eval
-import cats.data.{EitherT, ReaderT, StateT}
-import cats.syntax.flatMap._
 import io.github.vigoo.desert.BinaryDeserializer.Deser
-import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
+import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
 import shapeless.Lazy
+import zio.prelude.fx._
 
 import scala.util.Try
 
 trait BinarySerializerOps {
-  final def getOutput: Ser[BinaryOutput] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv].map(_.output)
-  final def getOutputTypeRegistry: Ser[TypeRegistry] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv].map(_.typeRegistry)
-  final def getSerializerState: Ser[SerializerState] = ReaderT.liftF(StateT.get[EitherT[Eval, DesertFailure, *], SerializerState])
-  final def setSerializerState(state: SerializerState): Ser[Unit] = ReaderT.liftF(StateT.set[EitherT[Eval, DesertFailure, *], SerializerState](state))
+  final def getOutput: Ser[BinaryOutput] = ZPure.access(_.output)
+  final def getOutputTypeRegistry: Ser[TypeRegistry] = ZPure.access(_.typeRegistry)
+  final def getSerializerState: Ser[SerializerState] = ZPure.get
+  final def setSerializerState(state: SerializerState): Ser[Unit] = ZPure.set(state)
 
   final def writeByte(value: Byte): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeByte(value)))
   final def writeShort(value: Short): Ser[Unit] = getOutput.flatMap(output => Ser.fromEither(output.writeShort(value)))
@@ -65,7 +63,7 @@ trait BinarySerializerOps {
   final def storeRefOrObject[T <: AnyRef](value: T)(implicit codec: Lazy[BinaryCodec[T]]): Ser[Unit] =
     storeRef(value).flatMap {
       case RefAlreadyStored(id) => writeVarInt(id.value, optimizeForPositive = true)
-      case RefIsNew(_) => writeVarInt(0, optimizeForPositive = true) >> write(value)(codec.value)
+      case RefIsNew(_) => writeVarInt(0, optimizeForPositive = true) *> write(value)(codec.value)
     }
 }
 

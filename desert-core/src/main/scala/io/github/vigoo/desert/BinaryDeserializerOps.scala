@@ -1,19 +1,18 @@
 package io.github.vigoo.desert
 
-import cats.Eval
-import cats.data.{EitherT, ReaderT, StateT}
-import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
+import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import shapeless.Lazy
+import zio.prelude.fx._
 
 import scala.util.Try
 
 trait BinaryDeserializerOps {
-  final def getInput: Deser[BinaryInput] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.input)
-  final def getInputTypeRegistry: Deser[TypeRegistry] = ReaderT.ask[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv].map(_.typeRegistry)
-  final def getDeserializerState: Deser[SerializerState] = ReaderT.liftF(StateT.get[EitherT[Eval, DesertFailure, *], SerializerState])
-  final def setDeserializerState(state: SerializerState): Deser[Unit] = ReaderT.liftF(StateT.set[EitherT[Eval, DesertFailure, *], SerializerState](state))
+  final def getInput: Deser[BinaryInput] = ZPure.access(_.input)
+  final def getInputTypeRegistry: Deser[TypeRegistry] = ZPure.access(_.typeRegistry)
+  final def getDeserializerState: Deser[SerializerState] = ZPure.get
+  final def setDeserializerState(state: SerializerState): Deser[Unit] = ZPure.set(state)
 
   final def readByte(): Deser[Byte] = getInput.flatMap(input => Deser.fromEither(input.readByte()))
   final def readShort(): Deser[Short] = getInput.flatMap(input => Deser.fromEither(input.readShort()))
