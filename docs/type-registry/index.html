@@ -28,7 +28,7 @@ can participate in the above described scenario must be explicitly registered to
   <span class="o">.</span><span class="py">register</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
   <span class="o">.</span><span class="py">register</span><span class="o">[</span><span class="kt">TestProd</span><span class="o">]</span>
   <span class="o">.</span><span class="py">freeze</span><span class="o">()</span> 
-<span class="c1">// typeRegistry1: TypeRegistry = io.github.vigoo.desert.DefaultTypeRegistry@213835db</span>
+<span class="c1">// typeRegistry1: TypeRegistry = io.github.vigoo.desert.DefaultTypeRegistry@5905af9</span>
 </code></pre></div></div>
 
 <p>In this example we register two types, <code class="highlighter-rouge">String</code> and a custom case class <code class="highlighter-rouge">TestProd</code>. We can then use
@@ -88,7 +88,7 @@ can be used to automatically use the above described mechanisms.</p>
   <span class="o">.</span><span class="py">register</span><span class="o">[</span><span class="kt">Impl1</span><span class="o">]</span>
   <span class="o">.</span><span class="py">register</span><span class="o">[</span><span class="kt">Impl2</span><span class="o">]</span>
   <span class="o">.</span><span class="py">freeze</span><span class="o">()</span>
-<span class="c1">// typeRegistry2: TypeRegistry = io.github.vigoo.desert.DefaultTypeRegistry@73eaa375</span>
+<span class="c1">// typeRegistry2: TypeRegistry = io.github.vigoo.desert.DefaultTypeRegistry@748db5c8</span>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">dataOrFailure</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nc">Outer</span><span class="o">(</span><span class="nc">Impl2</span><span class="o">(</span><span class="mi">11</span><span class="o">)),</span> <span class="n">typeRegistry2</span><span class="o">)</span>
