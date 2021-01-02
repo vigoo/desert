@@ -11,7 +11,7 @@ dynverSonatypeSnapshots in ThisBuild := true
 lazy val commonSettings = Seq(
   organization := "io.github.vigoo",
   scalaVersion := "2.13.3",
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
