@@ -92,7 +92,7 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
   .settings(
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.3.0",
+      "org.typelevel" %% "cats-core" % "2.3.1",
       "dev.zio" %% "zio-interop-cats" % "2.1.4.0" % Test
     )
   )
@@ -106,7 +106,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "2.3.0",
+      "org.typelevel" %% "cats-effect" % "2.3.1",
       "dev.zio" %% "zio-interop-cats" % "2.2.0.1" % Test
     )
   )
