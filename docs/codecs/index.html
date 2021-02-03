@@ -6,7 +6,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 
 ga('create', 'UA-56320875-2' , 'auto');
 ga('send', 'pageview');
-      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/desert/" class="brand"><div class="brand-wrapper"></div><span>desert</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/desert/index" title="Home" class="">Home</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/" title="Getting started" class="">Getting started</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/input-output" title="Input/output" class="">Input/output</a></div> <div class="sidebar-nav-item active "><a href="/desert/docs/codecs" title="Codecs" class="active">Codecs</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/evolution" title="Evolution" class="">Evolution</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/type-registry" title="Type Registry" class="">Type Registry</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/zio" title="Integrations: ZIO" class="">Integrations: ZIO</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats" title="Integrations: Cats" class="">Integrations: Cats</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats-effect" title="Integrations: Cats Effect" class="">Integrations: Cats Effect</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/akka" title="Integrations: Akka" class="">Integrations: Akka</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/release-notes" title="Release notes" class="">Release notes</a></div> <div class="sidebar-nav-item  "><a href="/desert/api/io/github/vigoo/desert/" title="API reference" class="">API reference</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vigoo" data-github-repo="desert"><div class="content-wrapper"><section><h1 id="codecs">Codecs</h1>
+      </script></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><div id="sidebar-brand"><a href="/desert/" class="brand"><div class="brand-wrapper"></div><span>desert</span></a><button id="main-toggle" class="sidebar-toggle"><span class="close"></span></button></div><div class="sidebar-nav"> <div class="sidebar-nav-item  "><a href="/desert/index" title="Home" class="">Home</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/" title="Getting started" class="">Getting started</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/input-output" title="Input/output" class="">Input/output</a></div> <div class="sidebar-nav-item active "><a href="/desert/docs/codecs" title="Codecs" class="active">Codecs</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/evolution" title="Evolution" class="">Evolution</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/type-registry" title="Type Registry" class="">Type Registry</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/zio" title="Integrations: ZIO" class="">Integrations: ZIO</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats" title="Integrations: Cats" class="">Integrations: Cats</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/cats-effect" title="Integrations: Cats Effect" class="">Integrations: Cats Effect</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/akka" title="Integrations: Akka" class="">Integrations: Akka</a></div> <div class="sidebar-nav-item  "><a href="/desert/docs/release-notes" title="Release notes" class="">Release notes</a></div> <div class="sidebar-nav-item  "><a href="/desert/api/io/github/vigoo/desert/" title="API reference" class="">API reference</a></div></div></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li class="search-nav"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li id="gh-eyes-item" class="hidden-xs to-uppercase"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-eye"></i><span>Watchers<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs to-uppercase"><a href="https://github.com/vigoo/desert" target="_blank" rel="noopener noreferrer"><i class="fa fa-star-o"></i><span>Stars<span id="stars" class="label label-default">--</span></span></a></li></ul></div></div></div></div><div id="content" data-github-owner="vigoo" data-github-repo="desert"><div class="content-wrapper"><section><h1 id="codecs">Codecs</h1>
 
 <p>A <code class="highlighter-rouge">BinaryCodec[T]</code> defines both the <em>serializer</em> and <em>deserializer</em> for a given type:</p>
 
@@ -60,22 +60,22 @@ ga('send', 'pageview');
 <span class="k">val</span> <span class="nv">uuid</span> <span class="k">=</span> <span class="nf">serializeToArray</span><span class="o">(</span><span class="nv">java</span><span class="o">.</span><span class="py">util</span><span class="o">.</span><span class="py">UUID</span><span class="o">.</span><span class="py">randomUUID</span><span class="o">())</span>
 <span class="c1">// uuid: Either[io.github.vigoo.desert.DesertFailure, Array[Byte]] = Right(</span>
 <span class="c1">//   value = Array(</span>
-<span class="c1">//     68,</span>
-<span class="c1">//     63,</span>
-<span class="c1">//     90,</span>
-<span class="c1">//     -31,</span>
-<span class="c1">//     -125,</span>
-<span class="c1">//     -47,</span>
-<span class="c1">//     65,</span>
-<span class="c1">//     -90,</span>
-<span class="c1">//     -113,</span>
-<span class="c1">//     -21,</span>
-<span class="c1">//     -82,</span>
-<span class="c1">//     4,</span>
+<span class="c1">//     -75,</span>
+<span class="c1">//     98,</span>
+<span class="c1">//     -96,</span>
+<span class="c1">//     92,</span>
+<span class="c1">//     -22,</span>
+<span class="c1">//     64,</span>
+<span class="c1">//     79,</span>
+<span class="c1">//     -12,</span>
+<span class="c1">//     -101,</span>
+<span class="c1">//     -65,</span>
+<span class="c1">//     -23,</span>
 <span class="c1">//     -48,</span>
-<span class="c1">//     87,</span>
-<span class="c1">//     111,</span>
-<span class="c1">//     47</span>
+<span class="c1">//     -96,</span>
+<span class="c1">//     67,</span>
+<span class="c1">//     56,</span>
+<span class="c1">//     -4</span>
 <span class="c1">//   )</span>
 <span class="c1">// )</span>
 </code></pre></div></div>
