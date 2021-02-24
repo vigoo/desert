@@ -80,7 +80,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
 lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
   description := "Akka serialization bindings for desert",
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.6.12",
+    "com.typesafe.akka" %% "akka-actor" % "2.6.13",
     "com.typesafe.akka" %% "akka-actor-typed" % "2.6.13",
   )
 ).dependsOn(core.jvm)
