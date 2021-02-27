@@ -18,12 +18,12 @@ script:
 
 jobs:
   include:
-    - scala: 2.13.3
+    - scala: 2.13.5
     - stage: release
       name: "Release"
       script: sbt ci-release
     - stage: microsite
-      scala: 2.13.3
+      scala: 2.13.5
       name: "Publish microsite"
       install:
         - rvm use 2.6.0 --install --fuzzy
