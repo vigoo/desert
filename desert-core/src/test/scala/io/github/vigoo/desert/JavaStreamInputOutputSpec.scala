@@ -41,7 +41,7 @@ object JavaStreamInputOutputSpec extends DefaultRunnableSpec {
       )
     )
 
-  private def testWriteAndRead[T](write: BinaryOutput => (), read: BinaryInput => Either[DesertFailure, T], expected: T): TestResult = {
+  private def testWriteAndRead[T](write: BinaryOutput => Unit, read: BinaryInput => Either[DesertFailure, T], expected: T): TestResult = {
     val outStream = new ByteArrayOutputStream()
     val output = new JavaStreamBinaryOutput(outStream)
     write(output)
