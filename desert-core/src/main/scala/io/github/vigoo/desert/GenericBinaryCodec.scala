@@ -609,8 +609,10 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           finalState <- Ser.fromEither(
             serializer.value.serialize(taggedTransients.tag(genericValue))
               .provide(chunkedOutput)
-              .runEither(initialState))
-              .map(_._1) // state
+              .getState
+              .map(_._1)
+              .either
+              .runResult(initialState))
           _ <- chunkedOutput.writeEvolutionHeader(finalState.fieldIndices)
           _ <- chunkedOutput.writeOrderedChunks()
           _ <- setSerializerState(finalState.serializerState)
@@ -634,7 +636,9 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           transientFields)
         result <- Deser.fromEither(deserializer.value.deserialize()
           .provide(chunkedInput)
-          .runEither(initialState))
+          .getState
+          .either
+          .runResult(initialState))
         (finalState, hlist) = result
         _ <- setDeserializerState(finalState.serializerState)
       } yield gen.from(taggedTransients.untag(hlist))
@@ -843,7 +847,7 @@ object GenericBinaryCodec {
                              transientFields: Map[Symbol, Any]
                             )
 
-  type ChunkedSer[T] = ZPure[ChunkedSerState, ChunkedSerState, ChunkedOutput, DesertFailure, T]
+  type ChunkedSer[T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedOutput, DesertFailure, T]
 
   object ChunkedSerOps {
     final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ZPure.environment
@@ -860,7 +864,9 @@ object GenericBinaryCodec {
         chunkedState <- getChunkedState
         runResult <- fromEither(value
           .provide(SerializationEnv(output, chunkedState.typeRegistry))
-          .runEither(chunkedState.serializerState))
+          .getState
+          .either
+          .runResult(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result
@@ -905,7 +911,7 @@ object GenericBinaryCodec {
     def inputFor(version: Byte): Either[DesertFailure, BinaryInput]
   }
 
-  type ChunkedDeser[T] = ZPure[ChunkedSerState, ChunkedSerState, ChunkedInput, DesertFailure, T]
+  type ChunkedDeser[T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedInput, DesertFailure, T]
 
   object ChunkedDeserOps {
     final def getChunkedInput: ChunkedDeser[ChunkedInput] = ZPure.environment
@@ -921,7 +927,9 @@ object GenericBinaryCodec {
         chunkedState <- getChunkedState
         runResult <- fromEither(value
           .provide(DeserializationEnv(input, chunkedState.typeRegistry))
-          .runEither(chunkedState.serializerState))
+          .getState
+          .either
+          .runResult(chunkedState.serializerState))
         (resultState, result) = runResult
         _ <- setChunkedState(chunkedState.copy(serializerState = resultState))
       } yield result

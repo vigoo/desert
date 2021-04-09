@@ -20,7 +20,7 @@ trait BinarySerializer[T] { self =>
 object BinarySerializer {
   final case class SerializationEnv(output: BinaryOutput, typeRegistry: TypeRegistry)
 
-  type Ser[T] = ZPure[SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
+  type Ser[T] = ZPure[Nothing, SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
 
   object Ser {
     final def fromEither[T](value: Either[DesertFailure, T]): Ser[T] =
@@ -39,7 +39,7 @@ trait BinaryDeserializer[T] { self =>
 object BinaryDeserializer {
   final case class DeserializationEnv(input: BinaryInput, typeRegistry: TypeRegistry)
 
-  type Deser[T] = ZPure[SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
+  type Deser[T] = ZPure[Nothing, SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
 
   object Deser {
     final def fromEither[T](value: Either[DesertFailure, T]): Deser[T] =
