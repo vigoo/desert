@@ -1,4 +1,4 @@
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.7.3")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.8.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.5.3")
 addSbtPlugin("com.47deg" % "sbt-microsites" % "1.3.4")
