@@ -23,7 +23,7 @@ library.</p>
 <span class="k">val</span> <span class="nv">stream</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ByteArrayOutputStream</span><span class="o">()</span>
 <span class="c1">// stream: ByteArrayOutputStream = ����</span>
 <span class="k">val</span> <span class="nv">output</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">JavaStreamBinaryOutput</span><span class="o">(</span><span class="n">stream</span><span class="o">)</span>
-<span class="c1">// output: JavaStreamBinaryOutput = io.github.vigoo.desert.JavaStreamBinaryOutput@3157d75d</span>
+<span class="c1">// output: JavaStreamBinaryOutput = io.github.vigoo.desert.JavaStreamBinaryOutput@cca58fe</span>
 <span class="nv">output</span><span class="o">.</span><span class="py">writeVarInt</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">optimizeForPositive</span> <span class="k">=</span> <span class="kc">true</span><span class="o">)</span>
 <span class="c1">// res0: Either[DesertFailure, Unit] = Right(value = ())</span>
 <span class="k">val</span> <span class="nv">r1</span> <span class="k">=</span> <span class="nv">stream</span><span class="o">.</span><span class="py">toByteArray</span>
