@@ -10,8 +10,8 @@ dynverSonatypeSnapshots in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization := "io.github.vigoo",
-  scalaVersion := "2.13.6",
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.12.0" cross CrossVersion.full),
+  scalaVersion := "2.13.5",
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
@@ -72,7 +72,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "dev.zio" %% "zio-prelude" % "1.0.0-RC1",
-      "com.chuusai" %% "shapeless" % "2.3.6",
+      "com.chuusai" %% "shapeless" % "2.3.7",
     ),
   )
   .jsSettings(coverageEnabled := false)
@@ -93,7 +93,7 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.6.1",
-      "dev.zio" %% "zio-interop-cats" % "3.0.2.0" % Test
+      "dev.zio" %% "zio-interop-cats" % "3.1.1.0" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
