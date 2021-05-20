@@ -11,7 +11,7 @@ dynverSonatypeSnapshots in ThisBuild := true
 lazy val commonSettings = Seq(
   organization := "io.github.vigoo",
   scalaVersion := "2.13.5",
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
@@ -71,8 +71,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC4",
-      "com.chuusai" %% "shapeless" % "2.3.6",
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC1",
+      "com.chuusai" %% "shapeless" % "2.3.7",
     ),
   )
   .jsSettings(coverageEnabled := false)
@@ -92,8 +92,8 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
   .settings(
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.6.0",
-      "dev.zio" %% "zio-interop-cats" % "3.0.2.0" % Test
+      "org.typelevel" %% "cats-core" % "2.6.1",
+      "dev.zio" %% "zio-interop-cats" % "3.1.1.0" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -106,7 +106,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.1.0",
+      "org.typelevel" %% "cats-effect" % "3.1.1",
     )
   )
   .jsSettings(coverageEnabled := false)
