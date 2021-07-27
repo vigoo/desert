@@ -10,15 +10,15 @@ dynverSonatypeSnapshots in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization := "io.github.vigoo",
-  scalaVersion := "2.13.3",
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+  scalaVersion := "2.13.6",
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio" % "1.0.5" % "test",
-    "dev.zio" %% "zio-test" % "1.0.5" % "test",
-    "dev.zio" %% "zio-test-sbt" % "1.0.5" % "test",
-    "dev.zio" %% "zio-test-magnolia" % "1.0.5" % "test",
+    "dev.zio" %% "zio" % "1.0.7" % "test",
+    "dev.zio" %% "zio-test" % "1.0.7" % "test",
+    "dev.zio" %% "zio-test-sbt" % "1.0.7" % "test",
+    "dev.zio" %% "zio-test-magnolia" % "1.0.7" % "test",
   ),
 
   coverageEnabled in(Test, compile) := true,
@@ -73,8 +73,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC5",
-      "com.chuusai" %% "shapeless" % "2.3.3",
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC5",      
+      "com.chuusai" %% "shapeless" % "2.3.7",
     ),
   )
   .jsSettings(coverageEnabled := false)
@@ -82,8 +82,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
 lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
   description := "Akka serialization bindings for desert",
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.6.13",
-    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.13",
+    "com.typesafe.akka" %% "akka-actor" % "2.6.15",
+    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.15",
   )
 ).dependsOn(core.jvm)
 
@@ -94,8 +94,8 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
   .settings(
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.4.2",
-      "dev.zio" %% "zio-interop-cats" % "2.1.4.0" % Test
+      "org.typelevel" %% "cats-core" % "2.6.1",
+      "dev.zio" %% "zio-interop-cats" % "3.1.1.0" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -108,8 +108,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "2.3.3",
-      "dev.zio" %% "zio-interop-cats" % "2.3.1.0" % Test
+      "org.typelevel" %% "cats-effect" % "3.2.0",
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -122,7 +121,7 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .settings(
     description := "ZIO API and codecs for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.5"
+      "dev.zio" %% "zio" % "1.0.7"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -134,8 +133,8 @@ lazy val benchmarks = project.in(file("benchmarks"))
     publishArtifact := false,
     coverageEnabled := false,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test" % "1.0.5",
-      "dev.zio" %% "zio-test-magnolia" % "1.0.5",
+      "dev.zio" %% "zio-test" % "1.0.7",
+      "dev.zio" %% "zio-test-magnolia" % "1.0.7",
     )
   )
   .enablePlugins(JmhPlugin)
