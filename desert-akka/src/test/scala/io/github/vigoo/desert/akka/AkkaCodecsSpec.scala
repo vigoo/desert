@@ -46,7 +46,7 @@ object AkkaCodecsSpec extends DefaultRunnableSpec {
     untypedActorSystem.map(_.toTyped)
 
   private def logFatalError(reason: Throwable): ZIO[Console, Nothing, Unit] =
-    console.putStrLn(s"Fatal actor termination error: ${reason.getMessage}")
+    console.putStrLn(s"Fatal actor termination error: ${reason.getMessage}").orDie
 
   class TestUntypedActor extends UntypedActor {
     override def receive: Receive = ???
