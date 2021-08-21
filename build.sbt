@@ -15,10 +15,10 @@ lazy val commonSettings = Seq(
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
 
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio" % "1.0.10" % "test",
-    "dev.zio" %% "zio-test" % "1.0.10" % "test",
-    "dev.zio" %% "zio-test-sbt" % "1.0.10" % "test",
-    "dev.zio" %% "zio-test-magnolia" % "1.0.10" % "test",
+    "dev.zio" %% "zio" % "1.0.11" % "test",
+    "dev.zio" %% "zio-test" % "1.0.11" % "test",
+    "dev.zio" %% "zio-test-sbt" % "1.0.11" % "test",
+    "dev.zio" %% "zio-test-magnolia" % "1.0.11" % "test",
   ),
 
   coverageEnabled in(Test, compile) := true,
@@ -121,7 +121,7 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .settings(
     description := "ZIO API and codecs for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.10"
+      "dev.zio" %% "zio" % "1.0.11"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -133,8 +133,8 @@ lazy val benchmarks = project.in(file("benchmarks"))
     publishArtifact := false,
     coverageEnabled := false,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test" % "1.0.10",
-      "dev.zio" %% "zio-test-magnolia" % "1.0.10",
+      "dev.zio" %% "zio-test" % "1.0.11",
+      "dev.zio" %% "zio-test-magnolia" % "1.0.11",
     )
   )
   .enablePlugins(JmhPlugin)
