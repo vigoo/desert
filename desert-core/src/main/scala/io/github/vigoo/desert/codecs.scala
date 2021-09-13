@@ -2,14 +2,13 @@ package io.github.vigoo.desert
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
 import _root_.zio.{Chunk, NonEmptyChunk}
-import _root_.zio.prelude.{NonEmptyList, Validation, ZSet}
+import _root_.zio.prelude.{Associative, NonEmptyList, Validation, ZSet}
 
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
@@ -330,7 +329,7 @@ object codecs {
             read[A]().map(Validation.succeed[A])
           else
             read[NonEmptyChunk[E]]().map { errors =>
-              Validation.collectAllPar(errors.map(Validation.fail)).map(x => x.asInstanceOf[A])
+              Validation.validateAll(errors.map(Validation.fail)).map(x => x.asInstanceOf[A])
             }
       } yield result
     }
