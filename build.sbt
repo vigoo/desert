@@ -74,7 +74,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "dev.zio" %% "zio-prelude" % "1.0.0-RC6",      
-      "com.chuusai" %% "shapeless" % "2.3.8",
+      "com.chuusai" %% "shapeless" % "2.3.9",
     ),
   )
   .jsSettings(coverageEnabled := false)
