@@ -74,7 +74,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "dev.zio" %% "zio-prelude" % "1.0.0-RC6",      
-      "com.chuusai" %% "shapeless" % "2.3.8",
+      "com.chuusai" %% "shapeless" % "2.3.9",
     ),
   )
   .jsSettings(coverageEnabled := false)
@@ -82,8 +82,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
 lazy val akka = Project("desert-akka", file("desert-akka")).settings(commonSettings).settings(
   description := "Akka serialization bindings for desert",
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.6.18",
-    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.18",
+    "com.typesafe.akka" %% "akka-actor" % "2.6.19",
+    "com.typesafe.akka" %% "akka-actor-typed" % "2.6.19",
   )
 ).dependsOn(core.jvm)
 
@@ -108,7 +108,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.3.7",
+      "org.typelevel" %% "cats-effect" % "3.3.9",
     )
   )
   .jsSettings(coverageEnabled := false)
