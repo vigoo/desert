@@ -73,7 +73,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC6",      
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC12",      
       "com.chuusai" %% "shapeless" % "2.3.9",
     ),
   )
