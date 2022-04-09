@@ -5,28 +5,28 @@ import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.codecs._
 import zio.test._
 
-object PrimitiveSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
-  override def spec: ZSpec[_root_.zio.test.environment.TestEnvironment, Any] =
+object PrimitiveSerializationSpec extends ZIOSpecDefault with SerializationProperties {
+  override def spec =
     suite("Primitive values can be serialized and read back")(
-      testM("boolean")(canBeSerialized(Gen.boolean)),
-      testM("byte")(canBeSerialized(Gen.anyByte)),
-      testM("short")(canBeSerialized(Gen.anyShort)),
-      testM("int")(canBeSerialized(Gen.anyInt)),
-      testM("long")(canBeSerialized(Gen.anyLong)),
-      testM("float")(canBeSerialized(Gen.anyFloat)),
-      testM("double")(canBeSerialized(Gen.anyDouble)),
-      testM("string")(canBeSerialized(Gen.anyString)),
-      testM("unit")(canBeSerialized(Gen.unit)),
-      testM("uuid")(canBeSerialized(Gen.anyUUID)),
+      test("boolean")(canBeSerialized(Gen.boolean)),
+      test("byte")(canBeSerialized(Gen.byte)),
+      test("short")(canBeSerialized(Gen.short)),
+      test("int")(canBeSerialized(Gen.int)),
+      test("long")(canBeSerialized(Gen.long)),
+      test("float")(canBeSerialized(Gen.float)),
+      test("double")(canBeSerialized(Gen.double)),
+      test("string")(canBeSerialized(Gen.string)),
+      test("unit")(canBeSerialized(Gen.unit)),
+      test("uuid")(canBeSerialized(Gen.uuid)),
 
       suite("variable length int")(
-        testM("optimized for positive") {
+        test("optimized for positive") {
           val varIntCodec = BinaryCodec.define(value => writeVarInt(value, optimizeForPositive = true))(readVarInt(optimizeForPositive = true))
-          canBeSerialized(Gen.anyInt)(varIntCodec)
+          canBeSerialized(Gen.int)(varIntCodec)
         },
-        testM("not optimized for positive") {
+        test("not optimized for positive") {
           val varIntCodec = BinaryCodec.define(value => writeVarInt(value, optimizeForPositive = false))(readVarInt(optimizeForPositive = false))
-          canBeSerialized(Gen.anyInt)(varIntCodec)
+          canBeSerialized(Gen.int)(varIntCodec)
         }
       )
     )

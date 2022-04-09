@@ -6,7 +6,6 @@ import java.util.zip.Deflater
 
 import io.github.vigoo.desert.BinaryCodec
 import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Measurement, Mode, OutputTimeUnit, Param, Scope, Setup, State, Warmup}
-import zio.BootstrapRuntime
 import io.github.vigoo.desert.syntax._
 
 import scala.io.Source
@@ -16,7 +15,7 @@ import scala.io.Source
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-class LargeCompressedArraySerializationBenchmark extends BootstrapRuntime {
+class LargeCompressedArraySerializationBenchmark  {
   import LargeCompressedArraySerializationBenchmark._
 
   var testData: TestData = _

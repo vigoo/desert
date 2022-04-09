@@ -9,8 +9,8 @@ import _root_.zio.prelude.fx._
 import scala.util.Try
 
 trait BinaryDeserializerOps {
-  final def getInput: Deser[BinaryInput] = ZPure.access(_.input)
-  final def getInputTypeRegistry: Deser[TypeRegistry] = ZPure.access(_.typeRegistry)
+  final def getInput: Deser[BinaryInput] = ZPure.serviceWith(_.input)
+  final def getInputTypeRegistry: Deser[TypeRegistry] = ZPure.serviceWith(_.typeRegistry)
   final def getDeserializerState: Deser[SerializerState] = ZPure.get
   final def setDeserializerState(state: SerializerState): Deser[Unit] = ZPure.set(state)
 

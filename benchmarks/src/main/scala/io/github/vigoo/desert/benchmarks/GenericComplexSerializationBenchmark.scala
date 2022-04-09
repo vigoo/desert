@@ -6,14 +6,13 @@ import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.BinarySerialization._
 import io.github.vigoo.desert.{BinaryCodec, FieldAdded}
 import org.openjdk.jmh.annotations._
-import zio.BootstrapRuntime
 
 import scala.util.Random
 
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-class GenericComplexSerializationBenchmark extends BootstrapRuntime {
+class GenericComplexSerializationBenchmark {
   import GenericComplexSerializationBenchmark._
 
   var testDocument: Root = _

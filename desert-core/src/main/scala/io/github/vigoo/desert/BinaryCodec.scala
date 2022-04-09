@@ -50,6 +50,8 @@ object BinaryDeserializer {
 trait BinaryCodec[T] extends BinarySerializer[T] with BinaryDeserializer[T]
 
 object BinaryCodec {
+  def apply[T: BinaryCodec]: BinaryCodec[T] = implicitly[BinaryCodec[T]]
+
   implicit def from[T](serializer: BinarySerializer[T], deserializer: BinaryDeserializer[T]): BinaryCodec[T] = new BinaryCodec[T] {
     override def deserialize(): Deser[T] = deserializer.deserialize()
     override def serialize(value: T): Ser[Unit] = serializer.serialize(value)

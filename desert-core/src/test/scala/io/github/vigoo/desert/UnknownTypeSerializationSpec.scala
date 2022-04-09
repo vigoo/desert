@@ -2,9 +2,8 @@ package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object UnknownTypeSerializationSpec extends DefaultRunnableSpec with SerializationProperties {
+object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationProperties {
 
   trait CommonInterface
   object CommonInterface {

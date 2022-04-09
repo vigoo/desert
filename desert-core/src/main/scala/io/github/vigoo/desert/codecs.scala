@@ -308,7 +308,7 @@ object codecs {
   // ZIO prelude specific codecs
 
   implicit def nonEmptyChunkCodec[A: BinaryCodec]: BinaryCodec[NonEmptyChunk[A]] = {
-    val inner = iterableCodec[A, Chunk[A]]
+    val inner = iterableCodec[A, Chunk[A]](BinaryCodec[A], Chunk.iterableFactory)
     BinaryCodec.from(
       inner.contramap(_.toChunk),
       () => inner.deserialize().flatMap { chunk =>

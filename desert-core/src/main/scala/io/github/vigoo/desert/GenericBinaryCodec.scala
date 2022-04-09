@@ -608,7 +608,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           )
           finalState <- Ser.fromEither(
             serializer.value.serialize(taggedTransients.tag(genericValue))
-              .provide(chunkedOutput)
+              .provideService(chunkedOutput)
               .getState
               .map(_._1)
               .either
@@ -635,7 +635,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           readConstructorName = None,
           transientFields)
         result <- Deser.fromEither(deserializer.value.deserialize()
-          .provide(chunkedInput)
+          .provideService(chunkedInput)
           .getState
           .either
           .runResult(initialState))
@@ -850,7 +850,7 @@ object GenericBinaryCodec {
   type ChunkedSer[T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedOutput, DesertFailure, T]
 
   object ChunkedSerOps {
-    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ZPure.environment
+    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ZPure.service[ChunkedSerState, ChunkedOutput]
     final def getChunkedState: ChunkedSer[ChunkedSerState] = ZPure.get
     final def setChunkedState(newState: ChunkedSerState): ChunkedSer[Unit] = ZPure.set(newState)
 
@@ -863,7 +863,7 @@ object GenericBinaryCodec {
       for {
         chunkedState <- getChunkedState
         runResult <- fromEither(value
-          .provide(SerializationEnv(output, chunkedState.typeRegistry))
+          .provideService(SerializationEnv(output, chunkedState.typeRegistry))
           .getState
           .either
           .runResult(chunkedState.serializerState))
@@ -876,15 +876,15 @@ object GenericBinaryCodec {
         state.lastIndexPerChunk.get(chunk) match {
           case Some(lastIndex) =>
             val newIndex: Byte = (lastIndex + 1).toByte
-            (state.copy(
+            ((), state.copy(
               lastIndexPerChunk = state.lastIndexPerChunk.updated(chunk, newIndex),
               fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, newIndex))
-            ), ())
+            ))
           case None =>
-            (state.copy(
+            ((), state.copy(
               lastIndexPerChunk = state.lastIndexPerChunk + (chunk -> 0),
               fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, 0))
-            ), ())
+            ))
         }
       }
     }
@@ -914,7 +914,7 @@ object GenericBinaryCodec {
   type ChunkedDeser[T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedInput, DesertFailure, T]
 
   object ChunkedDeserOps {
-    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ZPure.environment
+    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ZPure.service
     final def getChunkedState: ChunkedDeser[ChunkedSerState] = ZPure.get
     final def setChunkedState(newState: ChunkedSerState): ChunkedDeser[Unit] = ZPure.set(newState)
 
@@ -926,7 +926,7 @@ object GenericBinaryCodec {
       for {
         chunkedState <- getChunkedState
         runResult <- fromEither(value
-          .provide(DeserializationEnv(input, chunkedState.typeRegistry))
+          .provideService(DeserializationEnv(input, chunkedState.typeRegistry))
           .getState
           .either
           .runResult(chunkedState.serializerState))

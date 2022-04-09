@@ -10,25 +10,25 @@ import io.github.vigoo.desert.BinarySerializer.SerializationEnv
 trait BinarySerialization {
   def serialize[T : BinarySerializer](value: T, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
     write[T](value)
-      .provide(SerializationEnv(output, typeRegistry))
+      .provideService(SerializationEnv(output, typeRegistry))
       .either
       .runResult(SerializerState.initial)
 
   def serializeUnknown(value: Any, output: BinaryOutput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Unit] =
     writeUnknown(value)
-      .provide(SerializationEnv(output, typeRegistry))
+      .provideService(SerializationEnv(output, typeRegistry))
       .either
       .runResult(SerializerState.initial)
 
   def deserialize[T: BinaryDeserializer](input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, T] =
     read[T]()
-      .provide(DeserializationEnv(input, typeRegistry))
+      .provideService(DeserializationEnv(input, typeRegistry))
       .either
       .runResult(SerializerState.initial)
 
   def deserializeUnknown(input: BinaryInput, typeRegistry: TypeRegistry = TypeRegistry.empty): Either[DesertFailure, Any] =
     readUnknown()
-      .provide(DeserializationEnv(input, typeRegistry))
+      .provideService(DeserializationEnv(input, typeRegistry))
       .either
       .runResult(SerializerState.initial)
 

@@ -4,9 +4,8 @@ import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object DefaultTypeRegistrySpec extends DefaultRunnableSpec {
+object DefaultTypeRegistrySpec extends ZIOSpecDefault {
 
   case class TestProd(x: Double, y: Double)
 

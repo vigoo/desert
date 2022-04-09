@@ -4,9 +4,8 @@ import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object ReferenceTrackingSpec extends DefaultRunnableSpec with SerializationProperties {
+object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class Root(node: Node)

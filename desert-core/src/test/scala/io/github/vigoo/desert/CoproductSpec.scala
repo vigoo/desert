@@ -1,12 +1,10 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
-import zio.random.Random
 import zio.test._
-import zio.test.environment.TestEnvironment
 import zio.test.magnolia.DeriveGen
 
-object CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
+object CoproductSpec extends ZIOSpecDefault with SerializationProperties {
   sealed trait TypeV1
   final case object Cons1V1 extends TypeV1
   final case class Cons2V1(value: String) extends TypeV1
@@ -15,7 +13,7 @@ object CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
     implicit val c1codec: BinaryCodec[Cons1V1.type] = BinaryCodec.derive()
     implicit val c2codec: BinaryCodec[Cons2V1] = BinaryCodec.derive()
     implicit val codec: BinaryCodec[TypeV1] = BinaryCodec.derive()
-    val gen: Gen[Random with Sized, TypeV1] = DeriveGen[TypeV1]
+    val gen: Gen[Sized, TypeV1] = DeriveGen[TypeV1]
   }
 
   sealed trait TypeV2
@@ -28,14 +26,14 @@ object CoproductSpec extends DefaultRunnableSpec with SerializationProperties {
     implicit val c2codec: BinaryCodec[Cons2V2] = BinaryCodec.derive()
     implicit val c3codec: BinaryCodec[Cons3V2] = BinaryCodec.derive()
     implicit val codec: BinaryCodec[TypeV2] = BinaryCodec.derive()
-    val gen: Gen[Random with Sized, TypeV2] = DeriveGen[TypeV2]
+    val gen: Gen[Sized, TypeV2] = DeriveGen[TypeV2]
   }
 
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("Coproduct codec derivation")(
-      testM("serialization works")(canBeSerialized(TypeV1.gen)),
+      test("serialization works")(canBeSerialized(TypeV1.gen)),
       test("can read old data after adding new constructor")(
         canBeSerializedAndReadBack[TypeV1, TypeV2](Cons1V1, Cons1V2())
       ),

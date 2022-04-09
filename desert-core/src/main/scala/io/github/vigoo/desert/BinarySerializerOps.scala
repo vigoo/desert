@@ -11,8 +11,8 @@ import _root_.zio.prelude.fx._
 import scala.util.Try
 
 trait BinarySerializerOps {
-  final def getOutput: Ser[BinaryOutput] = ZPure.access(_.output)
-  final def getOutputTypeRegistry: Ser[TypeRegistry] = ZPure.access(_.typeRegistry)
+  final def getOutput: Ser[BinaryOutput] = ZPure.serviceWith(_.output)
+  final def getOutputTypeRegistry: Ser[TypeRegistry] = ZPure.serviceWith(_.typeRegistry)
   final def getSerializerState: Ser[SerializerState] = ZPure.get
   final def setSerializerState(state: SerializerState): Ser[Unit] = ZPure.set(state)
 

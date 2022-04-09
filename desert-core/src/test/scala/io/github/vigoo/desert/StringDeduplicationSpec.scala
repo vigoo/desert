@@ -9,9 +9,8 @@ import io.github.vigoo.desert.BinarySerializerOps._
 import io.github.vigoo.desert.codecs._
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object StringDeduplicationSpec extends DefaultRunnableSpec with SerializationProperties {
+object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperties {
 
   val s1 = "this is a test string"
   val s2 = "and another one"
@@ -62,14 +61,14 @@ object StringDeduplicationSpec extends DefaultRunnableSpec with SerializationPro
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
         val result = testSer
-          .provide(SerializationEnv(output, TypeRegistry.empty))
+          .provideService(SerializationEnv(output, TypeRegistry.empty))
           .either
           .runResult(SerializerState.initial).flatMap { _ =>
           stream.flush()
           val inStream = new ByteArrayInputStream(stream.toByteArray)
           val input = new JavaStreamBinaryInput(inStream)
           testDeser
-            .provide(DeserializationEnv(input, TypeRegistry.empty))
+            .provideService(DeserializationEnv(input, TypeRegistry.empty))
             .either
             .runResult(SerializerState.initial)
         }
@@ -80,7 +79,7 @@ object StringDeduplicationSpec extends DefaultRunnableSpec with SerializationPro
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
         val size = testSer
-          .provide(SerializationEnv(output, TypeRegistry.empty))
+          .provideService(SerializationEnv(output, TypeRegistry.empty))
           .either
           .runResult(SerializerState.initial).map { _ =>
           stream.flush()

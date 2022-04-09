@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import io.github.vigoo.desert.{BinaryOutput, JavaStreamBinaryOutput}
 import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Level, Measurement, Mode, OperationsPerInvocation, OutputTimeUnit, Scope, Setup, State, Warmup}
-import zio.BootstrapRuntime
 
 import scala.util.Random
 
@@ -14,7 +13,7 @@ import scala.util.Random
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 200, timeUnit = TimeUnit.MILLISECONDS)
-class JavaStreamBinaryOutputBenchmark extends BootstrapRuntime {
+class JavaStreamBinaryOutputBenchmark {
 
   val array: Array[Byte] = Random.nextBytes(4096)
   var output: BinaryOutput = _

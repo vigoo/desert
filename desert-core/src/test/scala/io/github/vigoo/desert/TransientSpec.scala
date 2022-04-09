@@ -2,9 +2,8 @@ package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object TransientSpec extends DefaultRunnableSpec with SerializationProperties {
+object TransientSpec extends ZIOSpecDefault with SerializationProperties {
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class TypeWithoutCodec(value: Int)

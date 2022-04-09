@@ -7,7 +7,6 @@ import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 import org.openjdk.jmh.annotations._
-import zio.BootstrapRuntime
 
 import scala.util.Random
 
@@ -16,7 +15,7 @@ import scala.util.Random
 @State(Scope.Benchmark)
 @Warmup(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-class JavaStreamBinaryInputBenchmark extends BootstrapRuntime {
+class JavaStreamBinaryInputBenchmark {
 
   val inputByte: Array[Byte] = serializeToArray(100.toByte).toOption.get
   val inputShort: Array[Byte] = serializeToArray(100.toShort).toOption.get

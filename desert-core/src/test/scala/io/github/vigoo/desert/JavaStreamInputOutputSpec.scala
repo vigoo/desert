@@ -4,13 +4,12 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
-object JavaStreamInputOutputSpec extends DefaultRunnableSpec {
+object JavaStreamInputOutputSpec extends ZIOSpecDefault {
   override def spec: ZSpec[TestEnvironment, Any] =
     suite("JavaStream input/output")(
-      testM("properly writes and reads back variable int")(
-        check(Gen.anyInt, Gen.boolean) { (value, optForPositive) =>
+      test("properly writes and reads back variable int")(
+        check(Gen.int, Gen.boolean) { (value, optForPositive) =>
           testWriteAndRead(
             _.writeVarInt(value, optForPositive),
             _.readVarInt(optForPositive),
@@ -28,9 +27,9 @@ object JavaStreamInputOutputSpec extends DefaultRunnableSpec {
         )
       },
 
-      testM("compressed byte array support")(
+      test("compressed byte array support")(
         Sized.withSize(500)(
-          check(Gen.vectorOf(Gen.anyByte)) { bytes =>
+          check(Gen.vectorOf(Gen.byte)) { bytes =>
             testWriteAndRead(
               _.writeCompressedByteArray(bytes.toArray),
               _.readCompressedByteArray().map(_.toVector),

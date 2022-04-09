@@ -1,20 +1,18 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
-import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 import zio.test.magnolia.DeriveGen
 
-object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
+object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class ProdV1(fieldA: String, fieldB: Int)
 
   object ProdV1 {
     implicit val codec: BinaryCodec[ProdV1] = BinaryCodec.derive()
-    val gen: Gen[Random with Sized, ProdV1] = DeriveGen[ProdV1]
+    val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
   }
 
   case class ProdV2(fieldA: String, newField1: Boolean, fieldB: Int)
@@ -23,7 +21,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
     implicit val codec: BinaryCodec[ProdV2] = BinaryCodec.derive(
       FieldAdded("newField1", true)
     )
-    val gen: Gen[Random with Sized, ProdV2] = DeriveGen[ProdV2]
+    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
   }
 
   case class ProdV3(fieldA: String, newField1: Boolean, fieldB: Option[Int])
@@ -33,7 +31,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB")
     )
-    val gen: Gen[Random with Sized, ProdV3] = DeriveGen[ProdV3]
+    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
   }
 
   case class ProdV4(fieldA: String, newField1: Boolean)
@@ -44,7 +42,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
       FieldMadeOptional("fieldB"),
       FieldRemoved("fieldB")
     )
-    val gen: Gen[Random with Sized, ProdV4] = DeriveGen[ProdV4]
+    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
   }
 
   case class ProdV5(@TransientField("unset") fieldA: String,
@@ -57,7 +55,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
       FieldRemoved("fieldB"),
       FieldMadeTransient("fieldA")
     )
-    val gen: Gen[Random with Sized, ProdV5] = DeriveGen[ProdV5]
+    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
   }
 
   sealed trait Coprod1
@@ -137,7 +135,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         ),
       ),
       suite("adding new field")(
-        testM("product with added field is serializable")(
+        test("product with added field is serializable")(
           canBeSerialized(ProdV2.gen)
         ),
         test("old version can read new")(
@@ -154,7 +152,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         )
       ),
       suite("making a field optional")(
-        testM("product with field made optional is serializable")(
+        test("product with field made optional is serializable")(
           canBeSerialized(ProdV3.gen)
         ),
         test("v1 version can read new if it is not None")(
@@ -188,7 +186,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         ),
       ),
       suite("removing a field")(
-        testM("product with field removed is serializable")(
+        test("product with field removed is serializable")(
           canBeSerialized(ProdV4.gen)
         ),
         test("can read v1 value by skipping the field")(
@@ -227,7 +225,7 @@ object EvolutionSpec extends DefaultRunnableSpec with SerializationProperties {
         )
       ),
       suite("making a field transient")(
-        testM("product with field made transient is serializable")(
+        test("product with field made transient is serializable")(
           canBeSerialized(ProdV5.gen,
             Some((a: ProdV5) =>
               hasField[ProdV5, Boolean]("newField1", _.newField1, equalTo(a.newField1)) &&
