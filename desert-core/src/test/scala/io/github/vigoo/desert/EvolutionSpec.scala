@@ -84,7 +84,7 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
     implicit val codec: BinaryCodec[Coprod2] = BinaryCodec.derive()
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Evolution")(
       suite("tuples vs products")(
         test("tuple can be read as case class")(

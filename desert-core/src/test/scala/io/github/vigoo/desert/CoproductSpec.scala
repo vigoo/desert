@@ -31,7 +31,7 @@ object CoproductSpec extends ZIOSpecDefault with SerializationProperties {
 
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Coproduct codec derivation")(
       test("serialization works")(canBeSerialized(TypeV1.gen)),
       test("can read old data after adding new constructor")(

@@ -8,7 +8,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object IOWrapperSpec extends ZIOSpecDefault {
-  override def spec: ZSpec[TestEnvironment, Throwable] =
+  override def spec: Spec[TestEnvironment, Throwable] =
     suite("Cats effect syntax")(
       test("is an IO wrapper around the core functionality") {
         ZIO.attempt {

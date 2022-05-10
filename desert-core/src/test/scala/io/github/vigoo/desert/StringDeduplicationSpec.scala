@@ -55,7 +55,7 @@ object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperti
       f <- read[DeduplicatedString]()
     } yield List(a, b, c, d, e, f).map(_.string)
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("String deduplication")(
       test("reads back duplicated strings correctly") {
         val stream = new ByteArrayOutputStream()
