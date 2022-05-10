@@ -44,7 +44,7 @@ object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties
     } yield result)
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Reference tracking")(
       test("allows the serialization of cycles") {
         val a = new Node("a", None)
@@ -55,7 +55,7 @@ object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties
         b.next = Some(c)
         c.next = Some(a)
 
-        val chk: Assertion[Root] = assertion("root")() { root =>
+        val chk: Assertion[Root] = assertion("root") { root =>
           val a = root.node
           val b = a.next.get
           val c = b.next.get

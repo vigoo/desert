@@ -8,7 +8,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object ZioCodecsSpec extends ZIOSpecDefault {
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("ZIO serialization codecs")(
       test("correctly byte chunks") {
         val chunkIn = Chunk[Byte](1, 2, 4, 8, 16)

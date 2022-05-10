@@ -10,7 +10,7 @@ import zio.test._
 import scala.collection.immutable.{SortedMap, SortedSet}
 
 object CatsCollectionSerializationSpec extends ZIOSpecDefault with SerializationProperties {
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Cats collections can be serialized and read back")(
       test("validated")(canBeSerialized(Gen.either(Gen.int, Gen.string).map(Validated.fromEither))),
       test("non-empty list")(canBeSerialized(Gen.listOf1(Gen.string).map(NonEmptyList.fromList))),

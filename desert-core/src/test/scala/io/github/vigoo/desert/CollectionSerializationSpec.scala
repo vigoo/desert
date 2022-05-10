@@ -8,7 +8,7 @@ import zio.test._
 import scala.util.{Failure, Success, Try}
 
 object CollectionSerializationSpec extends ZIOSpecDefault with SerializationProperties {
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Collections can be serialized and read back")(
       test("array of strings")(canBeSerialized(Gen.listOf(Gen.string).map(_.toArray))),
       test("array of ints")(canBeSerialized(Gen.listOf(Gen.int).map(_.toArray))),

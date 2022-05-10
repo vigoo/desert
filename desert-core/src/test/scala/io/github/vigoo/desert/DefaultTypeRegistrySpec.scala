@@ -36,7 +36,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
       })
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("DefaultTypeRegistry")(
       test("can register and retrieve codecs for types") {
         implicit val stringCodec = codecs.stringCodec

@@ -6,7 +6,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object JavaStreamInputOutputSpec extends ZIOSpecDefault {
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("JavaStream input/output")(
       test("properly writes and reads back variable int")(
         check(Gen.int, Gen.boolean) { (value, optForPositive) =>

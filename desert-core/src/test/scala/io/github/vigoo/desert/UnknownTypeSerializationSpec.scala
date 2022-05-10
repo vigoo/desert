@@ -25,7 +25,7 @@ object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationPro
     implicit val codec: BinaryCodec[TestProduct] = BinaryCodec.derive()
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Serializing types not known at compile time")(
       test("works on top level with type registry") {
         implicit val registry: TypeRegistry = DefaultTypeRegistry()

@@ -31,7 +31,7 @@ object TransientSpec extends ZIOSpecDefault with SerializationProperties {
     implicit val codec: BinaryCodec[SumWithTransientCons] = BinaryCodec.derive()
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Support for transient modifiers")(
       test("does not serialize a transient field") {
         canBeSerializedAndReadBack(
