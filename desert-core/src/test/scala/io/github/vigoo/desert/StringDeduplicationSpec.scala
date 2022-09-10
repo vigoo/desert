@@ -63,28 +63,30 @@ object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperti
         val result = testSer
           .provideService(SerializationEnv(output, TypeRegistry.empty))
           .either
-          .runResult(SerializerState.initial).flatMap { _ =>
-          stream.flush()
-          val inStream = new ByteArrayInputStream(stream.toByteArray)
-          val input = new JavaStreamBinaryInput(inStream)
-          testDeser
-            .provideService(DeserializationEnv(input, TypeRegistry.empty))
-            .either
-            .runResult(SerializerState.initial)
-        }
+          .runResult(SerializerState.initial)
+          .flatMap { _ =>
+            stream.flush()
+            val inStream = new ByteArrayInputStream(stream.toByteArray)
+            val input    = new JavaStreamBinaryInput(inStream)
+            testDeser
+              .provideService(DeserializationEnv(input, TypeRegistry.empty))
+              .either
+              .runResult(SerializerState.initial)
+          }
 
         assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
       },
       test("reduces the serialized size") {
         val stream = new ByteArrayOutputStream()
         val output = new JavaStreamBinaryOutput(stream)
-        val size = testSer
+        val size   = testSer
           .provideService(SerializationEnv(output, TypeRegistry.empty))
           .either
-          .runResult(SerializerState.initial).map { _ =>
-          stream.flush()
-          stream.toByteArray.length
-        }
+          .runResult(SerializerState.initial)
+          .map { _ =>
+            stream.flush()
+            stream.toByteArray.length
+          }
 
         assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
       },

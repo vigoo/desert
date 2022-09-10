@@ -13,7 +13,7 @@ object TypeRegistry {
   }
 
   val empty: TypeRegistry = new TypeRegistry {
-    override def get(any: Any): Option[RegisteredType[_]] = None
+    override def get(any: Any): Option[RegisteredType[_]]               = None
     override def forId(id: RegisteredTypeId): Option[RegisteredType[_]] = None
   }
 }

@@ -10,37 +10,36 @@ object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties
 
   case class Root(node: Node)
   object Root {
-    implicit val codec: BinaryCodec[Root] = BinaryCodec.define[Root](
-      root => storeRefOrObject(root.node)
-    )(readRefOrValue[Node](storeReadReference = false).map(Root.apply))
+    implicit val codec: BinaryCodec[Root] = BinaryCodec.define[Root](root => storeRefOrObject(root.node))(
+      readRefOrValue[Node](storeReadReference = false).map(Root.apply)
+    )
   }
 
-  class Node(val label: String,
-             var next: Option[Node]) {
+  class Node(val label: String, var next: Option[Node]) {
     override def toString: String = s"<$label>"
   }
-  object Node {
-    implicit def codec: BinaryCodec[Node] = BinaryCodec.define[Node](
-      node => for {
+  object Node                                           {
+    implicit def codec: BinaryCodec[Node] = BinaryCodec.define[Node](node =>
+      for {
         _ <- write(node.label)
         _ <- node.next match {
-          case Some(value) =>
-            for {
-              _ <- write(true)
-              _ <- storeRefOrObject(value)
-            } yield ()
-          case None =>
-            write(false)
-        }
+               case Some(value) =>
+                 for {
+                   _ <- write(true)
+                   _ <- storeRefOrObject(value)
+                 } yield ()
+               case None        =>
+                 write(false)
+             }
       } yield ()
     )(for {
-      label <- read[String]()
-      result = new Node(label, None)
-      _ <- storeReadRef(result)
+      label   <- read[String]()
+      result   = new Node(label, None)
+      _       <- storeReadRef(result)
       hasNext <- read[Boolean]()
-      _ <- if (hasNext ) {
-        readRefOrValue[Node](storeReadReference = false).map { value => result.next = Some(value) }
-      } else finishDeserializerWith(())
+      _       <- if (hasNext) {
+                   readRefOrValue[Node](storeReadReference = false).map(value => result.next = Some(value))
+                 } else finishDeserializerWith(())
     } yield result)
   }
 

@@ -14,15 +14,15 @@ object ZioCodecsSpec extends ZIOSpecDefault {
         val chunkIn = Chunk[Byte](1, 2, 4, 8, 16)
         for {
           serialized <- serializeToArray(chunkIn)
-          chunkOut <- deserializeFromArray[Chunk[Byte]](serialized)
+          chunkOut   <- deserializeFromArray[Chunk[Byte]](serialized)
         } yield assert(chunkIn)(equalTo(chunkOut))
       },
       test("correctly int chunks") {
         val chunkIn = Chunk[Int](1, 2, 4, 8, 16)
         for {
           serialized <- serializeToArray(chunkIn)
-          chunkOut <- deserializeFromArray[Chunk[Int]](serialized)
+          chunkOut   <- deserializeFromArray[Chunk[Int]](serialized)
         } yield assert(chunkIn)(equalTo(chunkOut))
-      },
+      }
     )
 }

@@ -5,7 +5,18 @@ import java.util.concurrent.TimeUnit
 import java.util.zip.Deflater
 
 import io.github.vigoo.desert.BinaryCodec
-import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Measurement, Mode, OutputTimeUnit, Param, Scope, Setup, State, Warmup}
+import org.openjdk.jmh.annotations.{
+  Benchmark,
+  BenchmarkMode,
+  Measurement,
+  Mode,
+  OutputTimeUnit,
+  Param,
+  Scope,
+  Setup,
+  State,
+  Warmup
+}
 import io.github.vigoo.desert.syntax._
 
 import scala.io.Source
@@ -15,10 +26,10 @@ import scala.io.Source
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-class LargeCompressedArraySerializationBenchmark  {
+class LargeCompressedArraySerializationBenchmark {
   import LargeCompressedArraySerializationBenchmark._
 
-  var testData: TestData = _
+  var testData: TestData          = _
   var serializedData: Array[Byte] = _
 
   @Param(Array("1"))
@@ -26,7 +37,8 @@ class LargeCompressedArraySerializationBenchmark  {
 
   @Setup
   def loadData(): Unit = {
-    testData = TestData(Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("testdata/data")).mkString, level)
+    testData =
+      TestData(Source.fromInputStream(getClass.getClassLoader.getResourceAsStream("testdata/data")).mkString, level)
 
 //    for (l <- (Deflater.BEST_SPEED to Deflater.BEST_COMPRESSION)) {
 //      val bs = serializeToArray(testData.copy(level = l)).toOption.get
@@ -55,8 +67,8 @@ object LargeCompressedArraySerializationBenchmark {
   case class TestData(data: String, level: Int)
 
   object TestData {
-    implicit val binaryCodec: BinaryCodec[TestData] = BinaryCodec.define(
-      (data: TestData) => writeCompressedBytes(data.data.getBytes(StandardCharsets.UTF_8), data.level)
+    implicit val binaryCodec: BinaryCodec[TestData] = BinaryCodec.define((data: TestData) =>
+      writeCompressedBytes(data.data.getBytes(StandardCharsets.UTF_8), data.level)
     )(readCompressedByteArray().map(bytes => TestData(new String(bytes, StandardCharsets.UTF_8), Deflater.BEST_SPEED)))
   }
 }

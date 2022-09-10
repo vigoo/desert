@@ -15,7 +15,7 @@ import scala.util.Random
 class GenericComplexSerializationBenchmark {
   import GenericComplexSerializationBenchmark._
 
-  var testDocument: Root = _
+  var testDocument: Root          = _
   var serializedData: Array[Byte] = _
 
   @Param(Array("12"))
@@ -26,21 +26,29 @@ class GenericComplexSerializationBenchmark {
 
   private def generateItem(s: Int)(implicit rnd: Random): Item =
     rnd.nextInt(3) match {
-      case 0 => Text(rnd.nextString(25))
-      case 1 => Rectangle(rnd.nextDouble(), rnd.nextDouble(), rnd.nextDouble(), rnd.nextDouble(),
-        Style(Color(rnd.nextInt().toByte, rnd.nextInt().toByte, rnd.nextInt().toByte), Color(rnd.nextInt().toByte, rnd.nextInt().toByte, rnd.nextInt().toByte)))
+      case 0           => Text(rnd.nextString(25))
+      case 1           =>
+        Rectangle(
+          rnd.nextDouble(),
+          rnd.nextDouble(),
+          rnd.nextDouble(),
+          rnd.nextDouble(),
+          Style(
+            Color(rnd.nextInt().toByte, rnd.nextInt().toByte, rnd.nextInt().toByte),
+            Color(rnd.nextInt().toByte, rnd.nextInt().toByte, rnd.nextInt().toByte)
+          )
+        )
       case 2 if s == 0 => Text(rnd.nextString(25))
-      case _ => Block(generateItemMap(s - 1))
+      case _           => Block(generateItemMap(s - 1))
     }
 
-  private def generateItemMap(s: Int)(implicit rnd: Random): Map[ItemId, Item] = {
+  private def generateItemMap(s: Int)(implicit rnd: Random): Map[ItemId, Item] =
     if (s == 0) {
       Map.empty
     } else {
       val count = rnd.nextInt(s)
       (0 to count).map(_ => (ItemId(rnd.nextString(16)) -> generateItem(s))).toMap
     }
-  }
 
   @Setup
   def createTestDocument(): Unit = {
@@ -87,15 +95,16 @@ object GenericComplexSerializationBenchmark {
   }
 
   sealed trait Item
-  case class Text(value: String) extends Item
+  case class Text(value: String)                                                 extends Item
   case class Rectangle(x: Double, y: Double, w: Double, h: Double, style: Style) extends Item
-  case class Block(items: Map[ItemId, Item]) extends Item
+  case class Block(items: Map[ItemId, Item])                                     extends Item
 
   object Item {
-    implicit val textCodec: BinaryCodec[Text] = BinaryCodec.derive()
-    implicit val rectangleCodec: BinaryCodec[Rectangle] = BinaryCodec.derive(FieldAdded("style", Style(Color(0, 0, 0), Color(255.toByte, 255.toByte, 255.toByte))))
-    implicit val blockCodec: BinaryCodec[Block] = BinaryCodec.derive()
-    implicit val itemCodec: BinaryCodec[Item] = BinaryCodec.derive()
+    implicit val textCodec: BinaryCodec[Text]           = BinaryCodec.derive()
+    implicit val rectangleCodec: BinaryCodec[Rectangle] =
+      BinaryCodec.derive(FieldAdded("style", Style(Color(0, 0, 0), Color(255.toByte, 255.toByte, 255.toByte))))
+    implicit val blockCodec: BinaryCodec[Block]         = BinaryCodec.derive()
+    implicit val itemCodec: BinaryCodec[Item]           = BinaryCodec.derive()
   }
 
   case class Root(title: String, items: Map[ItemId, Item])
