@@ -17,11 +17,11 @@ import scala.util.Random
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 class JavaStreamBinaryInputBenchmark {
 
-  val inputByte: Array[Byte] = serializeToArray(100.toByte).toOption.get
-  val inputShort: Array[Byte] = serializeToArray(100.toShort).toOption.get
-  val inputInt: Array[Byte] = serializeToArray(100000.toInt).toOption.get
-  val inputLong: Array[Byte] = serializeToArray(1000000000L).toOption.get
-  val inputFloat: Array[Byte] = serializeToArray(Math.PI.toFloat).toOption.get
+  val inputByte: Array[Byte]   = serializeToArray(100.toByte).toOption.get
+  val inputShort: Array[Byte]  = serializeToArray(100.toShort).toOption.get
+  val inputInt: Array[Byte]    = serializeToArray(100000.toInt).toOption.get
+  val inputLong: Array[Byte]   = serializeToArray(1000000000L).toOption.get
+  val inputFloat: Array[Byte]  = serializeToArray(Math.PI.toFloat).toOption.get
   val inputDouble: Array[Byte] = serializeToArray(Math.PI).toOption.get
   val inputVarInt: Array[Byte] = {
     val stream = new ByteArrayOutputStream()
@@ -39,39 +39,32 @@ class JavaStreamBinaryInputBenchmark {
   }
 
   @Benchmark
-  def readByte(): Unit = {
+  def readByte(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputByte)).readByte()
-  }
 
   @Benchmark
-  def readShort(): Unit = {
+  def readShort(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputShort)).readShort()
-  }
 
   @Benchmark
-  def readInt(): Unit = {
+  def readInt(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputInt)).readInt()
-  }
 
   @Benchmark
-  def readLong(): Unit = {
+  def readLong(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputLong)).readLong()
-  }
 
   @Benchmark
-  def readFloat(): Unit = {
+  def readFloat(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputFloat)).readFloat()
-  }
 
   @Benchmark
-  def readDouble(): Unit = {
+  def readDouble(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(inputDouble)).readDouble()
-  }
 
   @Benchmark
-  def readBytes(): Unit = {
+  def readBytes(): Unit =
     new JavaStreamBinaryInput(new ByteArrayInputStream(new Array(4096))).readBytes(4096)
-  }
 
   @Benchmark
   @OperationsPerInvocation(8)

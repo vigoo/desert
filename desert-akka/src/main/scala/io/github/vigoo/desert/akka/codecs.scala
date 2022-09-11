@@ -8,12 +8,11 @@ import io.github.vigoo.desert.BinaryCodec
 import io.github.vigoo.desert.codecs._
 
 object codecs {
-  implicit def untypedActorRefCodec(implicit system: UntypedExtendedActorSystem): BinaryCodec[UntypedActorRef] = {
+  implicit def untypedActorRefCodec(implicit system: UntypedExtendedActorSystem): BinaryCodec[UntypedActorRef] =
     BinaryCodec.from(
       stringCodec.contramap(Serialization.serializedActorPath),
       stringCodec.map(system.provider.resolveActorRef)
     )
-  }
 
   implicit def typedActorRefCodec[T](implicit system: ActorSystem[_]): BinaryCodec[ActorRef[T]] = {
     val resolver = ActorRefResolver(system)

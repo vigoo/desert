@@ -34,7 +34,7 @@ object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationPro
           .freeze()
 
         canBeSerializedAndReadBackWithTypeTag(First("hello"), First("hello")) &&
-          canBeSerializedAndReadBackWithTypeTag(Second(5), Second(5))
+        canBeSerializedAndReadBackWithTypeTag(Second(5), Second(5))
       },
       test("works for derived codecs if interface has proper codec") {
         implicit val registry: TypeRegistry = DefaultTypeRegistry()
@@ -43,7 +43,7 @@ object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationPro
           .freeze()
 
         canBeSerializedAndReadBack(TestProduct(First("hello")), TestProduct(First("hello"))) &&
-          canBeSerializedAndReadBack(TestProduct(Second(1)), TestProduct(Second(1)))
+        canBeSerializedAndReadBack(TestProduct(Second(1)), TestProduct(Second(1)))
       }
     )
 }

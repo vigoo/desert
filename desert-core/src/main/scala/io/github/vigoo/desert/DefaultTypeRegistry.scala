@@ -4,25 +4,24 @@ import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 
 import scala.reflect.ClassTag
 
-class DefaultTypeRegistry(byId: Map[RegisteredTypeId, RegisteredType[_]],
-                          ordered: List[RegisteredType[_]]) extends TypeRegistry {
+class DefaultTypeRegistry(byId: Map[RegisteredTypeId, RegisteredType[_]], ordered: List[RegisteredType[_]])
+    extends TypeRegistry {
 
-  override def get(any: Any): Option[RegisteredType[_]] = {
+  override def get(any: Any): Option[RegisteredType[_]] =
     ordered.find(reg => reg.cls.isAssignableFrom(any.getClass))
-  }
 
-  override def forId(id: RegisteredTypeId): Option[RegisteredType[_]] = {
+  override def forId(id: RegisteredTypeId): Option[RegisteredType[_]] =
     byId.get(id)
-  }
 }
 
-
 object DefaultTypeRegistry {
-  case class DefaultTypeRegistryBuilder(byId: Map[RegisteredTypeId, RegisteredType[_]],
-                                        ordered: List[RegisteredType[_]],
-                                        lastId: RegisteredTypeId) {
+  case class DefaultTypeRegistryBuilder(
+      byId: Map[RegisteredTypeId, RegisteredType[_]],
+      ordered: List[RegisteredType[_]],
+      lastId: RegisteredTypeId
+  ) {
     def register[T](implicit codec: BinaryCodec[T], tag: ClassTag[T]): DefaultTypeRegistryBuilder = {
-      val id = lastId.next
+      val id  = lastId.next
       val reg = RegisteredType(id, codec, tag.runtimeClass)
       copy(
         byId = byId + (id -> reg),
@@ -31,11 +30,10 @@ object DefaultTypeRegistry {
       )
     }
 
-    def registerPlaceholder(): DefaultTypeRegistryBuilder = {
+    def registerPlaceholder(): DefaultTypeRegistryBuilder =
       copy(
         lastId = lastId.next
       )
-    }
 
     def freeze(): TypeRegistry = new DefaultTypeRegistry(byId, ordered)
   }

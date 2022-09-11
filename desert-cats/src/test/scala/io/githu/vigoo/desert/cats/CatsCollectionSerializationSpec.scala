@@ -14,7 +14,13 @@ object CatsCollectionSerializationSpec extends ZIOSpecDefault with Serialization
     suite("Cats collections can be serialized and read back")(
       test("validated")(canBeSerialized(Gen.either(Gen.int, Gen.string).map(Validated.fromEither))),
       test("non-empty list")(canBeSerialized(Gen.listOf1(Gen.string).map(NonEmptyList.fromList))),
-      test("non-empty set")(canBeSerialized(Gen.setOf1(Gen.string).map(set => NonEmptySet.fromSet(SortedSet.from(set))))),
-      test("non-empty map")(canBeSerialized(Gen.mapOf1(Gen.string, Gen.int).map(map => NonEmptyMap.fromMap(SortedMap.from[String, Int](map))))),
+      test("non-empty set")(
+        canBeSerialized(Gen.setOf1(Gen.string).map(set => NonEmptySet.fromSet(SortedSet.from(set))))
+      ),
+      test("non-empty map")(
+        canBeSerialized(
+          Gen.mapOf1(Gen.string, Gen.int).map(map => NonEmptyMap.fromMap(SortedMap.from[String, Int](map)))
+        )
+      )
     )
 }

@@ -18,14 +18,16 @@ object PrimitiveSerializationSpec extends ZIOSpecDefault with SerializationPrope
       test("string")(canBeSerialized(Gen.string)),
       test("unit")(canBeSerialized(Gen.unit)),
       test("uuid")(canBeSerialized(Gen.uuid)),
-
       suite("variable length int")(
         test("optimized for positive") {
-          val varIntCodec = BinaryCodec.define(value => writeVarInt(value, optimizeForPositive = true))(readVarInt(optimizeForPositive = true))
+          val varIntCodec = BinaryCodec
+            .define(value => writeVarInt(value, optimizeForPositive = true))(readVarInt(optimizeForPositive = true))
           canBeSerialized(Gen.int)(varIntCodec)
         },
         test("not optimized for positive") {
-          val varIntCodec = BinaryCodec.define(value => writeVarInt(value, optimizeForPositive = false))(readVarInt(optimizeForPositive = false))
+          val varIntCodec = BinaryCodec.define(value => writeVarInt(value, optimizeForPositive = false))(
+            readVarInt(optimizeForPositive = false)
+          )
           canBeSerialized(Gen.int)(varIntCodec)
         }
       )

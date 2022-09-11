@@ -5,8 +5,8 @@ import io.github.vigoo.desert.BinaryDeserializer.Deser
 import zio.Chunk
 
 trait ZioBinaryDeserializerOps {
-  final def readByteChunk[A](count: Int): Deser[Chunk[Byte]] = getInput.flatMap {
-    input => Deser.fromEither(input.readBytes(count).map(Chunk.fromArray[Byte]))
+  final def readByteChunk[A](count: Int): Deser[Chunk[Byte]] = getInput.flatMap { input =>
+    Deser.fromEither(input.readBytes(count).map(Chunk.fromArray[Byte]))
   }
 }
 
