@@ -55,7 +55,19 @@ lazy val root = Project("desert", file("."))
     publishArtifact := false,
     description     := "A Scala binary serialization library"
   )
-  .aggregate(core.jvm, core.js, akka, cats.jvm, cats.js, catsEffect.jvm, catsEffect.js, zio.jvm, zio.js, benchmarks)
+  .aggregate(
+    core.jvm,
+    core.js,
+    akka,
+    cats.jvm,
+    cats.js,
+    catsEffect.jvm,
+    catsEffect.js,
+    zio.jvm,
+    zio.js,
+    shardcake,
+    benchmarks
+  )
 
 lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -118,6 +130,16 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   )
   .jsSettings(coverageEnabled := false)
   .dependsOn(core)
+
+lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
+  .settings(commonSettings)
+  .settings(
+    description := "Shardcake serialization bindings for desert",
+    libraryDependencies ++= Seq(
+      "com.devsisters" %% "shardcake-core" % "2.0.0"
+    )
+  )
+  .dependsOn(core.jvm, zio.jvm)
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
