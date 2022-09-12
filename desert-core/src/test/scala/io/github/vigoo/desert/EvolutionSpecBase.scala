@@ -1,61 +1,71 @@
 package io.github.vigoo.desert
 
+import io.github.vigoo.desert.EvolutionSpecBase.TestId
 import io.github.vigoo.desert.codecs._
 import zio.test.Assertion._
 import zio.test._
 import zio.test.magnolia.DeriveGen
 
-object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
+trait EvolutionSpecBase extends ZIOSpecDefault with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class ProdV1(fieldA: String, fieldB: Int)
 
   object ProdV1 {
-    implicit val codec: BinaryCodec[ProdV1] = BinaryCodec.derive()
-    val gen: Gen[Sized, ProdV1]             = DeriveGen[ProdV1]
+    val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
   }
+
+  implicit val v1codec: BinaryCodec[ProdV1]
 
   case class ProdV2(fieldA: String, newField1: Boolean, fieldB: Int)
 
   object ProdV2 {
-    implicit val codec: BinaryCodec[ProdV2] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
+    val steps                   = Seq(
       FieldAdded("newField1", true)
     )
-    val gen: Gen[Sized, ProdV2]             = DeriveGen[ProdV2]
   }
+
+  implicit val v2codec: BinaryCodec[ProdV2]
 
   case class ProdV3(fieldA: String, newField1: Boolean, fieldB: Option[Int])
 
   object ProdV3 {
-    implicit val codec: BinaryCodec[ProdV3] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB")
     )
-    val gen: Gen[Sized, ProdV3]             = DeriveGen[ProdV3]
   }
+
+  implicit val v3codec: BinaryCodec[ProdV3]
 
   case class ProdV4(fieldA: String, newField1: Boolean)
 
   object ProdV4 {
-    implicit val codec: BinaryCodec[ProdV4] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB"),
       FieldRemoved("fieldB")
     )
-    val gen: Gen[Sized, ProdV4]             = DeriveGen[ProdV4]
   }
+
+  implicit val v4codec: BinaryCodec[ProdV4]
 
   case class ProdV5(@TransientField("unset") fieldA: String, newField1: Boolean)
 
   object ProdV5 {
-    implicit val codec: BinaryCodec[ProdV5] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB"),
       FieldRemoved("fieldB"),
       FieldMadeTransient("fieldA")
     )
-    val gen: Gen[Sized, ProdV5]             = DeriveGen[ProdV5]
   }
+
+  implicit val v5codec: BinaryCodec[ProdV5]
 
   sealed trait Coprod1
 
@@ -63,11 +73,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
 
   case class Case21(x: String) extends Coprod1
 
-  object Coprod1 {
-    implicit val case1Codec: BinaryCodec[Case11] = BinaryCodec.derive()
-    implicit val case2Codec: BinaryCodec[Case21] = BinaryCodec.derive()
-    implicit val codec: BinaryCodec[Coprod1]     = BinaryCodec.derive()
-  }
+  implicit val c1case1Codec: BinaryCodec[Case11]
+  implicit val c1case2Codec: BinaryCodec[Case21]
+  implicit val c1codec: BinaryCodec[Coprod1]
 
   sealed trait Coprod2
 
@@ -77,11 +85,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
 
   case class Case22(x: String) extends Coprod2
 
-  object Coprod2 {
-    implicit val case1Codec: BinaryCodec[Case12] = BinaryCodec.derive()
-    implicit val case2Codec: BinaryCodec[Case22] = BinaryCodec.derive()
-    implicit val codec: BinaryCodec[Coprod2]     = BinaryCodec.derive()
-  }
+  implicit val c2case1Codec: BinaryCodec[Case12]
+  implicit val c2case2Codec: BinaryCodec[Case22]
+  implicit val c2codec: BinaryCodec[Coprod2]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Evolution")(
@@ -284,11 +290,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         )
       )
     )
+  implicit val testIdCodec: BinaryCodec[TestId]
+}
 
+object EvolutionSpecBase {
   case class TestId(value: String) extends AnyVal
-
-  object TestId {
-    implicit val codec: BinaryCodec[TestId] = BinaryCodec.deriveForWrapper
-  }
-
 }

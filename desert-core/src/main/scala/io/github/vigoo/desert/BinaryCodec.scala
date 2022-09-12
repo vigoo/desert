@@ -2,7 +2,6 @@ package io.github.vigoo.desert
 
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
-import shapeless.Lazy
 import _root_.zio.prelude.fx._
 
 import scala.language.experimental.macros
@@ -62,17 +61,6 @@ object BinaryCodec {
     override def serialize(value: T): Ser[Unit] = serializeFn(value)
     override def deserialize(): Deser[T]        = deserializeFn
   }
-
-  def derive[T](evolutionSteps: Evolution*): BinaryCodec[T] = macro Macros.deriveImpl[T]
-
-  def deriveForWrapper[T](implicit codec: Lazy[UnwrappedBinaryCodec[T]]): BinaryCodec[T] = codec.value
-
-  def deriveF[T](evolutionSteps: Evolution*)(f: GenericDerivationApi => BinaryCodec[T]): BinaryCodec[T] =
-    if (evolutionSteps.isEmpty) {
-      f(GenericBinaryCodec.simple)
-    } else {
-      f(new GenericBinaryCodec(InitialVersion +: evolutionSteps.toVector))
-    }
 
   def unknown[T](implicit tag: ClassTag[T]): BinaryCodec[T] =
     define[T](

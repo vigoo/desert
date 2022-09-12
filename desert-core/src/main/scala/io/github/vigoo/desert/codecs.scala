@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 /** Module containing implicit binary codecs for a lot of base types
   */
-object codecs {
+object codecs extends TupleCodecs {
 
   implicit val byteCodec: BinaryCodec[Byte]     = BinaryCodec.define[Byte](value => writeByte(value))(readByte())
   implicit val shortCodec: BinaryCodec[Short]   = BinaryCodec.define[Short](value => writeShort(value))(readShort())
@@ -136,9 +136,42 @@ object codecs {
       } yield new StackTraceElement(className.orNull, methodName.orNull, fileName.orNull, lineNumber)
     )
 
-  implicit def persistedThrowableCodec: BinaryCodec[PersistedThrowable] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
+  implicit def persistedThrowableCodec: BinaryCodec[PersistedThrowable] =
+    new AdtCodec[PersistedThrowable, PersistedThrowable](
+      evolutionSteps = Vector(InitialVersion),
+      typeName = "io.github.vigoo.desert.PersistedThrowable",
+      constructors = Vector("PersistedThrowable"),
+      transientFields = Map.empty,
+      getSerializationCommands = (pt: PersistedThrowable) =>
+        List(
+          AdtCodec.SerializationCommand.WriteField("className", pt.className, () => stringCodec),
+          AdtCodec.SerializationCommand.WriteField("message", pt.message, () => stringCodec),
+          AdtCodec.SerializationCommand.WriteField("stackTrace", pt.stackTrace, () => arrayCodec[StackTraceElement]),
+          AdtCodec.SerializationCommand.WriteField("cause", pt.cause, () => optionCodec(persistedThrowableCodec))
+        ),
+      deserializationCommands = List(
+        AdtCodec.DeserializationCommand.Read(
+          "className",
+          () => stringCodec,
+          (className: String, pt: PersistedThrowable) => pt.copy(className = className)
+        ),
+        AdtCodec.DeserializationCommand
+          .Read("message", () => stringCodec, (message: String, pt: PersistedThrowable) => pt.copy(message = message)),
+        AdtCodec.DeserializationCommand.Read(
+          "stackTrace",
+          () => arrayCodec[StackTraceElement],
+          (stackTrace: Array[StackTraceElement], pt: PersistedThrowable) => pt.copy(stackTrace = stackTrace)
+        ),
+        AdtCodec.DeserializationCommand.ReadOptional(
+          "cause",
+          () => persistedThrowableCodec,
+          () => optionCodec(persistedThrowableCodec),
+          (cause: Option[PersistedThrowable], pt: PersistedThrowable) => pt.copy(cause = cause)
+        )
+      ),
+      initialBuilderState = PersistedThrowable("", "", Array.empty, None),
+      materialize = identity
+    )
 
   implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(
     persistedThrowableCodec.contramap(PersistedThrowable.apply),
@@ -223,335 +256,6 @@ object codecs {
   implicit def setCodec[A: BinaryCodec]: BinaryCodec[Set[A]] = iterableCodec[A, Set[A]]
 
   implicit def sortedSetCodec[A: BinaryCodec: Ordering]: BinaryCodec[SortedSet[A]] = iterableCodec[A, SortedSet[A]]
-
-  // Tuples
-
-  implicit def tuple1Codec[T1: BinaryCodec]: BinaryCodec[Tuple1[T1]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple2Codec[T1: BinaryCodec, T2: BinaryCodec]: BinaryCodec[Tuple2[T1, T2]] = BinaryCodec.deriveF() {
-    api => import api._; derive
-  }
-
-  implicit def tuple3Codec[T1: BinaryCodec, T2: BinaryCodec, T3: BinaryCodec]: BinaryCodec[Tuple3[T1, T2, T3]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple4Codec[T1: BinaryCodec, T2: BinaryCodec, T3: BinaryCodec, T4: BinaryCodec]
-      : BinaryCodec[Tuple4[T1, T2, T3, T4]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple5Codec[T1: BinaryCodec, T2: BinaryCodec, T3: BinaryCodec, T4: BinaryCodec, T5: BinaryCodec]
-      : BinaryCodec[Tuple5[T1, T2, T3, T4, T5]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple6Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec
-  ]: BinaryCodec[Tuple6[T1, T2, T3, T4, T5, T6]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple7Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec
-  ]: BinaryCodec[Tuple7[T1, T2, T3, T4, T5, T6, T7]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple8Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec
-  ]: BinaryCodec[Tuple8[T1, T2, T3, T4, T5, T6, T7, T8]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple9Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec
-  ]: BinaryCodec[Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple10Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec
-  ]: BinaryCodec[Tuple10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple11Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec
-  ]: BinaryCodec[Tuple11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple12Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec
-  ]: BinaryCodec[Tuple12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple13Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec
-  ]: BinaryCodec[Tuple13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple14Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec
-  ]: BinaryCodec[Tuple14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]] = BinaryCodec.deriveF() { api =>
-    import api._; derive
-  }
-
-  implicit def tuple15Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec
-  ]: BinaryCodec[Tuple15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]] = BinaryCodec.deriveF() {
-    api => import api._; derive
-  }
-
-  implicit def tuple16Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec
-  ]: BinaryCodec[Tuple16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple17Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec
-  ]: BinaryCodec[Tuple17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple18Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec,
-      T18: BinaryCodec
-  ]: BinaryCodec[Tuple18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple19Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec,
-      T18: BinaryCodec,
-      T19: BinaryCodec
-  ]: BinaryCodec[Tuple19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple20Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec,
-      T18: BinaryCodec,
-      T19: BinaryCodec,
-      T20: BinaryCodec
-  ]: BinaryCodec[Tuple20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]] =
-    BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple21Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec,
-      T18: BinaryCodec,
-      T19: BinaryCodec,
-      T20: BinaryCodec,
-      T21: BinaryCodec
-  ]: BinaryCodec[
-    Tuple21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]
-  ] = BinaryCodec.deriveF() { api => import api._; derive }
-
-  implicit def tuple22Codec[
-      T1: BinaryCodec,
-      T2: BinaryCodec,
-      T3: BinaryCodec,
-      T4: BinaryCodec,
-      T5: BinaryCodec,
-      T6: BinaryCodec,
-      T7: BinaryCodec,
-      T8: BinaryCodec,
-      T9: BinaryCodec,
-      T10: BinaryCodec,
-      T11: BinaryCodec,
-      T12: BinaryCodec,
-      T13: BinaryCodec,
-      T14: BinaryCodec,
-      T15: BinaryCodec,
-      T16: BinaryCodec,
-      T17: BinaryCodec,
-      T18: BinaryCodec,
-      T19: BinaryCodec,
-      T20: BinaryCodec,
-      T21: BinaryCodec,
-      T22: BinaryCodec
-  ]: BinaryCodec[
-    Tuple22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]
-  ] = BinaryCodec.deriveF() { api => import api._; derive }
 
   implicit def mapCodec[K: BinaryCodec, V: BinaryCodec]: BinaryCodec[Map[K, V]] = iterableCodec[(K, V), Map[K, V]]
 

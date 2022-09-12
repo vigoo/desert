@@ -3,6 +3,7 @@ package io.github.vigoo.desert.shardcake
 import com.devsisters.shardcake.interfaces.Serialization
 import io.github.vigoo.desert.{BinaryCodec, DefaultTypeRegistry, TypeRegistry}
 import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.shapeless._
 import zio._
 import zio.test._
 
@@ -11,7 +12,7 @@ object DesertSerializationSpec extends ZIOSpecDefault {
   case class Test(a: Int, b: String)
 
   object Test {
-    implicit val codec: BinaryCodec[Test] = BinaryCodec.derive()
+    implicit val codec: BinaryCodec[Test] = DerivedBinaryCodec.derive()
   }
 
   def spec: Spec[TestEnvironment with Scope, Any] =

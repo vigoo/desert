@@ -3,27 +3,19 @@ package io.github.vigoo.desert
 import io.github.vigoo.desert.codecs._
 import zio.test._
 
-object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationProperties {
+trait UnknownTypeSerializationSpecBase extends ZIOSpecDefault with SerializationProperties {
 
   trait CommonInterface
-  object CommonInterface {
-    implicit val codec: BinaryCodec[CommonInterface] = BinaryCodec.unknown
-  }
+  implicit val ciCodec: BinaryCodec[CommonInterface] = BinaryCodec.unknown
 
   case class First(id: String) extends CommonInterface
-  object First {
-    implicit val codec: BinaryCodec[First] = BinaryCodec.derive()
-  }
+  implicit val firstCodec: BinaryCodec[First]
 
   case class Second(value: Int) extends CommonInterface
-  object Second {
-    implicit val codec: BinaryCodec[Second] = BinaryCodec.derive()
-  }
+  implicit val secondCodec: BinaryCodec[Second]
 
   case class TestProduct(something: CommonInterface)
-  object TestProduct {
-    implicit val codec: BinaryCodec[TestProduct] = BinaryCodec.derive()
-  }
+  implicit val testProductCodec: BinaryCodec[TestProduct]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Serializing types not known at compile time")(

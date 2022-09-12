@@ -1,8 +1,9 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.shapeless
 
+import io.github.vigoo.desert.BinaryCodec
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
-import shapeless._
+import _root_.shapeless._
 
 abstract class UnwrappedBinaryCodec[T] extends BinaryCodec[T]
 

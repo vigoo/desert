@@ -1,18 +1,12 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.shapeless
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.BinaryDeserializerOps._
-import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.BinarySerializerOps._
-import io.github.vigoo.desert.GenericBinaryCodec.{SerializationPlan, _}
+import _root_.shapeless._
+import _root_.shapeless.labelled._
+import _root_.shapeless.ops.hlist._
+import _root_.shapeless.tag._
+import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
-import shapeless.labelled._
-import shapeless.ops.hlist._
-import shapeless.tag._
-import shapeless.{:+:, _}
-import _root_.zio.prelude.fx._
-import zio.Chunk
+import io.github.vigoo.desert.shapeless.GenericBinaryCodec._
 
 import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
@@ -459,7 +453,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
           witness.value.name,
           () => headCodec.value,
           () => optHeadCodec.value,
-          (value: H, values: BuilderState) => values.storeFieldValue(witness.value.name, value)
+          (value: Option[H], values: BuilderState) => values.storeFieldValue(witness.value.name, value)
         ) :: tailPlan.commands
 
       override def materialize(values: BuilderState): FieldType[K, Option[H]] :: T =

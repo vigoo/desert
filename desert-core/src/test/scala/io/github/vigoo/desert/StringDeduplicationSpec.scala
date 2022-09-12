@@ -10,31 +10,23 @@ import io.github.vigoo.desert.codecs._
 import zio.test.Assertion._
 import zio.test._
 
-object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperties {
+trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationProperties {
 
   val s1 = "this is a test string"
   val s2 = "and another one"
   val s3 = "and another one"
 
   case class DataV1()
-  object DataV1 {
-    implicit val codec: BinaryCodec[DataV1] = BinaryCodec.derive()
-  }
+  implicit val v1codec: BinaryCodec[DataV1]
 
   case class DataV2(newField: String)
-  object DataV2 {
-    implicit val codec: BinaryCodec[DataV2] = BinaryCodec.derive(FieldAdded[String]("newField", "unknown"))
-  }
+  implicit val v2codec: BinaryCodec[DataV2]
 
   case class OuterV1(data: DataV1, other: String)
-  object OuterV1 {
-    implicit val codec: BinaryCodec[OuterV1] = BinaryCodec.derive()
-  }
+  implicit val outerv1codec: BinaryCodec[OuterV1]
 
   case class OuterV2(data: DataV2, other: String)
-  object OuterV2 {
-    implicit val codec: BinaryCodec[OuterV2] = BinaryCodec.derive()
-  }
+  implicit val outerv2codec: BinaryCodec[OuterV2]
 
   private val testSer: Ser[Unit] = for {
     _ <- write(DeduplicatedString(s1))

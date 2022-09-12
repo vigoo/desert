@@ -649,7 +649,7 @@ object AdtCodec {
         fieldName: String,
         codec: () => BinaryCodec[T],
         optCodec: () => BinaryCodec[Option[T]],
-        store: (T, BuilderState) => BuilderState
+        store: (Option[T], BuilderState) => BuilderState
     ) extends DeserializationCommand[BuilderState]
 
     final case class ReadTransient[T, BuilderState](fieldName: String, store: (T, BuilderState) => BuilderState)

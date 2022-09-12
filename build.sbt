@@ -58,6 +58,8 @@ lazy val root = Project("desert", file("."))
   .aggregate(
     core.jvm,
     core.js,
+    shapeless.jvm,
+    shapeless.js,
     akka,
     cats.jvm,
     cats.js,
@@ -65,6 +67,8 @@ lazy val root = Project("desert", file("."))
     catsEffect.js,
     zio.jvm,
     zio.js,
+    zioSchema.jvm,
+    zioSchema.js,
     shardcake,
     benchmarks
   )
@@ -76,12 +80,24 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .settings(
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "dev.zio"       %% "zio-prelude"   % "1.0.0-RC15",
-      "com.chuusai"   %% "shapeless"     % "2.3.9"
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC15"
     )
   )
   .jsSettings(coverageEnabled := false)
+  .enablePlugins(TupleCodecGenerator)
+
+lazy val shapeless = CrossProject("desert-shapeless", file("desert-shapeless"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    description := "Shapeless based generic derivation for desert codecs",
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.chuusai"   %% "shapeless"     % "2.3.9"
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val akka = Project("desert-akka", file("desert-akka"))
   .settings(commonSettings)
@@ -131,6 +147,18 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .jsSettings(coverageEnabled := false)
   .dependsOn(core)
 
+lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    description := "ZIO Schema based generic derivation and bindings for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-schema" % "0.2.1"
+    )
+  )
+  .dependsOn(core, zio)
+
 lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(commonSettings)
   .settings(
@@ -140,6 +168,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
     )
   )
   .dependsOn(core.jvm, zio.jvm)
+  .dependsOn(shapeless.jvm % "test->compile")
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
@@ -149,7 +178,7 @@ lazy val benchmarks = project
     coverageEnabled := false
   )
   .enablePlugins(JmhPlugin)
-  .dependsOn(core.jvm)
+  .dependsOn(core.jvm, shapeless.jvm)
 
 lazy val docs = project
   .settings(commonSettings)

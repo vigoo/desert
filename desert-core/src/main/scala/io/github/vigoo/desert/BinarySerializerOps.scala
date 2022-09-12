@@ -5,7 +5,6 @@ import java.util.zip.Deflater
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
-import shapeless.Lazy
 import _root_.zio.prelude.fx._
 
 import scala.util.Try
@@ -65,10 +64,11 @@ trait BinarySerializerOps {
       _                 <- setSerializerState(newState)
     } yield result
 
-  final def storeRefOrObject[T <: AnyRef](value: T)(implicit codec: Lazy[BinaryCodec[T]]): Ser[Unit] =
+  // TODO: needs the codec to be lazy?
+  final def storeRefOrObject[T <: AnyRef](value: T)(implicit codec: BinaryCodec[T]): Ser[Unit] =
     storeRef(value).flatMap {
       case RefAlreadyStored(id) => writeVarInt(id.value, optimizeForPositive = true)
-      case RefIsNew(_)          => writeVarInt(0, optimizeForPositive = true) *> write(value)(codec.value)
+      case RefIsNew(_)          => writeVarInt(0, optimizeForPositive = true) *> write(value)
     }
 }
 

@@ -3,7 +3,6 @@ package io.github.vigoo.desert
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import shapeless.Lazy
 import _root_.zio.prelude.fx._
 
 import scala.util.Try
@@ -69,11 +68,12 @@ trait BinaryDeserializerOps {
       _            <- setDeserializerState(newState)
     } yield ()
 
-  def readRefOrValue[T <: AnyRef](storeReadReference: Boolean = true)(implicit codec: Lazy[BinaryCodec[T]]): Deser[T] =
+  // TODO: need the codec to be lazy?
+  def readRefOrValue[T <: AnyRef](storeReadReference: Boolean = true)(implicit codec: BinaryCodec[T]): Deser[T] =
     readVarInt(optimizeForPositive = true).flatMap {
       case 0  =>
         for {
-          value <- read[T]()(codec.value)
+          value <- read[T]()
           _     <- if (storeReadReference) storeReadRef(value) else finishDeserializerWith(())
         } yield value
       case id =>

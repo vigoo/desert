@@ -5,13 +5,11 @@ import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import zio.test.Assertion._
 import zio.test._
 
-object DefaultTypeRegistrySpec extends ZIOSpecDefault {
+trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
 
   case class TestProd(x: Double, y: Double)
 
-  object TestProd {
-    implicit val codec: BinaryCodec[TestProd] = BinaryCodec.derive()
-  }
+  implicit val codec: BinaryCodec[TestProd]
 
   trait TestInterface
 
@@ -57,7 +55,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
         val regUnknown = registry.get(Vector.empty)
 
         assert(regString)(isSome(equalTo(RegisteredType(RegisteredTypeId(1), stringCodec, classOf[String])))) &&
-        assert(regProd)(isSome(equalTo(RegisteredType(RegisteredTypeId(2), TestProd.codec, classOf[TestProd])))) &&
+        assert(regProd)(isSome(equalTo(RegisteredType(RegisteredTypeId(2), codec, classOf[TestProd])))) &&
         assert(regIface)(
           isSome(equalTo(RegisteredType(RegisteredTypeId(3), TestInterface.codec, classOf[TestInterface])))
         ) &&
