@@ -1,8 +1,7 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.BinaryCodec
-import zio.schema.DynamicValue
-import zio.schema.ast.SchemaAst
+import _root_.zio.schema.ast.SchemaAst
+import _root_.zio.schema.DynamicValue
 
 package object zioschema {
 

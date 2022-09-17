@@ -32,6 +32,11 @@ object codecs extends TupleCodecs {
   implicit val unitCodec: BinaryCodec[Unit] =
     BinaryCodec.define[Unit](_ => finishSerializer())(finishDeserializerWith(()))
 
+  implicit val charCodec: BinaryCodec[Char] = BinaryCodec.from(
+    shortCodec.contramap(_.toShort),
+    shortCodec.map(_.toChar)
+  )
+
   implicit val stringCodec: BinaryCodec[String] = new BinaryCodec[String] {
     private val charset = StandardCharsets.UTF_8
 

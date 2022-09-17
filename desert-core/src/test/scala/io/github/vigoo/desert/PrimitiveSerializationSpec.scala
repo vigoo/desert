@@ -18,6 +18,7 @@ object PrimitiveSerializationSpec extends ZIOSpecDefault with SerializationPrope
       test("string")(canBeSerialized(Gen.string)),
       test("unit")(canBeSerialized(Gen.unit)),
       test("uuid")(canBeSerialized(Gen.uuid)),
+      test("char")(canBeSerialized(Gen.char)),
       suite("variable length int")(
         test("optimized for positive") {
           val varIntCodec = BinaryCodec
