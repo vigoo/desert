@@ -19,6 +19,7 @@ trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationPrope
   case class DataV1()
   implicit val v1codec: BinaryCodec[DataV1]
 
+  @evolutionSteps(FieldAdded[String]("newField", "unknown"))
   case class DataV2(newField: String)
   implicit val v2codec: BinaryCodec[DataV2]
 

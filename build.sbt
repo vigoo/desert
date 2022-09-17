@@ -154,10 +154,11 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-schema" % "0.2.1"
+      "dev.zio" %% "zio-schema"            % "0.2.1",
+      "dev.zio" %% "zio-schema-derivation" % "0.2.1" % Test
     )
   )
-  .dependsOn(core, zio)
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(commonSettings)

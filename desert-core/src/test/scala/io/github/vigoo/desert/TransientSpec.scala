@@ -42,17 +42,18 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
 object TransientSpecBase {
   case class TypeWithoutCodec(value: Int)
 
+  @evolutionSteps(FieldAdded("c", None))
   case class TransientTest(
       a: Int,
-      @TransientField("def") b: String,
-      @TransientField(None) c: Option[Int],
+      @transientField("def") b: String,
+      @transientField(None) c: Option[Int],
       d: Boolean,
-      @TransientField(TypeWithoutCodec(0)) e: TypeWithoutCodec
+      @transientField(TypeWithoutCodec(0)) e: TypeWithoutCodec
   ) // derive must not require an implicit codec for transient fields!
 
   sealed trait SumWithTransientCons
 
   case class Case1(a: Int)                                       extends SumWithTransientCons
-  @TransientConstructor case class Case2(data: TypeWithoutCodec) extends SumWithTransientCons
+  @transientConstructor case class Case2(data: TypeWithoutCodec) extends SumWithTransientCons
   case class Case3(x: String)                                    extends SumWithTransientCons
 }

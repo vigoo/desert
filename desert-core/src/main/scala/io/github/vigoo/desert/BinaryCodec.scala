@@ -3,6 +3,7 @@ package io.github.vigoo.desert
 import io.github.vigoo.desert.BinaryDeserializer.Deser
 import io.github.vigoo.desert.BinarySerializer.Ser
 import _root_.zio.prelude.fx._
+import io.github.vigoo.desert.syntax.failSerializerWith
 
 import scala.language.experimental.macros
 import scala.reflect.ClassTag
@@ -14,6 +15,12 @@ trait BinarySerializer[T] { self =>
   def serialize(value: T): Ser[Unit]
 
   def contramap[U](f: U => T): BinarySerializer[U] = (value: U) => self.serialize(f(value))
+
+  def contramapOrFail[U](f: U => Either[DesertFailure, T]): BinarySerializer[U] = (value: U) =>
+    f(value) match {
+      case Left(value)  => failSerializerWith(value)
+      case Right(value) => self.serialize(value)
+    }
 }
 
 object BinarySerializer {
@@ -33,6 +40,9 @@ trait BinaryDeserializer[T] { self =>
   def deserialize(): Deser[T]
 
   def map[U](f: T => U): BinaryDeserializer[U] = () => self.deserialize().map(f)
+
+  def mapOrFail[U](f: T => Either[DesertFailure, U]): BinaryDeserializer[U] = () =>
+    self.deserialize().flatMap(value => Deser.fromEither(f(value)))
 }
 
 object BinaryDeserializer {
