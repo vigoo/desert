@@ -94,7 +94,7 @@ lazy val shapeless = CrossProject("desert-shapeless", file("desert-shapeless"))(
     description := "Shapeless based generic derivation for desert codecs",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.chuusai"   %% "shapeless"     % "2.3.9"
+      "com.chuusai"   %% "shapeless"     % "2.3.10"
     )
   )
   .dependsOn(core % "compile->compile;test->test")
