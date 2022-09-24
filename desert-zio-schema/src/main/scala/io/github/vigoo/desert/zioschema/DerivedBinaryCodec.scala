@@ -20,18 +20,18 @@ object DerivedBinaryCodec {
 
   def derive[T](implicit schema: Schema[T]): BinaryCodec[T] =
     schema match {
-      case enum: Schema.Enum[_]                        =>
+      case enum: Schema.Enum[_]                   =>
         deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum)
-      case genericRecord: Schema.GenericRecord         =>
+      case genericRecord: Schema.GenericRecord    =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass1: Schema.CaseClass1[_, _]         =>
+      case caseClass1: Schema.CaseClass1[_, _]    =>
         deriveRecord(getEvolutionStepsFromAnnotation(caseClass1.annotations), caseClass1)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass2: Schema.CaseClass2[_, _, _]      =>
+      case caseClass2: Schema.CaseClass2[_, _, _] =>
         deriveRecord(getEvolutionStepsFromAnnotation(caseClass2.annotations), caseClass2)
           .asInstanceOf[BinaryCodec[T]]
-      case transform: Schema.Transform[_, _, _]        =>
+      case transform: Schema.Transform[_, _, _]   =>
         val binaryCodec = derive(transform.codec).asInstanceOf[BinaryCodec[Any]]
         BinaryCodec.from(
           binaryCodec.contramapOrFail(
@@ -41,13 +41,13 @@ object DerivedBinaryCodec {
             transform.g.asInstanceOf[Any => Either[String, T]](_).left.map(DeserializationFailure(_, None))
           )
         )
-      case Schema.Lazy(inner)                          =>
+      case Schema.Lazy(inner)                     =>
         derive(inner())
-      case map: Schema.MapSchema[_, _]                 =>
+      case map: Schema.MapSchema[_, _]            =>
         codecs.mapCodec(derive(map.ks), derive(map.vs)).asInstanceOf[BinaryCodec[T]]
-      case set: Schema.SetSchema[_]                    =>
+      case set: Schema.SetSchema[_]               =>
         codecs.setCodec(derive(set.as)).asInstanceOf[BinaryCodec[T]]
-      case sequence: Schema.Sequence[_, _, _]          =>
+      case sequence: Schema.Sequence[_, _, _]     =>
         val baseCodec = chunkCodec[Any](
           derive(sequence.schemaA.asInstanceOf[Schema[Any]])
         )
@@ -55,38 +55,38 @@ object DerivedBinaryCodec {
           baseCodec.contramap(sequence.toChunk.asInstanceOf[T => Chunk[Any]]),
           baseCodec.map(sequence.fromChunk.asInstanceOf[Chunk[Any] => T])
         )
-      case Schema.Primitive(standardType, annotations) =>
+      case Schema.Primitive(standardType, _)      =>
         (standardType match {
-          case StandardType.UnitType                      => codecs.unitCodec
-          case StandardType.StringType                    => codecs.stringCodec
-          case StandardType.BoolType                      => codecs.booleanCodec
-          case StandardType.ByteType                      => codecs.byteCodec
-          case StandardType.ShortType                     => codecs.shortCodec
-          case StandardType.IntType                       => codecs.intCodec
-          case StandardType.LongType                      => codecs.longCodec
-          case StandardType.FloatType                     => codecs.floatCodec
-          case StandardType.DoubleType                    => codecs.doubleCodec
-          case StandardType.BinaryType                    => byteChunkCodec
-          case StandardType.CharType                      => codecs.charCodec
-          case StandardType.UUIDType                      => codecs.uuidCodec
-          case StandardType.BigDecimalType                => ???
-          case StandardType.BigIntegerType                => ???
-          case StandardType.DayOfWeekType                 => ???
-          case StandardType.MonthType                     => ???
-          case StandardType.MonthDayType                  => ???
-          case StandardType.PeriodType                    => ???
-          case StandardType.YearType                      => ???
-          case StandardType.YearMonthType                 => ???
-          case StandardType.ZoneIdType                    => ???
-          case StandardType.ZoneOffsetType                => ???
-          case StandardType.DurationType                  => ???
-          case StandardType.InstantType(formatter)        => ???
-          case StandardType.LocalDateType(formatter)      => ???
-          case StandardType.LocalTimeType(formatter)      => ???
-          case StandardType.LocalDateTimeType(formatter)  => ???
-          case StandardType.OffsetTimeType(formatter)     => ???
-          case StandardType.OffsetDateTimeType(formatter) => ???
-          case StandardType.ZonedDateTimeType(formatter)  => ???
+          case StandardType.UnitType              => codecs.unitCodec
+          case StandardType.StringType            => codecs.stringCodec
+          case StandardType.BoolType              => codecs.booleanCodec
+          case StandardType.ByteType              => codecs.byteCodec
+          case StandardType.ShortType             => codecs.shortCodec
+          case StandardType.IntType               => codecs.intCodec
+          case StandardType.LongType              => codecs.longCodec
+          case StandardType.FloatType             => codecs.floatCodec
+          case StandardType.DoubleType            => codecs.doubleCodec
+          case StandardType.BinaryType            => byteChunkCodec
+          case StandardType.CharType              => codecs.charCodec
+          case StandardType.UUIDType              => codecs.uuidCodec
+          case StandardType.BigDecimalType        => codecs.javaBigDecimalCodec
+          case StandardType.BigIntegerType        => codecs.javaBigIntegerCodec
+          case StandardType.DayOfWeekType         => codecs.dayOfWeekCodec
+          case StandardType.MonthType             => codecs.monthCodec
+          case StandardType.MonthDayType          => codecs.monthDayCodec
+          case StandardType.PeriodType            => codecs.periodCodec
+          case StandardType.YearType              => codecs.yearCodec
+          case StandardType.YearMonthType         => codecs.yearMonthCodec
+          case StandardType.ZoneIdType            => codecs.zoneIdCodec
+          case StandardType.ZoneOffsetType        => codecs.zoneOffsetCodec
+          case StandardType.DurationType          => codecs.durationCodec
+          case StandardType.InstantType(_)        => codecs.instantCodec
+          case StandardType.LocalDateType(_)      => codecs.localDateCodec
+          case StandardType.LocalTimeType(_)      => codecs.localTimeCodec
+          case StandardType.LocalDateTimeType(_)  => codecs.localDateTimeCodec
+          case StandardType.OffsetTimeType(_)     => codecs.offsetTimeCodec
+          case StandardType.OffsetDateTimeType(_) => codecs.offsetDateTimeCodec
+          case StandardType.ZonedDateTimeType(_)  => codecs.zonedDateTimeCodec
         }).asInstanceOf[BinaryCodec[T]]
 
       case Schema.Optional(codec, annotations)           =>
