@@ -80,7 +80,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .settings(
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC15"
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
     )
   )
   .jsSettings(coverageEnabled := false)
