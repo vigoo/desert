@@ -14,10 +14,10 @@ lazy val commonSettings = Seq(
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio"               % "2.0.2" % Test,
-    "dev.zio" %% "zio-test"          % "2.0.2" % Test,
-    "dev.zio" %% "zio-test-sbt"      % "2.0.2" % Test,
-    "dev.zio" %% "zio-test-magnolia" % "2.0.2" % Test
+    "dev.zio" %% "zio"               % "2.0.3" % Test,
+    "dev.zio" %% "zio-test"          % "2.0.3" % Test,
+    "dev.zio" %% "zio-test-sbt"      % "2.0.3" % Test,
+    "dev.zio" %% "zio-test-magnolia" % "2.0.3" % Test
   ),
   Test / compile / coverageEnabled    := true,
   Compile / compile / coverageEnabled := false,
