@@ -56,7 +56,7 @@ object TupleCodecGenerator extends AutoPlugin {
 
     val tupleBuilders = tuples.map { model =>
       q"""final class ${model.builderType}[..${model.typeParams}] {
-            def asTuple: ${model.appliedTupleType} = ${model.fromFields}
+            def asTuple: Either[DesertFailure, ${model.appliedTupleType}] = Right(${model.fromFields})
 
             ..${model.fieldVars}
           }

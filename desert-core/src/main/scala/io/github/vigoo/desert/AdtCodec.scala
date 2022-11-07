@@ -17,7 +17,7 @@ class AdtCodec[T, BuilderState](
     getSerializationCommands: T => List[AdtCodec.SerializationCommand],
     deserializationCommands: List[AdtCodec.DeserializationCommand[BuilderState]],
     initialBuilderState: BuilderState,
-    materialize: BuilderState => T
+    materialize: BuilderState => Either[DesertFailure, T]
 ) extends BinaryCodec[T] {
   import AdtCodec._
 
@@ -109,7 +109,8 @@ class AdtCodec[T, BuilderState](
                                         )
       (finalState, finalBuilderState) = result
       _                              <- setDeserializerState(finalState.serializerState)
-    } yield materialize(finalBuilderState)
+      materializedResult             <- Deser.fromEither(materialize(finalBuilderState))
+    } yield materializedResult
 
   private def createChunkedOutput(primaryOutput: BinaryOutput): ChunkedOutput =
     if (version == 0) {

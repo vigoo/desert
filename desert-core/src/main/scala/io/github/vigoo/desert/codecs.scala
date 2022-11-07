@@ -387,7 +387,7 @@ object codecs extends TupleCodecs {
         )
       ),
       initialBuilderState = PersistedThrowable("", "", Array.empty, None),
-      materialize = identity
+      materialize = Right(_)
     )
 
   implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(

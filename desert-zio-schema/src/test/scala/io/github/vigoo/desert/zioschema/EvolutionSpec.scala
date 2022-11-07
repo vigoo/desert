@@ -21,5 +21,8 @@ object EvolutionSpec extends EvolutionSpecBase {
   override implicit val v5codec: BinaryCodec[ProdV5]     = DerivedBinaryCodec.derive
   override implicit val c1codec: BinaryCodec[Coprod1]    = DerivedBinaryCodec.derive
   override implicit val c2codec: BinaryCodec[Coprod2]    = DerivedBinaryCodec.derive
-  override implicit val testIdCodec: BinaryCodec[TestId] = null // TODO
+  override implicit val testIdCodec: BinaryCodec[TestId] = BinaryCodec.from(
+    codecs.stringCodec.contramap(_.value),
+    codecs.stringCodec.map(TestId.apply)
+  ) // TODO: derivation support
 }

@@ -573,7 +573,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       },
       deserializationPlan.value.commands,
       BuilderState.empty,
-      (values => gen.from(taggedTransients.untag(deserializationPlan.value.materialize(values))))
+      (values => Right(gen.from(taggedTransients.untag(deserializationPlan.value.materialize(values)))))
     )
   }
 
