@@ -10,7 +10,7 @@ ThisBuild / dynverSonatypeSnapshots := true
 
 lazy val commonSettings = Seq(
   organization                        := "io.github.vigoo",
-  scalaVersion                        := "2.13.8",
+  scalaVersion                        := "2.13.10",
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
   libraryDependencies ++= Seq(
@@ -80,7 +80,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .settings(
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC15"
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -94,7 +94,7 @@ lazy val shapeless = CrossProject("desert-shapeless", file("desert-shapeless"))(
     description := "Shapeless based generic derivation for desert codecs",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.chuusai"   %% "shapeless"     % "2.3.9"
+      "com.chuusai"   %% "shapeless"     % "2.3.10"
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -165,7 +165,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core" % "2.0.0"
+      "com.devsisters" %% "shardcake-core" % "2.0.4"
     )
   )
   .dependsOn(core.jvm, zio.jvm)
