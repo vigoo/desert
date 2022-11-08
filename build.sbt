@@ -4,6 +4,8 @@ import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
+val zioVersion = "2.0.3"
+
 name := "desert"
 
 ThisBuild / dynverSonatypeSnapshots := true
@@ -14,10 +16,10 @@ lazy val commonSettings = Seq(
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio"               % "2.0.3" % Test,
-    "dev.zio" %% "zio-test"          % "2.0.3" % Test,
-    "dev.zio" %% "zio-test-sbt"      % "2.0.3" % Test,
-    "dev.zio" %% "zio-test-magnolia" % "2.0.3" % Test
+    "dev.zio" %% "zio"               % zioVersion % Test,
+    "dev.zio" %% "zio-test"          % zioVersion % Test,
+    "dev.zio" %% "zio-test-sbt"      % zioVersion % Test,
+    "dev.zio" %% "zio-test-magnolia" % zioVersion % Test
   ),
   Test / compile / coverageEnabled    := true,
   Compile / compile / coverageEnabled := false,
@@ -80,6 +82,8 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .settings(
     description := "A Scala binary serialization library",
     libraryDependencies ++= Seq(
+      "dev.zio" %% "zio"         % zioVersion,
+      "dev.zio" %% "zio-streams" % zioVersion,
       "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
     )
   )
