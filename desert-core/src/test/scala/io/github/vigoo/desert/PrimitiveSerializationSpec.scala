@@ -1,10 +1,11 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.codecs._
+import zio.Scope
 import zio.test._
 
 object PrimitiveSerializationSpec extends ZIOSpecDefault with SerializationProperties {
-  override def spec =
+  override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("Primitive values can be serialized and read back")(
       test("boolean")(canBeSerialized(Gen.boolean)),
       test("byte")(canBeSerialized(Gen.byte)),

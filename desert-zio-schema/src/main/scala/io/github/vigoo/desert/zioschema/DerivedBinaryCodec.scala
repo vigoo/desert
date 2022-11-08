@@ -12,7 +12,6 @@ import io.github.vigoo.desert.{
   transientField
 }
 import io.github.vigoo.desert.syntax._
-import io.github.vigoo.desert.zioschema.RecordDeserializer.SchemaBuilderState
 import io.github.vigoo.desert.ziosupport.codecs._
 import zio.{Chunk, ChunkBuilder}
 import zio.schema.{Schema, StandardType}
@@ -20,13 +19,40 @@ import zio.schema.{Schema, StandardType}
 import scala.annotation.tailrec
 
 object DerivedBinaryCodec {
+  private lazy val globalDerivationContext = new DerivationContext
 
-  def derive[T](implicit schema: Schema[T]): BinaryCodec[T] =
+  def derive[T](implicit schema: Schema[T]): BinaryCodec[T] = {
+//    implicit val context: DerivationContext = new DerivationContext
+    implicit val context: DerivationContext = globalDerivationContext
+    deriveInContext[T](schema)
+  }
+
+  private[zioschema] def deriveInContext[T](
+      schema: Schema[T]
+  )(implicit derivationContext: DerivationContext): BinaryCodec[T] =
+    derivationContext.get(schema) match {
+      case None        =>
+        val derived = deriveImpl[T](schema, derivationContext)
+        val codec   = derivationContext.put(schema, derived)
+        codec
+      case Some(codec) =>
+        codec
+    }
+
+  private[zioschema] def deriveImpl[T](implicit
+      schema: Schema[T],
+      derivationContext: DerivationContext
+  ): BinaryCodec[T] =
     schema match {
-      case enum: Schema.Enum[_]                      =>
-        deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum)
+      case enum: Schema.Enum2[_, _, _]               =>
+        deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
+      case enum: Schema.Enum3[_, _, _, _]            =>
+        deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
       case genericRecord: Schema.GenericRecord       =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
+          .asInstanceOf[BinaryCodec[T]]
+      case caseClass0: Schema.CaseClass0[_]          =>
+        deriveRecord(getEvolutionStepsFromAnnotation(caseClass0.annotations), caseClass0)
           .asInstanceOf[BinaryCodec[T]]
       case caseClass1: Schema.CaseClass1[_, _]       =>
         deriveRecord(getEvolutionStepsFromAnnotation(caseClass1.annotations), caseClass1)
@@ -38,7 +64,7 @@ object DerivedBinaryCodec {
         deriveRecord(getEvolutionStepsFromAnnotation(caseClass3.annotations), caseClass3)
           .asInstanceOf[BinaryCodec[T]]
       case transform: Schema.Transform[_, _, _]      =>
-        val binaryCodec = derive(transform.codec).asInstanceOf[BinaryCodec[Any]]
+        val binaryCodec = deriveInContext(transform.codec).asInstanceOf[BinaryCodec[Any]]
         BinaryCodec.from(
           binaryCodec.contramapOrFail(
             transform.f.asInstanceOf[Any => Either[String, Any]](_).left.map(SerializationFailure(_, None))
@@ -48,14 +74,14 @@ object DerivedBinaryCodec {
           )
         )
       case Schema.Lazy(inner)                        =>
-        derive(inner())
+        deriveInContext(inner())
       case map: Schema.MapSchema[_, _]               =>
-        codecs.mapCodec(derive(map.ks), derive(map.vs)).asInstanceOf[BinaryCodec[T]]
+        codecs.mapCodec(deriveInContext(map.ks), deriveInContext(map.vs)).asInstanceOf[BinaryCodec[T]]
       case set: Schema.SetSchema[_]                  =>
-        codecs.setCodec(derive(set.as)).asInstanceOf[BinaryCodec[T]]
+        codecs.setCodec(deriveInContext(set.as)).asInstanceOf[BinaryCodec[T]]
       case sequence: Schema.Sequence[_, _, _]        =>
         val baseCodec = chunkCodec[Any](
-          derive(sequence.schemaA.asInstanceOf[Schema[Any]])
+          deriveInContext(sequence.schemaA.asInstanceOf[Schema[Any]])
         )
         BinaryCodec.from(
           baseCodec.contramap(sequence.toChunk.asInstanceOf[T => Chunk[Any]]),
@@ -96,7 +122,7 @@ object DerivedBinaryCodec {
         }).asInstanceOf[BinaryCodec[T]]
 
       case Schema.Optional(codec, _)           =>
-        codecs.optionCodec(derive(codec)).asInstanceOf[BinaryCodec[T]]
+        codecs.optionCodec(deriveInContext(codec)).asInstanceOf[BinaryCodec[T]]
       case Schema.Fail(message, _)             =>
         BinaryCodec.from(
           (_: T) => failSerializerWith(SerializationFailure(message, None)),
@@ -107,8 +133,8 @@ object DerivedBinaryCodec {
       case Schema.EitherSchema(left, right, _) =>
         codecs
           .eitherCodec(
-            derive(left),
-            derive(right)
+            deriveInContext(left),
+            deriveInContext(right)
           )
           .asInstanceOf[BinaryCodec[T]]
       case Schema.Meta(_, _)                   =>
@@ -124,14 +150,14 @@ object DerivedBinaryCodec {
       recordSerializer: RecordSerializer[S],
       recordDeserializer: RecordDeserializer[S]
   ): BinaryCodec[T] =
-    new AdtCodec[T, SchemaBuilderState](
+    new AdtCodec[T, RecordDeserializer.SchemaBuilderState](
       evolutionSteps = evolutionSteps,
       typeName = schema.id.name,
       constructors = Vector(schema.id.name),
       transientFields = getTransientFields(schema.structure),
       getSerializationCommands = (value: T) => recordSerializer.getSerializationCommands(schema, value),
       deserializationCommands = recordDeserializer.getDeserializationCommands(schema),
-      initialBuilderState = SchemaBuilderState.initial,
+      initialBuilderState = RecordDeserializer.SchemaBuilderState.initial,
       materialize = builderState =>
         schema
           .rawConstruct(builderState.asChunk)
@@ -140,20 +166,24 @@ object DerivedBinaryCodec {
           .map(msg => DeserializationFailure(msg, None))
     )
 
-  private def deriveEnum[T](evolutionSteps: Vector[Evolution], schema: Schema.Enum[T]): BinaryCodec[T] =
-    codecs.unitCodec.asInstanceOf[BinaryCodec[T]]
-//    new AdtCodec[T, SchemaBuilderState](
-//      evolutionSteps = evolutionSteps,
-//      typeName = schema.id.name,
-//      constructors = ???,
-//      transientFields = ???,
-//      getSerializationCommands = ???,
-//      deserializationCommands = ???,
-//      initialBuilderState = ???,
-//      materialize = ???
-//    )
+  private def deriveEnum[T, S <: Schema.Enum[_]](evolutionSteps: Vector[Evolution], schema: S)(implicit
+      enumSerializer: EnumSerializer[S],
+      enumDeserializer: EnumDeserializer[S]
+  ): BinaryCodec[T] =
+    new AdtCodec[T, EnumDeserializer.SchemaBuilderState](
+      evolutionSteps = evolutionSteps,
+      typeName = schema.id.name,
+      constructors = schema.structure.keys.toVector,
+      transientFields = Map.empty,
+      getSerializationCommands = (value: T) => enumSerializer.getSerializationCommands(schema, value),
+      deserializationCommands = enumDeserializer.getDeserializationCommands(schema),
+      initialBuilderState = EnumDeserializer.SchemaBuilderState.initial,
+      materialize = builderState => Right(builderState.result.asInstanceOf[T])
+    )
 
-  private def deriveTuple[T](left: Schema[Any], right: Schema[Any]): BinaryCodec[T] = {
+  private def deriveTuple[T](left: Schema[Any], right: Schema[Any])(implicit
+      derivationContext: DerivationContext
+  ): BinaryCodec[T] = {
     val fields = ChunkBuilder.make[Schema[Any]](2)
     gatherTupleFields(left, fields)
     fields += right
@@ -170,27 +200,31 @@ object DerivedBinaryCodec {
         fields += schema
     }
 
-  private def deriveNTuple[T](values: Chunk[Schema[Any]]): BinaryCodec[T] =
+  private def deriveNTuple[T](
+      values: Chunk[Schema[Any]]
+  )(implicit derivationContext: DerivationContext): BinaryCodec[T] =
     values.length match {
       case 2 =>
         codecs
           .tuple2Codec(
-            derive(values(0)),
+            deriveInContext(values(0)),
             fieldReaderFor(values(0)),
-            derive(values(1)),
+            deriveInContext(values(1)),
             fieldReaderFor(values(1))
           )
           .asInstanceOf[BinaryCodec[T]]
     }
 
-  private def fieldReaderFor(schema: Schema[_]): codecs.TupleFieldReader[Any] =
+  private def fieldReaderFor(
+      schema: Schema[_]
+  )(implicit derivationContext: DerivationContext): codecs.TupleFieldReader[Any] =
     RecordDeserializer.findTopLevelOptionalNode(schema) match {
       case Some(optional) =>
         codecs.TupleFieldReader
-          .optionalFieldReader[Any](derive(optional.codec.asInstanceOf[Schema[Any]]))
+          .optionalFieldReader[Any](deriveInContext(optional.codec.asInstanceOf[Schema[Any]]))
           .asInstanceOf[codecs.TupleFieldReader[Any]]
       case None           =>
-        codecs.TupleFieldReader.requiredFieldReader[Any](derive(schema.asInstanceOf[Schema[Any]]))
+        codecs.TupleFieldReader.requiredFieldReader[Any](deriveInContext(schema.asInstanceOf[Schema[Any]]))
     }
 
   private def getTransientFields(fields: Chunk[Schema.Field[_]]): Map[Symbol, Any] =

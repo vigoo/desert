@@ -23,7 +23,7 @@ private[zioschema] object RecordDeserializer {
     val initial: SchemaBuilderState = SchemaBuilderState(List.empty)
   }
 
-  implicit val genericRecordDeserializer: RecordDeserializer[Schema.GenericRecord] =
+  implicit def genericRecordDeserializer(implicit derivationContext: DerivationContext): RecordDeserializer[Schema.GenericRecord] =
     (schema: Schema.GenericRecord) =>
       schema.fieldSet.toChunk.toList.map { field =>
         fieldToDeserializationCommand(field)
@@ -32,20 +32,20 @@ private[zioschema] object RecordDeserializer {
   implicit def caseClass0Deserializer[Z]: RecordDeserializer[Schema.CaseClass0[Z]] =
     (schema: Schema.CaseClass0[Z]) => List.empty
 
-  implicit def caseClass1Deserializer[A1, Z]: RecordDeserializer[Schema.CaseClass1[A1, Z]] =
+  implicit def caseClass1Deserializer[A1, Z](implicit derivationContext: DerivationContext): RecordDeserializer[Schema.CaseClass1[A1, Z]] =
     (schema: Schema.CaseClass1[A1, Z]) =>
       List(
         fieldToDeserializationCommand(schema.field)
       )
 
-  implicit def caseClass2Deserializer[A1, A2, Z]: RecordDeserializer[Schema.CaseClass2[A1, A2, Z]] =
+  implicit def caseClass2Deserializer[A1, A2, Z](implicit derivationContext: DerivationContext): RecordDeserializer[Schema.CaseClass2[A1, A2, Z]] =
     (schema: Schema.CaseClass2[A1, A2, Z]) =>
       List(
         fieldToDeserializationCommand(schema.field1),
         fieldToDeserializationCommand(schema.field2)
       )
 
-  implicit def caseClass3Deserializer[A1, A2, A3, Z]: RecordDeserializer[Schema.CaseClass3[A1, A2, A3, Z]] =
+  implicit def caseClass3Deserializer[A1, A2, A3, Z](implicit derivationContext: DerivationContext): RecordDeserializer[Schema.CaseClass3[A1, A2, A3, Z]] =
     (schema: Schema.CaseClass3[A1, A2, A3, Z]) =>
       List(
         fieldToDeserializationCommand(schema.field1),
@@ -55,7 +55,7 @@ private[zioschema] object RecordDeserializer {
 
   private def fieldToDeserializationCommand(
       field: Schema.Field[_]
-  ): AdtCodec.DeserializationCommand[SchemaBuilderState] = {
+  )(implicit derivationContext: DerivationContext): AdtCodec.DeserializationCommand[SchemaBuilderState] = {
     val optional            = findTopLevelOptionalNode(field.schema)
     val transientAnnotation = field.annotations.collectFirst { case tf: transientField =>
       tf
@@ -69,14 +69,14 @@ private[zioschema] object RecordDeserializer {
     else if (optional.isDefined) {
       AdtCodec.DeserializationCommand.ReadOptional(
         field.label,
-        () => DerivedBinaryCodec.derive(optional.get.codec.asInstanceOf[Schema[Any]]),
-        () => DerivedBinaryCodec.derive(field.schema).asInstanceOf[BinaryCodec[Option[Any]]],
+        () => DerivedBinaryCodec.deriveInContext(optional.get.codec.asInstanceOf[Schema[Any]]),
+        () => DerivedBinaryCodec.deriveInContext(field.schema).asInstanceOf[BinaryCodec[Option[Any]]],
         (value: Option[Any], state: SchemaBuilderState) => state.storeField(value)
       )
     } else
       AdtCodec.DeserializationCommand.Read(
         field.label,
-        () => DerivedBinaryCodec.derive(field.schema.asInstanceOf[Schema[Any]]),
+        () => DerivedBinaryCodec.deriveInContext(field.schema.asInstanceOf[Schema[Any]]),
         (value: Any, state: SchemaBuilderState) => state.storeField(value)
       )
   }
