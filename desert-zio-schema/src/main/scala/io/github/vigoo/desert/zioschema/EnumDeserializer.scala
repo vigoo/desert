@@ -44,7 +44,8 @@ private[zioschema] object EnumDeserializer {
     AdtCodec.DeserializationCommand.ReadConstructor(
       c.id,
       () => DerivedBinaryCodec.deriveInContext(c.codec).asInstanceOf[BinaryCodec[Any]],
-      (value: Any, state) => state.copy(result = value)
+      (value: Any, state) =>
+        state.copy(result = value)
     )
 
   private def isTransient(c: Schema.Case[_, _]): Boolean =

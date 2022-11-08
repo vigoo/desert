@@ -67,10 +67,10 @@ object DerivedBinaryCodec {
         val binaryCodec = deriveInContext(transform.codec).asInstanceOf[BinaryCodec[Any]]
         BinaryCodec.from(
           binaryCodec.contramapOrFail(
-            transform.f.asInstanceOf[Any => Either[String, Any]](_).left.map(SerializationFailure(_, None))
+            transform.g.asInstanceOf[Any => Either[String, Any]](_).left.map(SerializationFailure(_, None))
           ),
           binaryCodec.mapOrFail(
-            transform.g.asInstanceOf[Any => Either[String, T]](_).left.map(DeserializationFailure(_, None))
+            transform.f.asInstanceOf[Any => Either[String, T]](_).left.map(DeserializationFailure(_, None))
           )
         )
       case Schema.Lazy(inner)                        =>
