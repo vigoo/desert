@@ -9,10 +9,6 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   implicit val ttCodec: BinaryCodec[TransientTest]
-
-  implicit val case1Codec: BinaryCodec[Case1]
-  // Derive must not require implicit codec for the transient Case2
-  implicit val case3Codec: BinaryCodec[Case3]
   implicit val swtCodec: BinaryCodec[SumWithTransientCons]
 
   override def spec: Spec[TestEnvironment, Any] =
@@ -25,12 +21,12 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
       },
       test("correctly serializes types with transient constructors") {
         canBeSerializedAndReadBack(
-          Case1(25),
-          Case1(25)
+          Case1(25): SumWithTransientCons,
+          Case1(25): SumWithTransientCons
         ) &&
         canBeSerializedAndReadBack(
-          Case3("hello"),
-          Case3("hello")
+          Case3("hello"): SumWithTransientCons,
+          Case3("hello"): SumWithTransientCons
         )
       },
       test("serializing a transient constructor fails") {

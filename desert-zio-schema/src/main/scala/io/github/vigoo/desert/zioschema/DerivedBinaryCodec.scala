@@ -44,26 +44,83 @@ object DerivedBinaryCodec {
       derivationContext: DerivationContext
   ): BinaryCodec[T] =
     schema match {
-      case enum: Schema.Enum2[_, _, _]               =>
+      case enum: Schema.Enum2[_, _, _]                                                                 =>
         deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
-      case enum: Schema.Enum3[_, _, _, _]            =>
+      case enum: Schema.Enum3[_, _, _, _]                                                              =>
         deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
-      case genericRecord: Schema.GenericRecord       =>
+      case genericRecord: Schema.GenericRecord                                                         =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass0: Schema.CaseClass0[_]          =>
-        deriveRecord(getEvolutionStepsFromAnnotation(caseClass0.annotations), caseClass0)
+      case cc: Schema.CaseClass0[_]                                                                    =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass1: Schema.CaseClass1[_, _]       =>
-        deriveRecord(getEvolutionStepsFromAnnotation(caseClass1.annotations), caseClass1)
+      case cc: Schema.CaseClass1[_, _]                                                                 =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass2: Schema.CaseClass2[_, _, _]    =>
-        deriveRecord(getEvolutionStepsFromAnnotation(caseClass2.annotations), caseClass2)
+      case cc: Schema.CaseClass2[_, _, _]                                                              =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
           .asInstanceOf[BinaryCodec[T]]
-      case caseClass3: Schema.CaseClass3[_, _, _, _] =>
-        deriveRecord(getEvolutionStepsFromAnnotation(caseClass3.annotations), caseClass3)
+      case cc: Schema.CaseClass3[_, _, _, _]                                                           =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
           .asInstanceOf[BinaryCodec[T]]
-      case transform: Schema.Transform[_, _, _]      =>
+      case cc: Schema.CaseClass4[_, _, _, _, _]                                                        =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass5[_, _, _, _, _, _]                                                     =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass6[_, _, _, _, _, _, _]                                                  =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass7[_, _, _, _, _, _, _, _]                                               =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass8[_, _, _, _, _, _, _, _, _]                                            =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass9[_, _, _, _, _, _, _, _, _, _]                                         =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass10[_, _, _, _, _, _, _, _, _, _, _]                                     =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass11[_, _, _, _, _, _, _, _, _, _, _, _]                                  =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass12[_, _, _, _, _, _, _, _, _, _, _, _, _]                               =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass13[_, _, _, _, _, _, _, _, _, _, _, _, _, _]                            =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass14[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                         =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass15[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                      =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass16[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                   =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass17[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass18[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]             =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass19[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]          =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass20[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]       =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass21[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]    =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case cc: Schema.CaseClass22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] =>
+        deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
+          .asInstanceOf[BinaryCodec[T]]
+      case transform: Schema.Transform[_, _, _]                                                        =>
         val binaryCodec = deriveInContext(transform.schema).asInstanceOf[BinaryCodec[Any]]
         BinaryCodec.from(
           binaryCodec.contramapOrFail(
@@ -73,13 +130,13 @@ object DerivedBinaryCodec {
             transform.f.asInstanceOf[Any => Either[String, T]](_).left.map(DeserializationFailure(_, None))
           )
         )
-      case Schema.Lazy(inner)                        =>
+      case Schema.Lazy(inner)                                                                          =>
         deriveInContext(inner())
-      case map: Schema.Map[_, _]                     =>
+      case map: Schema.Map[_, _]                                                                       =>
         codecs.mapCodec(deriveInContext(map.keySchema), deriveInContext(map.valueSchema)).asInstanceOf[BinaryCodec[T]]
-      case set: Schema.Set[_]                        =>
+      case set: Schema.Set[_]                                                                          =>
         codecs.setCodec(deriveInContext(set.elementSchema)).asInstanceOf[BinaryCodec[T]]
-      case sequence: Schema.Sequence[_, _, _]        =>
+      case sequence: Schema.Sequence[_, _, _]                                                          =>
         val baseCodec = chunkCodec[Any](
           deriveInContext(sequence.elementSchema.asInstanceOf[Schema[Any]])
         )
@@ -87,7 +144,7 @@ object DerivedBinaryCodec {
           baseCodec.contramap(sequence.toChunk.asInstanceOf[T => Chunk[Any]]),
           baseCodec.map(sequence.fromChunk.asInstanceOf[Chunk[Any] => T])
         )
-      case Schema.Primitive(standardType, _)         =>
+      case Schema.Primitive(standardType, _)                                                           =>
         (standardType match {
           case StandardType.UnitType              => codecs.unitCodec
           case StandardType.StringType            => codecs.stringCodec
@@ -145,14 +202,14 @@ object DerivedBinaryCodec {
       recordSerializer: RecordSerializer[S],
       recordDeserializer: RecordDeserializer[S]
   ): BinaryCodec[T] =
-    new AdtCodec[T, RecordDeserializer.SchemaBuilderState](
+    new AdtCodec[T, RecordDeserializerBase.SchemaBuilderState](
       evolutionSteps = evolutionSteps,
       typeName = schema.id.name,
       constructors = Vector(schema.id.name),
       transientFields = getTransientFields(schema.fields),
       getSerializationCommands = (value: T) => recordSerializer.getSerializationCommands(schema, value),
       deserializationCommands = recordDeserializer.getDeserializationCommands(schema),
-      initialBuilderState = RecordDeserializer.SchemaBuilderState.initial,
+      initialBuilderState = RecordDeserializerBase.SchemaBuilderState.initial,
       materialize = builderState =>
         Unsafe.unsafe { implicit u =>
           schema

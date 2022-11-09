@@ -163,6 +163,7 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
     )
   )
   .dependsOn(core % "compile->compile;test->test", zio)
+  .enablePlugins(ZioSchemaGenerator)
 
 lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(commonSettings)
