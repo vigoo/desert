@@ -15,8 +15,8 @@ private[zioschema] object RecordSerializer {
     (schema: Schema.GenericRecord, value: Any) =>
       schema.fieldSet.toChunk.map { field =>
         AdtCodec.SerializationCommand.WriteField[Any](
-          field.label,
-          value.asInstanceOf[ListMap[String, _]](field.label),
+          field.name,
+          value.asInstanceOf[ListMap[String, _]](field.name),
           () => DerivedBinaryCodec.derive(field.schema.asInstanceOf[Schema[Any]])
         )
       }.toList
@@ -28,8 +28,8 @@ private[zioschema] object RecordSerializer {
     (schema: Schema.CaseClass1[A, Z], value: Any) =>
       List(
         AdtCodec.SerializationCommand.WriteField(
-          schema.field.label,
-          schema.asInstanceOf[Schema.CaseClass1[Any, Any]].extractField(value),
+          schema.field.name,
+          schema.asInstanceOf[Schema.CaseClass1[Any, Any]].field.get(value),
           () => DerivedBinaryCodec.derive(schema.field.schema.asInstanceOf[Schema[Any]])
         )
       )
@@ -40,13 +40,13 @@ private[zioschema] object RecordSerializer {
     (schema: Schema.CaseClass2[A1, A2, Z], value: Any) =>
       List(
         AdtCodec.SerializationCommand.WriteField(
-          schema.field1.label,
-          schema.asInstanceOf[Schema.CaseClass2[Any, Any, Any]].extractField1(value),
+          schema.field1.name,
+          schema.asInstanceOf[Schema.CaseClass2[Any, Any, Any]].field1.get(value),
           () => DerivedBinaryCodec.deriveInContext(schema.field1.schema.asInstanceOf[Schema[Any]])
         ),
         AdtCodec.SerializationCommand.WriteField(
-          schema.field2.label,
-          schema.asInstanceOf[Schema.CaseClass2[Any, Any, Any]].extractField2(value),
+          schema.field2.name,
+          schema.asInstanceOf[Schema.CaseClass2[Any, Any, Any]].field2.get(value),
           () => DerivedBinaryCodec.deriveInContext(schema.field2.schema.asInstanceOf[Schema[Any]])
         )
       )
@@ -57,18 +57,18 @@ private[zioschema] object RecordSerializer {
     (schema: Schema.CaseClass3[A1, A2, A3, Z], value: Any) =>
       List(
         AdtCodec.SerializationCommand.WriteField(
-          schema.field1.label,
-          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].extractField1(value),
+          schema.field1.name,
+          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].field1.get(value),
           () => DerivedBinaryCodec.deriveInContext(schema.field1.schema.asInstanceOf[Schema[Any]])
         ),
         AdtCodec.SerializationCommand.WriteField(
-          schema.field2.label,
-          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].extractField2(value),
+          schema.field2.name,
+          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].field2.get(value),
           () => DerivedBinaryCodec.deriveInContext(schema.field2.schema.asInstanceOf[Schema[Any]])
         ),
         AdtCodec.SerializationCommand.WriteField(
-          schema.field3.label,
-          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].extractField3(value),
+          schema.field3.name,
+          schema.asInstanceOf[Schema.CaseClass3[Any, Any, Any, Any]].field3.get(value),
           () => DerivedBinaryCodec.deriveInContext(schema.field3.schema.asInstanceOf[Schema[Any]])
         )
       )

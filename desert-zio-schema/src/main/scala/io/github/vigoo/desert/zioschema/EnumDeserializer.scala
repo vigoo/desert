@@ -14,7 +14,7 @@ private[zioschema] object EnumDeserializer {
     val initial: SchemaBuilderState = SchemaBuilderState(null)
   }
 
-  implicit def enum2Deserializer[A1 <: Z, A2 <: Z, Z](implicit
+  implicit def enum2Deserializer[A1, A2, Z](implicit
       derivationContext: DerivationContext
   ): EnumDeserializer[Schema.Enum2[A1, A2, Z]] =
     new EnumDeserializer[Schema.Enum2[A1, A2, Z]] {
@@ -26,7 +26,7 @@ private[zioschema] object EnumDeserializer {
           .map(caseToDeserializationCommand)
     }
 
-  implicit def enum3Deserializer[A1 <: Z, A2 <: Z, A3 <: Z, Z](implicit
+  implicit def enum3Deserializer[A1, A2, A3, Z](implicit
       derivationContext: DerivationContext
   ): EnumDeserializer[Schema.Enum3[A1, A2, A3, Z]] =
     new EnumDeserializer[Schema.Enum3[A1, A2, A3, Z]] {
@@ -43,9 +43,8 @@ private[zioschema] object EnumDeserializer {
   )(implicit derivationContext: DerivationContext): AdtCodec.DeserializationCommand[SchemaBuilderState] =
     AdtCodec.DeserializationCommand.ReadConstructor(
       c.id,
-      () => DerivedBinaryCodec.deriveInContext(c.codec).asInstanceOf[BinaryCodec[Any]],
-      (value: Any, state) =>
-        state.copy(result = value)
+      () => DerivedBinaryCodec.deriveInContext(c.schema).asInstanceOf[BinaryCodec[Any]],
+      (value: Any, state) => state.copy(result = value)
     )
 
   private def isTransient(c: Schema.Case[_, _]): Boolean =

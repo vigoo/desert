@@ -13,7 +13,7 @@ import io.github.vigoo.desert.{
 }
 import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.ziosupport.codecs._
-import zio.{Chunk, ChunkBuilder}
+import zio.{Chunk, ChunkBuilder, Unsafe}
 import zio.schema.{Schema, StandardType}
 
 import scala.annotation.tailrec
@@ -64,7 +64,7 @@ object DerivedBinaryCodec {
         deriveRecord(getEvolutionStepsFromAnnotation(caseClass3.annotations), caseClass3)
           .asInstanceOf[BinaryCodec[T]]
       case transform: Schema.Transform[_, _, _]      =>
-        val binaryCodec = deriveInContext(transform.codec).asInstanceOf[BinaryCodec[Any]]
+        val binaryCodec = deriveInContext(transform.schema).asInstanceOf[BinaryCodec[Any]]
         BinaryCodec.from(
           binaryCodec.contramapOrFail(
             transform.g.asInstanceOf[Any => Either[String, Any]](_).left.map(SerializationFailure(_, None))
@@ -75,13 +75,13 @@ object DerivedBinaryCodec {
         )
       case Schema.Lazy(inner)                        =>
         deriveInContext(inner())
-      case map: Schema.MapSchema[_, _]               =>
-        codecs.mapCodec(deriveInContext(map.ks), deriveInContext(map.vs)).asInstanceOf[BinaryCodec[T]]
-      case set: Schema.SetSchema[_]                  =>
-        codecs.setCodec(deriveInContext(set.as)).asInstanceOf[BinaryCodec[T]]
+      case map: Schema.Map[_, _]                     =>
+        codecs.mapCodec(deriveInContext(map.keySchema), deriveInContext(map.valueSchema)).asInstanceOf[BinaryCodec[T]]
+      case set: Schema.Set[_]                        =>
+        codecs.setCodec(deriveInContext(set.elementSchema)).asInstanceOf[BinaryCodec[T]]
       case sequence: Schema.Sequence[_, _, _]        =>
         val baseCodec = chunkCodec[Any](
-          deriveInContext(sequence.schemaA.asInstanceOf[Schema[Any]])
+          deriveInContext(sequence.elementSchema.asInstanceOf[Schema[Any]])
         )
         BinaryCodec.from(
           baseCodec.contramap(sequence.toChunk.asInstanceOf[T => Chunk[Any]]),
@@ -121,29 +121,24 @@ object DerivedBinaryCodec {
           case StandardType.ZonedDateTimeType(_)  => codecs.zonedDateTimeCodec
         }).asInstanceOf[BinaryCodec[T]]
 
-      case Schema.Optional(codec, _)           =>
-        codecs.optionCodec(deriveInContext(codec)).asInstanceOf[BinaryCodec[T]]
-      case Schema.Fail(message, _)             =>
+      case Schema.Optional(schema, _)    =>
+        codecs.optionCodec(deriveInContext(schema)).asInstanceOf[BinaryCodec[T]]
+      case Schema.Fail(message, _)       =>
         BinaryCodec.from(
           (_: T) => failSerializerWith(SerializationFailure(message, None)),
           () => failDeserializerWith[T](DeserializationFailure(message, None))
         )
-      case Schema.Tuple(left, right, _)        =>
+      case Schema.Tuple2(left, right, _) =>
         deriveTuple(left, right)
-      case Schema.EitherSchema(left, right, _) =>
+      case Schema.Either(left, right, _) =>
         codecs
           .eitherCodec(
             deriveInContext(left),
             deriveInContext(right)
           )
           .asInstanceOf[BinaryCodec[T]]
-      case Schema.Meta(_, _)                   =>
-        schemaAstCodec.asInstanceOf[BinaryCodec[T]]
-      case Schema.Dynamic(_)                   =>
+      case Schema.Dynamic(_)             =>
         dynamicValueCodec.asInstanceOf[BinaryCodec[T]]
-      case Schema.SemiDynamic(_, _)            =>
-        // NOTE: SemiDynamic is going to be removed from zio-schema, not supporting here
-        ???
     }
 
   private def deriveRecord[T, S <: Schema.Record[_]](evolutionSteps: Vector[Evolution], schema: S)(implicit
@@ -154,16 +149,18 @@ object DerivedBinaryCodec {
       evolutionSteps = evolutionSteps,
       typeName = schema.id.name,
       constructors = Vector(schema.id.name),
-      transientFields = getTransientFields(schema.structure),
+      transientFields = getTransientFields(schema.fields),
       getSerializationCommands = (value: T) => recordSerializer.getSerializationCommands(schema, value),
       deserializationCommands = recordDeserializer.getDeserializationCommands(schema),
       initialBuilderState = RecordDeserializer.SchemaBuilderState.initial,
       materialize = builderState =>
-        schema
-          .rawConstruct(builderState.asChunk)
-          .map(_.asInstanceOf[T])
-          .left
-          .map(msg => DeserializationFailure(msg, None))
+        Unsafe.unsafe { implicit u =>
+          schema
+            .construct(builderState.asChunk)
+            .map(_.asInstanceOf[T])
+            .left
+            .map(msg => DeserializationFailure(msg, None))
+        }
     )
 
   private def deriveEnum[T, S <: Schema.Enum[_]](evolutionSteps: Vector[Evolution], schema: S)(implicit
@@ -173,7 +170,7 @@ object DerivedBinaryCodec {
     new AdtCodec[T, EnumDeserializer.SchemaBuilderState](
       evolutionSteps = evolutionSteps,
       typeName = schema.id.name,
-      constructors = schema.structure.keys.toVector,
+      constructors = schema.cases.map(_.id).toVector,
       transientFields = Map.empty,
       getSerializationCommands = (value: T) => enumSerializer.getSerializationCommands(schema, value),
       deserializationCommands = enumDeserializer.getDeserializationCommands(schema),
@@ -193,10 +190,10 @@ object DerivedBinaryCodec {
   @tailrec
   private def gatherTupleFields(schema: Schema[Any], fields: ChunkBuilder[Schema[Any]]): Unit =
     schema.asInstanceOf[Schema[_]] match {
-      case Schema.Tuple(left, right, _) =>
+      case Schema.Tuple2(left, right, _) =>
         fields += right
         gatherTupleFields(left, fields)
-      case _                            =>
+      case _                             =>
         fields += schema
     }
 
@@ -221,16 +218,16 @@ object DerivedBinaryCodec {
     RecordDeserializer.findTopLevelOptionalNode(schema) match {
       case Some(optional) =>
         codecs.TupleFieldReader
-          .optionalFieldReader[Any](deriveInContext(optional.codec.asInstanceOf[Schema[Any]]))
+          .optionalFieldReader[Any](deriveInContext(optional.schema.asInstanceOf[Schema[Any]]))
           .asInstanceOf[codecs.TupleFieldReader[Any]]
       case None           =>
         codecs.TupleFieldReader.requiredFieldReader[Any](deriveInContext(schema.asInstanceOf[Schema[Any]]))
     }
 
-  private def getTransientFields(fields: Chunk[Schema.Field[_]]): Map[Symbol, Any] =
+  private def getTransientFields(fields: Chunk[Schema.Field[_, _]]): Map[Symbol, Any] =
     fields.flatMap { field =>
       field.annotations.collect { case transientField(defaultValue) =>
-        Symbol(field.label) -> defaultValue
+        Symbol(field.name) -> defaultValue
       }
     }.toMap
 
