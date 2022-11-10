@@ -25,7 +25,7 @@ trait SerializationProperties {
       }
     }
 
-  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, check: Assertion[B])(implicit
+  def canBeSerializedAndReadBack[A: BinarySerializer, B: BinaryDeserializer](value: A, check: Assertion[B])(implicit
       typeRegistry: TypeRegistry
   ): TestResult = {
     val resultValue =
@@ -37,12 +37,24 @@ trait SerializationProperties {
     assert(resultValue)(isRight(check))
   }
 
-  def canBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](value: A, expectedB: B)(implicit
+  def failsWhenReadBack[A: BinarySerializer, B: BinaryDeserializer](value: A, check: Assertion[DesertFailure])(implicit
+      typeRegistry: TypeRegistry
+  ): TestResult = {
+    val resultValue =
+      for {
+        serialized  <- serializeToArray(value, typeRegistry)
+        resultValue <- deserializeFromArray[B](serialized, typeRegistry)
+      } yield resultValue
+
+    assert(resultValue)(isLeft(check))
+  }
+
+  def canBeSerializedAndReadBack[A: BinarySerializer, B: BinaryDeserializer](value: A, expectedB: B)(implicit
       typeRegistry: TypeRegistry
   ): TestResult =
     canBeSerializedAndReadBack(value, equalTo(expectedB))
 
-  def cannotBeSerializedAndReadBack[A: BinaryCodec, B: BinaryCodec](
+  def cannotBeSerializedAndReadBack[A: BinarySerializer, B: BinaryDeserializer](
       value: A
   )(implicit typeRegistry: TypeRegistry): TestResult = {
     val resultValue =
