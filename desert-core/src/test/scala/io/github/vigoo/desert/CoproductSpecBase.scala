@@ -33,7 +33,7 @@ trait CoproductSpecBase extends ZIOSpecDefault with SerializationProperties {
 object CoproductSpecBase {
   sealed trait TypeV1
 
-  final case object Cons1V1 extends TypeV1
+  case object Cons1V1 extends TypeV1
 
   final case class Cons2V1(value: String) extends TypeV1
 

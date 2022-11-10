@@ -4,7 +4,11 @@ import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
-val zioVersion = "2.0.3"
+val scala2 = "2.13.10"
+val scala3 = "3.2.1"
+
+val zioVersion       = "2.0.3"
+val zioSchemaVersion = "0.2.1+31-977355d7-SNAPSHOT"
 
 name := "desert"
 
@@ -12,8 +16,16 @@ ThisBuild / dynverSonatypeSnapshots := true
 
 lazy val commonSettings = Seq(
   organization                        := "io.github.vigoo",
-  scalaVersion                        := "2.13.10",
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
+  scalaVersion                        := scala2,
+  crossScalaVersions                  := Seq(scala2, scala3),
+  libraryDependencies ++=
+    (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq.empty
+      case _            =>
+        Seq(
+          compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full)
+        )
+    }),
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio"               % zioVersion % Test,
@@ -23,16 +35,24 @@ lazy val commonSettings = Seq(
   ),
   Test / compile / coverageEnabled    := true,
   Compile / compile / coverageEnabled := false,
-  scalacOptions                       := Seq(
-    "-deprecation",
-    "-unchecked"
-  ),
-
+  scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 13)) =>
+      Seq(
+        "-deprecation",
+        "-unchecked"
+      )
+    case Some((3, _))  =>
+      Seq(
+        "-deprecation",
+        "-Ykind-projector"
+      )
+    case _             => Nil
+  }),
   // Publishing
-  publishMavenStyle      := true,
-  licenses               := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  sonatypeProjectHosting := Some(GitHubHosting("vigoo", "desert", "daniel.vigovszky@gmail.com")),
-  developers             := List(
+  publishMavenStyle                   := true,
+  licenses                            := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  sonatypeProjectHosting              := Some(GitHubHosting("vigoo", "desert", "daniel.vigovszky@gmail.com")),
+  developers                          := List(
     Developer(
       id = "vigoo",
       name = "Daniel Vigovszky",
@@ -40,8 +60,8 @@ lazy val commonSettings = Seq(
       url = url("https://vigoo.github.io")
     )
   ),
-  sonatypeCredentialHost := "s01.oss.sonatype.org",
-  sonatypeRepository     := "https://s01.oss.sonatype.org/service/local",
+  sonatypeCredentialHost              := "s01.oss.sonatype.org",
+  sonatypeRepository                  := "https://s01.oss.sonatype.org/service/local",
   credentials ++=
     (for {
       username <- Option(System.getenv().get("SONATYPE_USERNAME"))
@@ -99,7 +119,8 @@ lazy val shapeless = CrossProject("desert-shapeless", file("desert-shapeless"))(
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "com.chuusai"   %% "shapeless"     % "2.3.10"
-    )
+    ),
+    crossScalaVersions -= scala3
   )
   .dependsOn(core % "compile->compile;test->test")
 
@@ -158,8 +179,8 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-schema"            % "0.2.1+31-977355d7-SNAPSHOT",
-      "dev.zio" %% "zio-schema-derivation" % "0.2.1+31-977355d7-SNAPSHOT" % Test
+      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
   .dependsOn(core % "compile->compile;test->test", zio)
@@ -170,18 +191,20 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core" % "2.0.4"
+      "com.devsisters" %% "shardcake-core"        % "2.0.4",
+      "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
   .dependsOn(core.jvm, zio.jvm)
-  .dependsOn(shapeless.jvm % "test->compile")
+  .dependsOn(zioSchema.jvm % "test->compile")
 
 lazy val benchmarks = project
   .in(file("benchmarks"))
   .settings(commonSettings)
   .settings(
     publishArtifact := false,
-    coverageEnabled := false
+    coverageEnabled := false,
+    crossScalaVersions -= scala3
   )
   .enablePlugins(JmhPlugin)
   .dependsOn(core.jvm, shapeless.jvm)
@@ -196,6 +219,7 @@ lazy val docs = project
     name                                       := "desert",
     description                                := "A Scala binary serialization library",
     publishArtifact                            := false,
+    crossScalaVersions -= scala3,
     ScalaUnidoc / siteSubdirName               := "api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(

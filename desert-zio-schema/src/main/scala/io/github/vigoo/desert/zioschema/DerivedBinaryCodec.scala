@@ -44,10 +44,10 @@ object DerivedBinaryCodec {
       derivationContext: DerivationContext
   ): BinaryCodec[T] =
     schema match {
-      case enum: Schema.Enum2[_, _, _]                                                                 =>
-        deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
-      case enum: Schema.Enum3[_, _, _, _]                                                              =>
-        deriveEnum(getEvolutionStepsFromAnnotation(enum.annotations), enum).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum2[_, _, _]                                                                 =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum3[_, _, _, _]                                                              =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
       case genericRecord: Schema.GenericRecord                                                         =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
           .asInstanceOf[BinaryCodec[T]]
@@ -186,7 +186,7 @@ object DerivedBinaryCodec {
           () => failDeserializerWith[T](DeserializationFailure(message, None))
         )
       case Schema.Tuple2(left, right, _) =>
-        deriveTuple(left, right)
+        deriveTuple(left.asInstanceOf[Schema[Any]], right.asInstanceOf[Schema[Any]])
       case Schema.Either(left, right, _) =>
         codecs
           .eitherCodec(
@@ -248,8 +248,8 @@ object DerivedBinaryCodec {
   private def gatherTupleFields(schema: Schema[Any], fields: ChunkBuilder[Schema[Any]]): Unit =
     schema.asInstanceOf[Schema[_]] match {
       case Schema.Tuple2(left, right, _) =>
-        fields += right
-        gatherTupleFields(left, fields)
+        fields += right.asInstanceOf[Schema[Any]]
+        gatherTupleFields(left.asInstanceOf[Schema[Any]], fields)
       case _                             =>
         fields += schema
     }

@@ -50,9 +50,9 @@ private[zioschema] trait RecordDeserializerBase {
   @tailrec
   private[zioschema] final def findTopLevelOptionalNode(value: Schema[_]): Option[Schema.Optional[_]] =
     value match {
-      case enum: Schema.Enum[_]                                 => None
-      case record: Schema.Record[_]                             => None
-      case collection: Schema.Collection[_, _]                  => None
+      case _: Schema.Enum[_]                                    => None
+      case _: Schema.Record[_]                                  => None
+      case _: Schema.Collection[_, _]                           => None
       case Schema.Transform(codec, f, g, annotations, identity) =>
         findTopLevelOptionalNode(codec)
       case Schema.Primitive(standardType, annotations)          => None
