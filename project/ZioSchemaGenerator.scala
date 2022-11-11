@@ -8,9 +8,10 @@ import scala.meta._
 object ZioSchemaGenerator extends AutoPlugin {
 
   case class FieldModel(field: Term.Name)
+  case class ConstructorModel(name: Term.Name)
 
   case class CaseClassModel(arity: Int) {
-    def implicitSerializerName: Term.Name = Term.Name(s"caseClass${arity}Serializer")
+    def implicitSerializerName: Term.Name   = Term.Name(s"caseClass${arity}Serializer")
     def implicitDeserializerName: Term.Name = Term.Name(s"caseClass${arity}Deserializer")
 
     def typeParams: List[Type.Name]       = (1 to arity).toList.map(n => Type.Name(s"T$n")) :+ Type.Name("Z")
@@ -26,6 +27,30 @@ object ZioSchemaGenerator extends AutoPlugin {
     def fields: List[FieldModel] =
       (1 to arity)
         .map(n => if (arity == 1) FieldModel(Term.Name("field")) else FieldModel(Term.Name(s"field$n")))
+        .toList
+  }
+
+  case class EnumModel(arity: Int) {
+    def implicitSerializerName: Term.Name   = Term.Name(s"enum${arity}Serializer")
+    def implicitDeserializerName: Term.Name = Term.Name(s"enum${arity}Deserializer")
+
+    def typeParams: List[Type.Name] = (1 to arity).toList.map(n => Type.Name(s"T$n")) :+ Type.Name("Z")
+
+    def typeParamsAsAnys: List[Type.Name] = typeParams.map(_ => t"Any")
+
+    def typeParamDefs: List[Type.Param] = typeParams.map { name =>
+      Type.Param(Nil, name, Nil, Type.Bounds(None, None), Nil, Nil)
+    }
+
+    def enumName: Type.Name = Type.Name(s"Enum$arity")
+
+    def enumType: Type = t"Schema.$enumName[..$typeParams]"
+
+    def enumTypeWithAnys: Type = t"Schema.$enumName[..$typeParamsAsAnys]"
+
+    def constructors: List[ConstructorModel] =
+      (1 to arity)
+        .map(n => ConstructorModel(Term.Name(s"case$n")))
         .toList
   }
 
@@ -122,13 +147,96 @@ object ZioSchemaGenerator extends AutoPlugin {
     Files.write(targetFile.toPath, code.toString.getBytes(StandardCharsets.UTF_8))
   }
 
+  private def generateEnumSerializer(log: Logger, targetFile: File): Unit = {
+    val enums = (2 to 22).map(EnumModel).toList
+
+    val enumSerializers: List[Stat] =
+      enums.map { cc =>
+        val caseRefs = cc.constructors.map(c => q"schema.${c.name}")
+
+        q"""
+         implicit def ${cc.implicitSerializerName}[..${cc.typeParamDefs}](implicit derivationContext: DerivationContext): EnumSerializer[${cc.enumType}] =
+           (schema: ${cc.enumType}, value: Any) =>
+             serializeCases(value)(..$caseRefs)
+         """
+      }
+
+    val code =
+      source"""
+               package io.github.vigoo.desert.zioschema
+
+               import io.github.vigoo.desert.AdtCodec
+               import zio.schema.Schema
+
+               import scala.collection.immutable.ListMap
+
+               private[zioschema] trait EnumSerializer[S <: Schema.Enum[_]] {
+                 def getSerializationCommands(schema: S, value: Any): List[AdtCodec.SerializationCommand]
+               }
+
+               private[zioschema] object EnumSerializer extends EnumSerializerBase {
+
+                 ..$enumSerializers
+               }
+            """
+
+    try Files.createDirectories(targetFile.toPath.getParent)
+    catch {
+      case _: FileAlreadyExistsException =>
+    }
+    Files.write(targetFile.toPath, code.toString.getBytes(StandardCharsets.UTF_8))
+  }
+
+  private def generateEnumDeserializer(log: Logger, targetFile: File): Unit = {
+    val enums = (2 to 22).map(EnumModel).toList
+
+    val enumDeserializers: List[Stat] =
+      enums.map { cc =>
+        val caseRefs = cc.constructors.map(c => q"schema.${c.name}")
+
+        q"""
+         implicit def ${cc.implicitDeserializerName}[..${cc.typeParamDefs}](implicit derivationContext: DerivationContext): EnumDeserializer[${cc.enumType}] =
+           (schema: ${cc.enumType}) =>
+             List(..$caseRefs).filterNot(isTransient).map(caseToDeserializationCommand)
+         """
+      }
+
+    val code =
+      source"""
+               package io.github.vigoo.desert.zioschema
+
+               import io.github.vigoo.desert.AdtCodec
+               import zio.schema.Schema
+
+               import scala.collection.immutable.ListMap
+
+               private[zioschema] trait EnumDeserializer[S <: Schema.Enum[_]] {
+                 def getDeserializationCommands(schema: S): List[AdtCodec.DeserializationCommand[EnumDeserializerBase.SchemaBuilderState]]
+               }
+
+               private[zioschema] object EnumDeserializer extends EnumDeserializerBase {
+
+                 ..$enumDeserializers
+               }
+            """
+
+    try Files.createDirectories(targetFile.toPath.getParent)
+    catch {
+      case _: FileAlreadyExistsException =>
+    }
+    Files.write(targetFile.toPath, code.toString.getBytes(StandardCharsets.UTF_8))
+  }
+
   lazy val generateSource =
     Def.task {
       val log = streams.value.log
 
-      val sourcesDir       = (Compile / sourceManaged).value
-      val recordSerializer = sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "RecordSerializer.scala"
-      val recordDeserializer = sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "RecordDeserializer.scala"
+      val sourcesDir         = (Compile / sourceManaged).value
+      val recordSerializer   = sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "RecordSerializer.scala"
+      val recordDeserializer =
+        sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "RecordDeserializer.scala"
+      val enumSerializer     = sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "EnumSerializer.scala"
+      val enumDeserializer   = sourcesDir / "io" / "github" / "vigoo" / "desert" / "zioschema" / "EnumDeserializer.scala"
 
       val cachedFun = FileFunction.cached(
         streams.value.cacheDirectory / "desert-zio-schema-generators",
@@ -136,7 +244,9 @@ object ZioSchemaGenerator extends AutoPlugin {
       ) { input: Set[File] =>
         generateRecordSerializer(log, recordSerializer)
         generateRecordDeserializer(log, recordDeserializer)
-        Set(recordSerializer, recordDeserializer)
+        generateEnumSerializer(log, enumSerializer)
+        generateEnumDeserializer(log, enumDeserializer)
+        Set(recordSerializer, recordDeserializer, enumSerializer, enumDeserializer)
       }
 
       cachedFun(Set(file("project/ZioSchemaGenerator.scala"))).toSeq

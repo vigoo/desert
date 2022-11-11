@@ -13,7 +13,7 @@ object DesertSerializationSpec extends ZIOSpecDefault {
   case class Test(a: Int, b: String)
 
   object Test {
-    implicit val schema: Schema[Test] = DeriveSchema.gen
+    implicit val schema: Schema[Test]     = DeriveSchema.gen
     implicit val codec: BinaryCodec[Test] = DerivedBinaryCodec.derive
   }
 

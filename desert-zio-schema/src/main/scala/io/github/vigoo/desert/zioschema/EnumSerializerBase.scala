@@ -3,22 +3,8 @@ package io.github.vigoo.desert.zioschema
 import io.github.vigoo.desert.{AdtCodec, BinaryCodec, SerializingTransientConstructor, transientConstructor}
 import zio.schema.Schema
 
-private[zioschema] trait EnumSerializer[S <: Schema.Enum[_]] {
-  def getSerializationCommands(schema: S, value: Any): List[AdtCodec.SerializationCommand]
-}
-
-private[zioschema] object EnumSerializer {
-  implicit def enum2Serializer[A1, A2, Z](implicit
-      derivationContext: DerivationContext
-  ): EnumSerializer[Schema.Enum2[A1, A2, Z]] =
-    (schema: Schema.Enum2[A1, A2, Z], value: Any) => serializeCases(value)(schema.case1, schema.case2)
-
-  implicit def enum3Serializer[A1, A2, A3, Z](implicit
-      derivationContext: DerivationContext
-  ): EnumSerializer[Schema.Enum3[A1, A2, A3, Z]] =
-    (schema: Schema.Enum3[A1, A2, A3, Z], value: Any) => serializeCases(value)(schema.case1, schema.case2, schema.case3)
-
-  private def serializeCases(
+private[zioschema] trait EnumSerializerBase {
+  protected def serializeCases(
       value: Any
   )(cases: Schema.Case[_, _]*)(implicit derivationContext: DerivationContext): List[AdtCodec.SerializationCommand] =
     cases.find(_.asInstanceOf[Schema.Case[Any, Any]].deconstructOption(value).isDefined) match {

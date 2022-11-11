@@ -65,7 +65,7 @@ private[zioschema] trait RecordDeserializerBase {
     }
 }
 
-object RecordDeserializerBase {
+private[zioschema] object RecordDeserializerBase {
   final case class SchemaBuilderState(fields: List[Any]) {
     def storeField(value: Any): SchemaBuilderState =
       this.copy(fields = value :: fields)

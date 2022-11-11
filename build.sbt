@@ -75,7 +75,8 @@ lazy val root = Project("desert", file("."))
   .settings(commonSettings)
   .settings(
     publishArtifact := false,
-    description     := "A Scala binary serialization library"
+    description     := "A Scala binary serialization library",
+    crossScalaVersions := Nil,
   )
   .aggregate(
     core.jvm,

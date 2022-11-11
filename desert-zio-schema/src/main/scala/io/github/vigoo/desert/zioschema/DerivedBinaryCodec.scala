@@ -44,10 +44,49 @@ object DerivedBinaryCodec {
       derivationContext: DerivationContext
   ): BinaryCodec[T] =
     schema match {
-      case e: Schema.Enum2[_, _, _]                                                                 =>
+      case e: Schema.Enum2[_, _, _]                                                              =>
         deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
-      case e: Schema.Enum3[_, _, _, _]                                                              =>
+      case e: Schema.Enum3[_, _, _, _]                                                           =>
         deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum4[_, _, _, _, _]                                                        =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum5[_, _, _, _, _, _]                                                     =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum6[_, _, _, _, _, _, _]                                                  =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum7[_, _, _, _, _, _, _, _]                                               =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum8[_, _, _, _, _, _, _, _, _]                                            =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum9[_, _, _, _, _, _, _, _, _, _]                                         =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum10[_, _, _, _, _, _, _, _, _, _, _]                                     =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum11[_, _, _, _, _, _, _, _, _, _, _, _]                                  =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum12[_, _, _, _, _, _, _, _, _, _, _, _, _]                               =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum13[_, _, _, _, _, _, _, _, _, _, _, _, _, _]                            =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum14[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                         =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum15[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                      =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum16[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                   =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum17[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum18[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]             =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum19[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]          =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum20[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]       =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum21[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]    =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case e: Schema.Enum22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+
       case genericRecord: Schema.GenericRecord                                                         =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
           .asInstanceOf[BinaryCodec[T]]
@@ -224,14 +263,14 @@ object DerivedBinaryCodec {
       enumSerializer: EnumSerializer[S],
       enumDeserializer: EnumDeserializer[S]
   ): BinaryCodec[T] =
-    new AdtCodec[T, EnumDeserializer.SchemaBuilderState](
+    new AdtCodec[T, EnumDeserializerBase.SchemaBuilderState](
       evolutionSteps = evolutionSteps,
       typeName = schema.id.name,
       constructors = schema.cases.map(_.id).toVector,
       transientFields = Map.empty,
       getSerializationCommands = (value: T) => enumSerializer.getSerializationCommands(schema, value),
       deserializationCommands = enumDeserializer.getDeserializationCommands(schema),
-      initialBuilderState = EnumDeserializer.SchemaBuilderState.initial,
+      initialBuilderState = EnumDeserializerBase.SchemaBuilderState.initial,
       materialize = builderState => Right(builderState.result.asInstanceOf[T])
     )
 
