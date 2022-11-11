@@ -3,7 +3,13 @@ package io.github.vigoo.desert.akka
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.{Actor => UntypedActor, ActorRef => UntypedActorRef, ActorSystem => UntypedActorSystem, ExtendedActorSystem => UntypedExtendedActorSystem, Props => UntypedProps}
+import akka.actor.{
+  Actor => UntypedActor,
+  ActorRef => UntypedActorRef,
+  ActorSystem => UntypedActorSystem,
+  ExtendedActorSystem => UntypedExtendedActorSystem,
+  Props => UntypedProps
+}
 import io.github.vigoo.desert.DesertException
 import io.github.vigoo.desert.akka.codecs._
 import io.github.vigoo.desert.syntax._
@@ -19,26 +25,28 @@ object AkkaCodecsSpec extends ZIOSpecDefault {
         untypedActorSystem.flatMap { system =>
           implicit val extendedSystem: UntypedExtendedActorSystem = system.asInstanceOf[UntypedExtendedActorSystem]
           for {
-            actor1 <- ZIO.attempt(system.actorOf(UntypedProps(classOf[TestUntypedActor])))
+            actor1     <- ZIO.attempt(system.actorOf(UntypedProps(classOf[TestUntypedActor])))
             serialized <- ZIO.fromEither(serializeToArray(actor1)).mapError(new DesertException(_))
-            actor2 <- ZIO.fromEither(deserializeFromArray[UntypedActorRef](serialized)).mapError(new DesertException(_))
+            actor2     <- ZIO.fromEither(deserializeFromArray[UntypedActorRef](serialized)).mapError(new DesertException(_))
           } yield assert(actor1)(equalTo(actor2))
         }
       ),
       test("correctly serializes typed actor references")(
         typedActorSystem.flatMap { implicit system =>
           for {
-            actor1 <- ZIO.attempt(system.toClassic.spawnAnonymous(testActorBehavior))
+            actor1     <- ZIO.attempt(system.toClassic.spawnAnonymous(testActorBehavior))
             serialized <- ZIO.fromEither(serializeToArray(actor1)).mapError(new DesertException(_))
-            actor2 <- ZIO.fromEither(deserializeFromArray[ActorRef[String]](serialized)).mapError(new DesertException(_))
+            actor2     <-
+              ZIO.fromEither(deserializeFromArray[ActorRef[String]](serialized)).mapError(new DesertException(_))
           } yield assert(actor1)(equalTo(actor2))
         }
       )
     )
 
   private def untypedActorSystem: ZIO[Scope, Throwable, UntypedActorSystem] =
-    ZIO.acquireRelease(ZIO.attempt(UntypedActorSystem("test")))(
-      system => ZIO.fromFuture(_ => system.terminate()).unit.catchAll(logFatalError))
+    ZIO.acquireRelease(ZIO.attempt(UntypedActorSystem("test")))(system =>
+      ZIO.fromFuture(_ => system.terminate()).unit.catchAll(logFatalError)
+    )
 
   private def typedActorSystem: ZIO[Scope, Throwable, ActorSystem[_]] =
     untypedActorSystem.map(_.toTyped)
@@ -51,5 +59,5 @@ object AkkaCodecsSpec extends ZIOSpecDefault {
   }
 
   val testActorBehavior: Behavior[String] =
-    Behaviors.receiveMessage( _ => Behaviors.ignore )
+    Behaviors.receiveMessage(_ => Behaviors.ignore)
 }

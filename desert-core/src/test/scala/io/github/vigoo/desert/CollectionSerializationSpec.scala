@@ -18,30 +18,41 @@ object CollectionSerializationSpec extends ZIOSpecDefault with SerializationProp
       test("string -> int map")(canBeSerialized(Gen.mapOf(Gen.string, Gen.int))),
       test("option")(canBeSerialized(Gen.option(Gen.string))),
       test("either")(canBeSerialized(Gen.either(Gen.int, Gen.string))),
-      test("validation")(canBeSerialized(Gen.either(Gen.listOf1(Gen.int).map(l => NonEmptyChunk.fromIterable(l.head, l.tail)), Gen.string).map(Validation.fromEither))),
-      test("non-empty list")(canBeSerialized(Gen.listOf1(Gen.string).map(l => NonEmptyList.fromIterable(l.head, l.tail)))),
+      test("validation")(
+        canBeSerialized(
+          Gen
+            .either(Gen.listOf1(Gen.int).map(l => NonEmptyChunk.fromIterable(l.head, l.tail)), Gen.string)
+            .map(Validation.fromEither)
+        )
+      ),
+      test("non-empty list")(
+        canBeSerialized(Gen.listOf1(Gen.string).map(l => NonEmptyList.fromIterable(l.head, l.tail)))
+      ),
       test("zset")(canBeSerialized(Gen.mapOf(Gen.string, Gen.int).map(ZSet.fromMap))),
+      test("try")(
+        canBeSerialized(
+          Gen.either(Gen.throwable, Gen.string).map(_.toTry),
+          Some({ source: Try[String] =>
+            import Assertion._
 
-      test("try")(canBeSerialized(Gen.either(Gen.throwable, Gen.string).map(_.toTry), Some({ source: Try[String] =>
-        import Assertion._
-
-        source match {
-          case Failure(exception) =>
-            isFailure(isSubtype[PersistedThrowable](anything))
-          case Success(value) =>
-            isSuccess(equalTo(value))
-        }
-      }))),
-
+            source match {
+              case Failure(exception) =>
+                isFailure(isSubtype[PersistedThrowable](anything))
+              case Success(value)     =>
+                isSuccess(equalTo(value))
+            }
+          })
+        )
+      ),
       test("unknown sized collection serializer is stack safe") {
         implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
-        val bigList = (0 to 100000).toList
+        val bigList                             = (0 to 100000).toList
         canBeSerializedAndReadBack(bigList, bigList)
       },
       test("known sized collection serializer is stack safe") {
         implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
-        val bigVector = (0 to 100000).toVector
+        val bigVector                           = (0 to 100000).toVector
         canBeSerializedAndReadBack(bigVector, bigVector)
-      },
+      }
     )
 }

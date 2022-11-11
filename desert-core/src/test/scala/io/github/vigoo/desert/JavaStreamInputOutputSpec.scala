@@ -17,7 +17,6 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
           )
         }
       ),
-
       test("array slice support works") {
         val data = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
         testWriteAndRead(
@@ -26,7 +25,6 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
           Array[Byte](2, 3, 4, 5)
         )
       },
-
       test("compressed byte array support")(
         Sized.withSize(500)(
           check(Gen.vectorOf(Gen.byte)) { bytes =>
@@ -40,15 +38,19 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
       )
     )
 
-  private def testWriteAndRead[T](write: BinaryOutput => Unit, read: BinaryInput => Either[DesertFailure, T], expected: T): TestResult = {
+  private def testWriteAndRead[T](
+      write: BinaryOutput => Unit,
+      read: BinaryInput => Either[DesertFailure, T],
+      expected: T
+  ): TestResult = {
     val outStream = new ByteArrayOutputStream()
-    val output = new JavaStreamBinaryOutput(outStream)
+    val output    = new JavaStreamBinaryOutput(outStream)
     write(output)
     outStream.flush()
-    val data = outStream.toByteArray
+    val data      = outStream.toByteArray
 
-    val inStream = new ByteArrayInputStream(data)
-    val input = new JavaStreamBinaryInput(inStream)
+    val inStream  = new ByteArrayInputStream(data)
+    val input     = new JavaStreamBinaryInput(inStream)
     val readValue = read(input)
 
     assert(readValue)(isRight(equalTo(expected)))

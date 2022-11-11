@@ -32,16 +32,16 @@ class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
     } else {
       for {
         readBytes <- handleFailures(dataStream.read(buffer))
-        _ <- assert(readBytes == count, InputEndedUnexpectedly())
+        _         <- assert(readBytes == count, InputEndedUnexpectedly())
       } yield buffer
     }
   }
 
   private def handleFailures[T](f: => T): Either[DesertFailure, T] =
     Try(f) match {
-      case Success(value) => Right(value)
+      case Success(value)                => Right(value)
       case Failure(reason: EOFException) => Left(InputEndedUnexpectedly())
-      case Failure(reason) => Left(FailedToReadInput(reason))
+      case Failure(reason)               => Left(FailedToReadInput(reason))
     }
 
   private def assert(condition: Boolean, failure: DesertFailure): Either[DesertFailure, Unit] =

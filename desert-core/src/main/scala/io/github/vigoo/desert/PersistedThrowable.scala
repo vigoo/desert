@@ -2,10 +2,12 @@ package io.github.vigoo.desert
 
 import scala.util.Try
 
-case class PersistedThrowable(className: String,
-                              message: String,
-                              stackTrace: Array[StackTraceElement],
-                              cause: Option[PersistedThrowable]) extends RuntimeException {
+case class PersistedThrowable(
+    className: String,
+    message: String,
+    stackTrace: Array[StackTraceElement],
+    cause: Option[PersistedThrowable]
+) extends RuntimeException {
   setStackTrace(stackTrace)
 
   override def getMessage: String =
@@ -23,7 +25,7 @@ object PersistedThrowable {
       stackTrace = throwable.getStackTrace,
       cause = Option(throwable.getCause).map {
         case pe: PersistedThrowable => pe
-        case throwable: Throwable => PersistedThrowable(throwable)
+        case throwable: Throwable   => PersistedThrowable(throwable)
       }
     )
 }

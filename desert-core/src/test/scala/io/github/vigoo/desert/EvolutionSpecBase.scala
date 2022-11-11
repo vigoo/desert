@@ -1,62 +1,71 @@
 package io.github.vigoo.desert
 
+import io.github.vigoo.desert.EvolutionSpecBase.TestId
 import io.github.vigoo.desert.codecs._
 import zio.test.Assertion._
 import zio.test._
 import zio.test.magnolia.DeriveGen
 
-object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
+trait EvolutionSpecBase extends ZIOSpecDefault with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   case class ProdV1(fieldA: String, fieldB: Int)
 
   object ProdV1 {
-    implicit val codec: BinaryCodec[ProdV1] = BinaryCodec.derive()
     val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
   }
+
+  implicit val v1codec: BinaryCodec[ProdV1]
 
   case class ProdV2(fieldA: String, newField1: Boolean, fieldB: Int)
 
   object ProdV2 {
-    implicit val codec: BinaryCodec[ProdV2] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
+    val steps                   = Seq(
       FieldAdded("newField1", true)
     )
-    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
   }
+
+  implicit val v2codec: BinaryCodec[ProdV2]
 
   case class ProdV3(fieldA: String, newField1: Boolean, fieldB: Option[Int])
 
   object ProdV3 {
-    implicit val codec: BinaryCodec[ProdV3] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB")
     )
-    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
   }
+
+  implicit val v3codec: BinaryCodec[ProdV3]
 
   case class ProdV4(fieldA: String, newField1: Boolean)
 
   object ProdV4 {
-    implicit val codec: BinaryCodec[ProdV4] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB"),
       FieldRemoved("fieldB")
     )
-    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
   }
 
-  case class ProdV5(@TransientField("unset") fieldA: String,
-                    newField1: Boolean)
+  implicit val v4codec: BinaryCodec[ProdV4]
+
+  case class ProdV5(@TransientField("unset") fieldA: String, newField1: Boolean)
 
   object ProdV5 {
-    implicit val codec: BinaryCodec[ProdV5] = BinaryCodec.derive(
+    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
+    val steps                   = Seq(
       FieldAdded("newField1", true),
       FieldMadeOptional("fieldB"),
       FieldRemoved("fieldB"),
       FieldMadeTransient("fieldA")
     )
-    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
   }
+
+  implicit val v5codec: BinaryCodec[ProdV5]
 
   sealed trait Coprod1
 
@@ -64,11 +73,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
 
   case class Case21(x: String) extends Coprod1
 
-  object Coprod1 {
-    implicit val case1Codec: BinaryCodec[Case11] = BinaryCodec.derive()
-    implicit val case2Codec: BinaryCodec[Case21] = BinaryCodec.derive()
-    implicit val codec: BinaryCodec[Coprod1] = BinaryCodec.derive()
-  }
+  implicit val c1case1Codec: BinaryCodec[Case11]
+  implicit val c1case2Codec: BinaryCodec[Case21]
+  implicit val c1codec: BinaryCodec[Coprod1]
 
   sealed trait Coprod2
 
@@ -78,11 +85,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
 
   case class Case22(x: String) extends Coprod2
 
-  object Coprod2 {
-    implicit val case1Codec: BinaryCodec[Case12] = BinaryCodec.derive()
-    implicit val case2Codec: BinaryCodec[Case22] = BinaryCodec.derive()
-    implicit val codec: BinaryCodec[Coprod2] = BinaryCodec.derive()
-  }
+  implicit val c2case1Codec: BinaryCodec[Case12]
+  implicit val c2case2Codec: BinaryCodec[Case22]
+  implicit val c2codec: BinaryCodec[Coprod2]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Evolution")(
@@ -98,7 +103,7 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
             ProdV1("hello", 100),
             ("hello", 100)
           )
-        ),
+        )
       ),
       suite("value type wrappers")(
         test("string can be read as a wrapped string")(
@@ -132,7 +137,7 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
             Set(1, 2, 3, 4, 5),
             hasSameElements(Vector(1, 2, 3, 4, 5))
           )
-        ),
+        )
       ),
       suite("adding new field")(
         test("product with added field is serializable")(
@@ -147,7 +152,7 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         test("new version can read old")(
           canBeSerializedAndReadBack(
             ProdV1("hello", 100),
-            ProdV2("hello", newField1 = true, 100),
+            ProdV2("hello", newField1 = true, 100)
           )
         )
       ),
@@ -175,15 +180,15 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         test("new version can read v1")(
           canBeSerializedAndReadBack(
             ProdV1("hello", 200),
-            ProdV3("hello", newField1 = true, Some(200)),
+            ProdV3("hello", newField1 = true, Some(200))
           )
         ),
         test("new version can read v2")(
           canBeSerializedAndReadBack(
             ProdV2("hello", newField1 = false, 200),
-            ProdV3("hello", newField1 = false, Some(200)),
+            ProdV3("hello", newField1 = false, Some(200))
           )
-        ),
+        )
       ),
       suite("removing a field")(
         test("product with field removed is serializable")(
@@ -209,27 +214,30 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         ),
         test("cannot read as v1 because of missing field")(
           cannotBeSerializedAndReadBack[ProdV4, ProdV1](
-            ProdV4("hello", newField1 = false),
+            ProdV4("hello", newField1 = false)
           )
         ),
         test("cannot read as v2 because of missing field")(
           cannotBeSerializedAndReadBack[ProdV4, ProdV2](
-            ProdV4("hello", newField1 = false),
+            ProdV4("hello", newField1 = false)
           )
         ),
         test("can read as v3, missing field becomes None")(
           canBeSerializedAndReadBack(
             ProdV4("hello", newField1 = false),
-            ProdV3("hello", newField1 = false, fieldB = None),
+            ProdV3("hello", newField1 = false, fieldB = None)
           )
         )
       ),
       suite("making a field transient")(
         test("product with field made transient is serializable")(
-          canBeSerialized(ProdV5.gen,
+          canBeSerialized(
+            ProdV5.gen,
             Some((a: ProdV5) =>
               hasField[ProdV5, Boolean]("newField1", _.newField1, equalTo(a.newField1)) &&
-                hasField[ProdV5, String]("fieldA", _.fieldA, equalTo("unset"))))
+                hasField[ProdV5, String]("fieldA", _.fieldA, equalTo("unset"))
+            )
+          )
         ),
         test("can read v1 value by skipping the field and using the provided default")(
           canBeSerializedAndReadBack(
@@ -257,9 +265,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         ),
         test("cannot read as v4 because of missing field")(
           cannotBeSerializedAndReadBack[ProdV5, ProdV4](
-            ProdV5("hello", newField1 = false),
+            ProdV5("hello", newField1 = false)
           )
-        ),
+        )
       ),
       suite("adding new transient constructors")(
         test("adding a new transient constructor keeps binary compatibility")(
@@ -282,11 +290,9 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
         )
       )
     )
+  implicit val testIdCodec: BinaryCodec[TestId]
+}
 
+object EvolutionSpecBase {
   case class TestId(value: String) extends AnyVal
-
-  object TestId {
-    implicit val codec: BinaryCodec[TestId] = BinaryCodec.deriveForWrapper
-  }
-
 }
