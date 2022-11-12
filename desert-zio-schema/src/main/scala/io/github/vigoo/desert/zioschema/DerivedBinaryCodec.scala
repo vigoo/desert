@@ -117,6 +117,9 @@ object DerivedBinaryCodec {
             codecs
               .tryCodec(deriveInContext(cc.field.schema).asInstanceOf[BinaryCodec[Any]])
               .asInstanceOf[BinaryCodec[T]]
+          } else if (cc.id == schemas.typeRegistryTypeId) {
+            val classTag = cc.annotations.head.asInstanceOf[ClassTag[Any]]
+            BinaryCodec.unknown(classTag).asInstanceOf[BinaryCodec[T]]
           } else {
             deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
               .asInstanceOf[BinaryCodec[T]]

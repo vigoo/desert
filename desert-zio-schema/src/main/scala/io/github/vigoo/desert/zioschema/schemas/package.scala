@@ -34,4 +34,18 @@ package object schemas {
       Schema.Field[Try[A], A]("element", elemSchema, get0 = _ => ???, set0 = (_, _) => ???),
       (_: A) => ???
     )
+
+  val typeRegistryTypeId: TypeId                    = TypeId.parse("io.github.vigoo.desert.TypeRegistry")
+  def codecFromTypeRegistry[A: ClassTag]: Schema[A] =
+    Schema.CaseClass1[Nothing, A](
+      typeRegistryTypeId,
+      Schema.Field[A, Nothing](
+        "element",
+        Schema.fail("__placeholder_for_unknown_codecs__"),
+        get0 = _ => ???,
+        set0 = (_, _) => ???
+      ),
+      (_: A) => ???,
+      annotations0 = Chunk(implicitly[ClassTag[A]])
+    )
 }
