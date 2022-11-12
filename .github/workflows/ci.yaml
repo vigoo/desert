@@ -20,7 +20,7 @@ jobs:
         uses: coursier/cache-action@v5
       - name: Build and test
         if: ${{ matrix.scala == '3.2.1' }}
-        run: sbt ++${{ matrix.scala }} clean core/test akka/test cats/test catsEffect/test zio/test zioSchema/test shardcake/test
+        run: sbt ++${{ matrix.scala }} clean desert-core/test desert-coreJS/test desert-akka/test desert-cats/test desert-catsJS/test desert-cats-effect/test desert-cats-effectJS/test desert-zio/test desert-zioJS/test desert-zio-schema/test desert-zio-schemaJS/test desert-shardcake/test
       - name: Build and test
         if: ${{ matrix.scala != '3.2.1' }}
         run: sbt ++${{ matrix.scala }} clean coverage test coverageReport && bash <(curl -s https://codecov.io/bash)
