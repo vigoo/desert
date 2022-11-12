@@ -20,10 +20,11 @@ the serialization format:
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.shapeless._
 
 case class Point(x: Int, y: Int)
 object Point {
-  implicit val codec: BinaryCodec[Point] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Point] = DerivedBinaryCodec.derive
 }
 
 val ex1 = for {
@@ -41,7 +42,7 @@ type, so it is fully safe to evolve the date model to make use of more and more 
 ```scala mdoc
 case class Id(id: Int) // extends AnyVal
 object Id {
-  implicit val codec: BinaryCodec[Id] = BinaryCodec.deriveForWrapper
+  implicit val codec: BinaryCodec[Id] = DerivedBinaryCodec.deriveForWrapper
 }
 
 val ex2 = for {
@@ -76,12 +77,13 @@ used when deserializing an old data. With this the old and the new data model re
 ```scala mdoc
 case class PointV1(x: Int, y: Int)
 object PointV1 {
-  implicit val codec: BinaryCodec[PointV1] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[PointV1] = DerivedBinaryCodec.derive
 }
 
+@evolutionSteps(FieldAdded[Int]("z", 1))
 case class PointV2(x: Int, y: Int, z: Int)
 object PointV2 {
-  implicit val codec: BinaryCodec[PointV2] = BinaryCodec.derive(FieldAdded[Int]("z", 1))
+  implicit val codec: BinaryCodec[PointV2] = DerivedBinaryCodec.derive
 }
 
 val ex4 = for {
@@ -104,12 +106,13 @@ the following capabilities:
 - If the new version reads the old data, it automatically wraps the field in `Some`
 
 ```scala mdoc
+@evolutionSteps(
+  FieldAdded[Int]("z", 1),
+  FieldMadeOptional("z")
+)
 case class PointV3(x: Int, y: Int, z: Option[Int])
 object PointV3 {
-  implicit val codec: BinaryCodec[PointV3] = BinaryCodec.derive(
-    FieldAdded[Int]("z", 1),
-    FieldMadeOptional("z")
-  )
+  implicit val codec: BinaryCodec[PointV3] = DerivedBinaryCodec.derive
 }
 
 val ex5 = for {
@@ -134,13 +137,14 @@ The third supported evolution step is _removing a field_. Here backward compatib
 - Old version can only read new data if the removed field was an `Option[T]`, reading it as `None`
 
 ```scala mdoc
+@evolutionSteps(
+  FieldAdded[Int]("z", 1),
+  FieldMadeOptional("z"),
+  FieldRemoved("z")
+)
 case class PointV4(x: Int, y: Int)
 object PointV4 {
-  implicit val codec: BinaryCodec[PointV4] = BinaryCodec.derive(
-    FieldAdded[Int]("z", 1),
-    FieldMadeOptional("z"),
-    FieldRemoved("z")
-  )
+  implicit val codec: BinaryCodec[PointV4] = DerivedBinaryCodec.derive
 }
 
 val ex6 = for {
@@ -164,14 +168,15 @@ It is just an alias for `FieldRemoved` from the serializer's point of view, so t
 as for field removal.
 
 ```scala mdoc
-case class PointV5(x: Int, @TransientField(0) y: Int)
+@evolutionSteps(
+  FieldAdded[Int]("z", 1),
+  FieldMadeOptional("z"),
+  FieldRemoved("z"),
+  FieldMadeTransient("y")
+)
+case class PointV5(x: Int, @transientField(0) y: Int)
 object PointV5 {
-  implicit val codec: BinaryCodec[PointV5] = BinaryCodec.derive(
-    FieldAdded[Int]("z", 1),
-    FieldMadeOptional("z"),
-    FieldRemoved("z"),
-    FieldMadeTransient("y")
-  )
+  implicit val codec: BinaryCodec[PointV5] = DerivedBinaryCodec.derive
 }
 
 val ex7 = for {
@@ -192,7 +197,7 @@ a constructor either. Each constructor can be evolved separately with the above 
 their own evolution steps.  
 
 ### Adding a new transient constructor
-Constructors marked with `TransientConstructor` are not getting an associated _constructor ID_ so they can
+Constructors marked with `transientConstructor` are not getting an associated _constructor ID_ so they can
 be inserted or get removed freely.
 
 ### Type registry placeholders
@@ -202,7 +207,7 @@ in the registration:
 
 ```scala mdoc:invisible
 case class Impl2()
-object Impl2 { implicit val codec: BinaryCodec[Impl2] = BinaryCodec.derive() }
+object Impl2 { implicit val codec: BinaryCodec[Impl2] = DerivedBinaryCodec.derive }
 ```
 
 ```scala mdoc:silent

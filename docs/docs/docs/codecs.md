@@ -17,9 +17,10 @@ The `io.github.vigoo.desert.codecs` module defines a lot of implicit binary code
 The following code examples demonstrate this and also shows how the binary representation looks like.
 
 ```scala mdoc
-import io.github.vigoo.desert.{BinaryCodec, TransientConstructor, TransientField}
+import io.github.vigoo.desert.{BinaryCodec, transientConstructor, transientField}
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.shapeless._
 
 val byte = serializeToArray(100.toByte)
 val short = serializeToArray(100.toShort)
@@ -49,8 +50,8 @@ val none = serializeToArray[Option[Int]](None)
 val some = serializeToArray[Option[Int]](Some(100))
 val left = serializeToArray[Either[Boolean, Int]](Left(true))
 val right = serializeToArray[Either[Boolean, Int]](Right(100))
-val valid = serializeToArray[Validation[String, Int]](Validation.Success(100))
-val invalid = serializeToArray[Validation[String, Int]](Validation.Failure(NonEmptyChunk("error")))
+val valid = serializeToArray[Validation[String, Int]](Validation.succeed(100))
+val invalid = serializeToArray[Validation[String, Int]](Validation.failNonEmptyChunk(NonEmptyChunk("error")))
 ```
 
 ```scala mdoc:silent
@@ -143,7 +144,7 @@ For _case classes_ the representation is the same as for tuples:
 ```scala mdoc
 case class Point(x: Int, y: Int, z: Int)
 object Point {
-  implicit val codec: BinaryCodec[Point] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Point] = DerivedBinaryCodec.derive
 }
 
 val pt = serializeToArray(Point(1, 2, 3))
@@ -163,9 +164,9 @@ case class Beer(typ: String) extends Drink
 case object Water extends Drink
 
 object Drink {
-  implicit val beerCodec: BinaryCodec[Beer] = BinaryCodec.derive()
-  implicit val waterCodec: BinaryCodec[Water.type] = BinaryCodec.derive()
-  implicit val codec: BinaryCodec[Drink] = BinaryCodec.derive()
+  implicit val beerCodec: BinaryCodec[Beer] = DerivedBinaryCodec.derive
+  implicit val waterCodec: BinaryCodec[Water.type] = DerivedBinaryCodec.derive
+  implicit val codec: BinaryCodec[Drink] = DerivedBinaryCodec.derive
 }
 
 val a = serializeToArray[Drink](Beer("X"))
@@ -176,9 +177,9 @@ val b = serializeToArray[Drink](Water)
 It is possible to mark some fields of a _case class_ as **transient**:
 
 ```scala mdoc
-case class Point2(x: Int, y: Int, z: Int, @TransientField(None) cachedDistance: Option[Double])
+case class Point2(x: Int, y: Int, z: Int, @transientField(None) cachedDistance: Option[Double])
 object Point2 {
-  implicit val codec: BinaryCodec[Point2] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Point2] = DerivedBinaryCodec.derive
 }
 
 val pt2 = for {
@@ -196,12 +197,12 @@ It is possible to mark whole constructors as **transient**:
 
 ```scala mdoc
 sealed trait Cases
-@TransientConstructor case class Case1() extends Cases
+@transientConstructor case class Case1() extends Cases
 case class Case2() extends Cases
 
 object Cases {
-  implicit val case2Codec: BinaryCodec[Case2] = BinaryCodec.derive()
-  implicit val codec: BinaryCodec[Cases] = BinaryCodec.derive()
+  implicit val case2Codec: BinaryCodec[Case2] = DerivedBinaryCodec.derive
+  implicit val codec: BinaryCodec[Cases] = DerivedBinaryCodec.derive
 }
 
 val cs1 = serializeToArray[Cases](Case1())
@@ -219,7 +220,7 @@ the intention in the type system. `desert` can derive binary codecs for these to
 ```scala mdoc
 case class DocumentId(id: Long) // extends AnyVal
 object DocumentId {
-  implicit val codec: BinaryCodec[DocumentId] = BinaryCodec.deriveForWrapper
+  implicit val codec: BinaryCodec[DocumentId] = DerivedBinaryCodec.deriveForWrapper
 }
 
 val id = serializeToArray(DocumentId(100))
@@ -240,8 +241,8 @@ def deserialize(): Deser[T]
 where 
 
 ```scala
-type Ser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], SerializationEnv, T]
-type Deser[T] = ReaderT[StateT[EitherT[Eval, DesertFailure, *], SerializerState, *], DeserializationEnv, T]
+type Ser[T] = ZPure[Nothing, SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
+type Deser[T] = ZPure[Nothing, SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
 ```
 
 With the `BinaryCodec.define` function it is possible to define a fully custom codec. In the following

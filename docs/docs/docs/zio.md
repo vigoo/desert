@@ -21,7 +21,7 @@ Import the zio-specific syntax module:
 ```scala mdoc
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.zio.syntax._
+import io.github.vigoo.desert.ziosupport.syntax._
 ```
 
 to get variants like

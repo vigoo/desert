@@ -16,10 +16,11 @@ can participate in the above described scenario must be explicitly registered to
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.shapeless._
 
 case class TestProd(value: Int)
 object TestProd {
-  implicit val codec: BinaryCodec[TestProd] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[TestProd] = DerivedBinaryCodec.derive
 }
 ```
 
@@ -65,17 +66,17 @@ object Iface {
 
 case class Impl1(x: Int) extends Iface
 object Impl1 {
-  implicit val codec: BinaryCodec[Impl1] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Impl1] = DerivedBinaryCodec.derive
 }
 
 case class Impl2(x: Int) extends Iface
 object Impl2 {
-  implicit val codec: BinaryCodec[Impl2] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Impl2] = DerivedBinaryCodec.derive
 }
 
 case class Outer(inner: Iface)
 object Outer {
-  implicit val codec: BinaryCodec[Outer] = BinaryCodec.derive()
+  implicit val codec: BinaryCodec[Outer] = DerivedBinaryCodec.derive
 }
 
 val typeRegistry2 = DefaultTypeRegistry()

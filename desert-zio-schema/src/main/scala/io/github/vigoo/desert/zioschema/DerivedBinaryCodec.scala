@@ -14,7 +14,7 @@ import io.github.vigoo.desert.{
 import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.ziosupport.codecs._
 import zio.{Chunk, ChunkBuilder, Unsafe}
-import zio.schema.{Schema, StandardType, TypeId}
+import zio.schema.{CaseSet, Schema, StandardType, TypeId}
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -93,7 +93,13 @@ object DerivedBinaryCodec {
           deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
 
         case e: Schema.EnumN[_, _]               =>
-          deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+          deriveEnum(
+            getEvolutionStepsFromAnnotation(e.annotations),
+            e.asInstanceOf[Schema.EnumN[Any, CaseSet.Aux[Any]]]
+          )(
+            EnumSerializer.enumNSerializer,
+            EnumDeserializer.enumNDeserializer
+          ).asInstanceOf[BinaryCodec[T]]
         case genericRecord: Schema.GenericRecord =>
           deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
             .asInstanceOf[BinaryCodec[T]]

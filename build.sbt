@@ -182,8 +182,16 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
     libraryDependencies ++= Seq(
       "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
       "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
-      "org.scala-lang" % "scala-reflect"         % scalaVersion.value % Test
-    )
+    ),
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, _)) =>
+          Seq(
+            "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
+          )
+        case _ => Seq()
+      }
+    }
   )
   .dependsOn(core % "compile->compile;test->test", zio)
   .enablePlugins(ZioSchemaGenerator)
@@ -229,7 +237,9 @@ lazy val docs = project
       catsEffect.js,
       zio.js,
       cats.js,
-      benchmarks
+      benchmarks,
+      shapeless.js,
+      zioSchema.js
     ),
     git.remoteRepo                             := "git@github.com:vigoo/desert.git",
     micrositeUrl                               := "https://vigoo.github.io",
@@ -261,7 +271,7 @@ lazy val docs = project
     micrositeAnalyticsToken                    := "UA-56320875-2",
     makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg"
   )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm)
 
 // Temporary fix to avoid including mdoc in the published POM
 
