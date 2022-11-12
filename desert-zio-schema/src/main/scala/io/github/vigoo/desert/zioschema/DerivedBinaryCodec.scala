@@ -44,6 +44,8 @@ object DerivedBinaryCodec {
       derivationContext: DerivationContext
   ): BinaryCodec[T] =
     schema match {
+      case e: Schema.Enum1[_, _]                                                                 =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
       case e: Schema.Enum2[_, _, _]                                                              =>
         deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
       case e: Schema.Enum3[_, _, _, _]                                                           =>
@@ -87,9 +89,12 @@ object DerivedBinaryCodec {
       case e: Schema.Enum22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] =>
         deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
 
-      case genericRecord: Schema.GenericRecord                                                         =>
+      case e: Schema.EnumN[_, _]               =>
+        deriveEnum(getEvolutionStepsFromAnnotation(e.annotations), e).asInstanceOf[BinaryCodec[T]]
+      case genericRecord: Schema.GenericRecord =>
         deriveRecord(getEvolutionStepsFromAnnotation(genericRecord.annotations), genericRecord)
           .asInstanceOf[BinaryCodec[T]]
+
       case cc: Schema.CaseClass0[_]                                                                    =>
         deriveRecord(getEvolutionStepsFromAnnotation(cc.annotations), cc)
           .asInstanceOf[BinaryCodec[T]]

@@ -1,9 +1,15 @@
 package io.github.vigoo.desert.zioschema
 
 import io.github.vigoo.desert.{AdtCodec, BinaryCodec, transientConstructor}
-import zio.schema.Schema
+import zio.schema.{CaseSet, Schema}
 
 private[zioschema] trait EnumDeserializerBase {
+
+  implicit def enumNDeserializer[Z, C <: CaseSet.Aux[Z]](implicit
+      derivationContext: DerivationContext
+  ): EnumDeserializer[Schema.EnumN[Z, C]] =
+    (schema: Schema.EnumN[Z, C]) => schema.cases.toList.filterNot(isTransient).map(caseToDeserializationCommand)
+
   protected def caseToDeserializationCommand(
       c: Schema.Case[_, _]
   )(implicit

@@ -55,6 +55,7 @@ object ZioSchemaGenerator extends AutoPlugin {
   }
 
   private def generateRecordSerializer(log: Logger, targetFile: File): Unit = {
+    log.info(s"Generating record serializers to $targetFile")
     val caseClasses = (1 to 22).map(CaseClassModel).toList
 
     val caseClassSerializers: List[Stat] =
@@ -105,6 +106,7 @@ object ZioSchemaGenerator extends AutoPlugin {
   }
 
   private def generateRecordDeserializer(log: Logger, targetFile: File): Unit = {
+    log.info(s"Generating record deserializers to $targetFile")
     val caseClasses = (1 to 22).map(CaseClassModel).toList
 
     val caseClassDeserializers: List[Stat] =
@@ -148,7 +150,8 @@ object ZioSchemaGenerator extends AutoPlugin {
   }
 
   private def generateEnumSerializer(log: Logger, targetFile: File): Unit = {
-    val enums = (2 to 22).map(EnumModel).toList
+    log.info(s"Generating enum serializers to $targetFile")
+    val enums = (1 to 22).map(EnumModel).toList
 
     val enumSerializers: List[Stat] =
       enums.map { cc =>
@@ -188,7 +191,8 @@ object ZioSchemaGenerator extends AutoPlugin {
   }
 
   private def generateEnumDeserializer(log: Logger, targetFile: File): Unit = {
-    val enums = (2 to 22).map(EnumModel).toList
+    log.info(s"Generating enum deserializers to $targetFile")
+    val enums = (1 to 22).map(EnumModel).toList
 
     val enumDeserializers: List[Stat] =
       enums.map { cc =>
