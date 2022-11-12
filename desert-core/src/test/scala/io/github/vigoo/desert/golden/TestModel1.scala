@@ -1,11 +1,24 @@
 package io.github.vigoo.desert.golden
 
 import io.github.vigoo.desert.golden.TestModel1.{ListElement1, ListElement2}
-import io.github.vigoo.desert.{PersistedThrowable, TransientConstructor, TransientField}
+import io.github.vigoo.desert.{
+  FieldAdded,
+  FieldMadeOptional,
+  FieldMadeTransient,
+  PersistedThrowable,
+  evolutionSteps,
+  transientConstructor,
+  transientField
+}
 
 import java.util.UUID
 import scala.util.{Success, Try}
 
+@evolutionSteps(
+  FieldMadeOptional("option"),
+  FieldAdded("string", "default string"),
+  FieldAdded("set", Set.empty[String])
+)
 case class TestModel1(
     byte: Byte,
     short: Short,
@@ -35,10 +48,12 @@ object TestModel1 {
 
   object ListElement2 {
     final case class First(elem: ListElement1) extends ListElement2
-    final case class Second(uuid: UUID, desc: Option[String], @TransientField(None) cached: Option[String])
+
+    @evolutionSteps(FieldMadeTransient("cached"))
+    final case class Second(uuid: UUID, desc: Option[String], @transientField(None) cached: Option[String])
         extends ListElement2
 
-    @TransientConstructor
+    @transientConstructor
     final case class Third(file: java.io.File)
   }
 
