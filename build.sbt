@@ -74,9 +74,9 @@ lazy val commonSettings = Seq(
 lazy val root = Project("desert", file("."))
   .settings(commonSettings)
   .settings(
-    publishArtifact := false,
-    description     := "A Scala binary serialization library",
-    crossScalaVersions := Nil,
+    publishArtifact    := false,
+    description        := "A Scala binary serialization library",
+    crossScalaVersions := Nil
   )
   .aggregate(
     core.jvm,
@@ -180,8 +180,9 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion % Test
+      "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
+      "org.scala-lang" % "scala-reflect"         % scalaVersion.value % Test
     )
   )
   .dependsOn(core % "compile->compile;test->test", zio)
