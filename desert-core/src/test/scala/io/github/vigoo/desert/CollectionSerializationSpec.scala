@@ -32,7 +32,7 @@ object CollectionSerializationSpec extends ZIOSpecDefault with SerializationProp
       test("try")(
         canBeSerialized(
           Gen.either(Gen.throwable, Gen.string).map(_.toTry),
-          Some({ source: Try[String] =>
+          Some({ (source: Try[String]) =>
             import Assertion._
 
             source match {

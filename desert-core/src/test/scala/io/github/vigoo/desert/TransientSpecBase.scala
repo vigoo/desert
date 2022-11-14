@@ -9,10 +9,6 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   implicit val ttCodec: BinaryCodec[TransientTest]
-
-  implicit val case1Codec: BinaryCodec[Case1]
-  // Derive must not require implicit codec for the transient Case2
-  implicit val case3Codec: BinaryCodec[Case3]
   implicit val swtCodec: BinaryCodec[SumWithTransientCons]
 
   override def spec: Spec[TestEnvironment, Any] =
@@ -25,12 +21,12 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
       },
       test("correctly serializes types with transient constructors") {
         canBeSerializedAndReadBack(
-          Case1(25),
-          Case1(25)
+          Case1(25): SumWithTransientCons,
+          Case1(25): SumWithTransientCons
         ) &&
         canBeSerializedAndReadBack(
-          Case3("hello"),
-          Case3("hello")
+          Case3("hello"): SumWithTransientCons,
+          Case3("hello"): SumWithTransientCons
         )
       },
       test("serializing a transient constructor fails") {
@@ -42,17 +38,18 @@ trait TransientSpecBase extends ZIOSpecDefault with SerializationProperties {
 object TransientSpecBase {
   case class TypeWithoutCodec(value: Int)
 
+  @evolutionSteps(FieldAdded("c", None))
   case class TransientTest(
       a: Int,
-      @TransientField("def") b: String,
-      @TransientField(None) c: Option[Int],
+      @transientField("def") b: String,
+      @transientField(None) c: Option[Int],
       d: Boolean,
-      @TransientField(TypeWithoutCodec(0)) e: TypeWithoutCodec
+      @transientField(TypeWithoutCodec(0)) e: TypeWithoutCodec
   ) // derive must not require an implicit codec for transient fields!
 
   sealed trait SumWithTransientCons
 
   case class Case1(a: Int)                                       extends SumWithTransientCons
-  @TransientConstructor case class Case2(data: TypeWithoutCodec) extends SumWithTransientCons
+  @transientConstructor case class Case2(data: TypeWithoutCodec) extends SumWithTransientCons
   case class Case3(x: String)                                    extends SumWithTransientCons
 }

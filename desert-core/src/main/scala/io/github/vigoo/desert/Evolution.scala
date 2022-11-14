@@ -1,6 +1,8 @@
 package io.github.vigoo.desert
 
-sealed trait Evolution
+import scala.annotation.StaticAnnotation
+
+sealed trait Evolution extends Serializable
 
 case object InitialVersion extends Evolution
 
@@ -33,3 +35,5 @@ object FieldMadeTransient {
     */
   def apply(name: String): Evolution = FieldRemoved(name)
 }
+
+final case class evolutionSteps(steps: Evolution*) extends StaticAnnotation

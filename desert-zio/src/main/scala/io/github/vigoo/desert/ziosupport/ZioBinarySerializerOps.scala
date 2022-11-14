@@ -1,4 +1,4 @@
-package io.github.vigoo.desert.zio
+package io.github.vigoo.desert.ziosupport
 
 import io.github.vigoo.desert.BinarySerializer.Ser
 import io.github.vigoo.desert.syntax._

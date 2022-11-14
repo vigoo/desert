@@ -1,11 +1,11 @@
 package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
 import io.github.vigoo.desert.BinaryDeserializerOps._
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
 import io.github.vigoo.desert.BinarySerializerOps._
+import io.github.vigoo.desert.StringDeduplicationSpecBase.{DataV1, DataV2, OuterV1, OuterV2}
 import io.github.vigoo.desert.codecs._
 import zio.test.Assertion._
 import zio.test._
@@ -16,16 +16,9 @@ trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationPrope
   val s2 = "and another one"
   val s3 = "and another one"
 
-  case class DataV1()
   implicit val v1codec: BinaryCodec[DataV1]
-
-  case class DataV2(newField: String)
   implicit val v2codec: BinaryCodec[DataV2]
-
-  case class OuterV1(data: DataV1, other: String)
   implicit val outerv1codec: BinaryCodec[OuterV1]
-
-  case class OuterV2(data: DataV2, other: String)
   implicit val outerv2codec: BinaryCodec[OuterV2]
 
   private val testSer: Ser[Unit] = for {
@@ -90,4 +83,16 @@ trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationPrope
         )
       }
     )
+}
+
+object StringDeduplicationSpecBase {
+
+  case class DataV1()
+
+  @evolutionSteps(FieldAdded[String]("newField", "unknown"))
+  case class DataV2(newField: String)
+
+  case class OuterV1(data: DataV1, other: String)
+
+  case class OuterV2(data: DataV2, other: String)
 }

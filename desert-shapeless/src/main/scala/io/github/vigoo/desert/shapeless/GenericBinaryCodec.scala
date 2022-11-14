@@ -92,7 +92,7 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     * or constructor's name by [[LabelledGeneric]], having a type of 'FieldType[K, V]'.
     *
     * The result of this type-level operation, 'Result' is a [[HList]] or [[Coproduct]] where those fields or
-    * constructors that are having a transient attribute of [[TransientField]] or [[TransientConstructor]] are also
+    * constructors that are having a transient attribute of [[transientField]] or [[transientConstructor]] are also
     * tagged with the [[MarkedAsTransient]] tag, so each element is either 'FieldType[K, V]' or 'FieldType[K,
     * MarkedAsTransient[V]]'.
     *
@@ -102,9 +102,9 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     * @tparam H
     *   The generic representation of the type
     * @tparam AF
-    *   [[HList]] of the [[TransientField]] annotations, extracted by [[Annotations]]
+    *   [[HList]] of the [[transientField]] annotations, extracted by [[Annotations]]
     * @tparam AC
-    *   [[HList]] of the [[TransientConstructor]] annotations, extracted by [[Annotations]]
+    *   [[HList]] of the [[transientConstructor]] annotations, extracted by [[Annotations]]
     */
   trait TagTransients[H, AF, AC] {
     type Result
@@ -137,11 +137,11 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
 
     implicit def prodTagTransientsTransient[K <: Symbol, H, T <: HList, TT <: HList, AT <: HList, AC](implicit
         tailTagger: TagTransients.Aux[T, AT, AC, TT]
-    ): TagTransients.Aux[FieldType[K, H] :: T, Some[TransientField] :: AT, AC, FieldType[
+    ): TagTransients.Aux[FieldType[K, H] :: T, Some[transientField] :: AT, AC, FieldType[
       K,
       MarkedAsTransient[H]
     ] :: TT] =
-      new TagTransients[FieldType[K, H] :: T, Some[TransientField] :: AT, AC] {
+      new TagTransients[FieldType[K, H] :: T, Some[transientField] :: AT, AC] {
         override type Result = FieldType[K, MarkedAsTransient[H]] :: TT
         override def tag(value: FieldType[K, H] :: T): Result                                     = value match {
           case head :: tail =>
@@ -189,10 +189,10 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
 
     implicit def coprodTagTransientsTransient[K <: Symbol, H, T <: Coproduct, TT <: Coproduct, AT, AC <: HList](implicit
         tailTagger: TagTransients.Aux[T, AT, AC, TT]
-    ): TagTransients.Aux[FieldType[K, H] :+: T, AT, Some[TransientConstructor] :: AC, FieldType[K, MarkedAsTransient[
+    ): TagTransients.Aux[FieldType[K, H] :+: T, AT, Some[transientConstructor] :: AC, FieldType[K, MarkedAsTransient[
       H
     ]] :+: TT] =
-      new TagTransients[FieldType[K, H] :+: T, AT, Some[TransientConstructor] :: AC] {
+      new TagTransients[FieldType[K, H] :+: T, AT, Some[transientConstructor] :: AC] {
         override type Result = FieldType[K, MarkedAsTransient[H]] :+: TT
         override def tag(value: FieldType[K, H] :+: T): Result                                      = value match {
           case Inl(head) =>
@@ -306,8 +306,8 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     *
     * The derivation needs both type level and runtime information about the type it derives the codec for. On type
     * level first the [[LabelledGeneric]] representation gets extracted into 'H'. This is either a [[HList]] of fields
-    * or a [[Coproduct]] of constructors. Then with [[Annotations]] it finds both the [[TransientField]] and
-    * [[TransientConstructor]] annotations for each field and constructor, stored in the 'Trs' and 'Trcs' types. Based
+    * or a [[Coproduct]] of constructors. Then with [[Annotations]] it finds both the [[transientField]] and
+    * [[transientConstructor]] annotations for each field and constructor, stored in the 'Trs' and 'Trcs' types. Based
     * on these the [[TagTransients]] type level operation constructs 'TH' where each field/constructor is tagged with
     * its label and optionally as transient. This is the type which is then used recursively to generate the serializer
     * and the deserializer through the implicits of [[SerializationPlan]] and [[DeserializationPlan]].
@@ -316,7 +316,7 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     * class extracts the name of non-transient constructors into a runtime [[Vector]]. This defines the association
     * between constructors and numeric IDs.
     *
-    * It is not enough to have transient tags in type level because the [[TransientField]] annotation also holds a
+    * It is not enough to have transient tags in type level because the [[transientField]] annotation also holds a
     * default value. For this reason we need to be able to access the default value runtime as well, during the
     * construction of the generic representation in the deserializer.
     *
@@ -328,15 +328,15 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     * @param keys
     *   Gets the HList of field/constructor names of 'H' into 'Ks'
     * @param transientAnnotations
-    *   Extracts the [[TransientField]] annotations of 'T' into 'Trs'
+    *   Extracts the [[transientField]] annotations of 'T' into 'Trs'
     * @param transientConstructorAnnotations
-    *   Extracts the [[TransientConstructor]] annotations of 'T' into 'Trcs'
+    *   Extracts the [[transientConstructor]] annotations of 'T' into 'Trcs'
     * @param taggedTransients
     *   Tags the generic representation 'H' with transient tags based on 'Trs' and 'Trcs' into 'TH'
     * @param zip
     *   Creates a zipped list of 'Ks' and 'Trs', associating field names with transient annotations into 'KsTrs'
     * @param toList
-    *   Extractor of the 'KsTrs' [[HList]] into a [[List]] of [[Symbol]] and optional [[TransientField]] pairs
+    *   Extractor of the 'KsTrs' [[HList]] into a [[List]] of [[Symbol]] and optional [[transientField]] pairs
     * @param serializationPlan
     *   The serializer implementation for the tagged generic representation 'TH'
     * @param deserializationPlan
@@ -352,11 +352,11 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
     * @tparam Ks
     *   [[HList]] of field/constructor names
     * @tparam Trs
-    *   [[HList]] of optional [[TransientField]] annotations per field/constructor
+    *   [[HList]] of optional [[transientField]] annotations per field/constructor
     * @tparam Trcs
-    *   [[HList]] of optional [[TransientConstructor]] annotations per field/constructor
+    *   [[HList]] of optional [[transientConstructor]] annotations per field/constructor
     * @tparam KsTrs
-    *   [[HList]] of pairs of [[Symbol]] and optional [[TransientField]] values
+    *   [[HList]] of pairs of [[Symbol]] and optional [[transientField]] values
     * @tparam TH
     *   Tagged generic representation of type 'T' produced by [[TagTransients]]
     * @return
@@ -365,11 +365,11 @@ trait GenericDerivationApi extends LowerPriorityGenericDerivationApi {
   def derive[T, H, Ks <: HList, Trs <: HList, Trcs <: HList, KsTrs <: HList, TH](implicit
       gen: LabelledGeneric.Aux[T, H],
       keys: Lazy[Symbols.Aux[H, Ks]],
-      transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-      transientConstructorAnnotations: Annotations.Aux[TransientConstructor, T, Trcs],
+      transientAnnotations: Annotations.Aux[transientField, T, Trs],
+      transientConstructorAnnotations: Annotations.Aux[transientConstructor, T, Trcs],
       taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
       zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
-      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
+      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[transientField])],
       serializationPlan: Lazy[SerializationPlan[TH]],
       deserializationPlan: Lazy[DeserializationPlan[TH]],
       toConstructorMap: Lazy[ToConstructorMap[TH]],
@@ -546,11 +546,11 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   def derive[T, H, Ks <: HList, Trs <: HList, Trcs <: HList, KsTrs <: HList, TH](implicit
       gen: LabelledGeneric.Aux[T, H],
       keys: Lazy[Symbols.Aux[H, Ks]],
-      transientAnnotations: Annotations.Aux[TransientField, T, Trs],
-      transientConstructorAnnotations: Annotations.Aux[TransientConstructor, T, Trcs],
+      transientAnnotations: Annotations.Aux[transientField, T, Trs],
+      transientConstructorAnnotations: Annotations.Aux[transientConstructor, T, Trcs],
       taggedTransients: TagTransients.Aux[H, Trs, Trcs, TH],
       zip: Zip.Aux[Ks :: Trs :: HNil, KsTrs],
-      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[TransientField])],
+      toList: ToTraversable.Aux[KsTrs, List, (Symbol, Option[transientField])],
       serializationPlan: Lazy[SerializationPlan[TH]],
       deserializationPlan: Lazy[DeserializationPlan[TH]],
       toConstructorMap: Lazy[ToConstructorMap[TH]],
@@ -558,7 +558,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
   ): BinaryCodec[T] = {
     val constructorMap  = toConstructorMap.value.constructors
     val trs             = zip(keys.value() :: transientAnnotations() :: HNil)
-    val transientFields = toList(trs).collect { case (key, Some(TransientField(defaultValue))) =>
+    val transientFields = toList(trs).collect { case (key, Some(transientField(defaultValue))) =>
       (key, defaultValue)
     }.toMap
 
@@ -573,7 +573,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       },
       deserializationPlan.value.commands,
       BuilderState.empty,
-      (values => gen.from(taggedTransients.untag(deserializationPlan.value.materialize(values))))
+      (values => Right(gen.from(taggedTransients.untag(deserializationPlan.value.materialize(values)))))
     )
   }
 

@@ -10,6 +10,7 @@ import io.github.vigoo.desert.SerializerState.{StringAlreadyStored, StringId, St
 import _root_.zio.{Chunk, NonEmptyChunk}
 import _root_.zio.prelude.{Associative, NonEmptyList, Validation, ZSet}
 
+import java.time._
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
 import scala.reflect.ClassTag
@@ -26,11 +27,21 @@ object codecs extends TupleCodecs {
   implicit val floatCodec: BinaryCodec[Float]   = BinaryCodec.define[Float](value => writeFloat(value))(readFloat())
   implicit val doubleCodec: BinaryCodec[Double] = BinaryCodec.define[Double](value => writeDouble(value))(readDouble())
 
+  private def createVarIntCodec(optimizeForPositive: Boolean): BinaryCodec[Int] =
+    BinaryCodec.define[Int](value => writeVarInt(value, optimizeForPositive))(readVarInt(optimizeForPositive))
+  val varIntOptimizedForPositiveCodec: BinaryCodec[Int]                         = createVarIntCodec(optimizeForPositive = true)
+  val varIntCodec: BinaryCodec[Int]                                             = createVarIntCodec(optimizeForPositive = false)
+
   implicit val booleanCodec: BinaryCodec[Boolean] =
     BinaryCodec.define[Boolean](value => writeByte(if (value) 1 else 0))(readByte().map(_ != 0))
 
   implicit val unitCodec: BinaryCodec[Unit] =
     BinaryCodec.define[Unit](_ => finishSerializer())(finishDeserializerWith(()))
+
+  implicit val charCodec: BinaryCodec[Char] = BinaryCodec.from(
+    shortCodec.contramap(_.toShort),
+    shortCodec.map(_.toChar)
+  )
 
   implicit val stringCodec: BinaryCodec[String] = new BinaryCodec[String] {
     private val charset = StandardCharsets.UTF_8
@@ -101,6 +112,212 @@ object codecs extends TupleCodecs {
     lsb <- readLong()
   } yield new UUID(msb, lsb))
 
+  implicit val bigDecimalCodec: BinaryCodec[BigDecimal] =
+    BinaryCodec.from(stringCodec.contramap(_.toString()), stringCodec.map(BigDecimal(_)))
+
+  implicit val javaBigDecimalCodec: BinaryCodec[java.math.BigDecimal] =
+    BinaryCodec.from(stringCodec.contramap(_.toString()), stringCodec.map(new java.math.BigDecimal(_)))
+
+  implicit val javaBigIntegerCodec: BinaryCodec[java.math.BigInteger] =
+    BinaryCodec.define({ (bigint: java.math.BigInteger) =>
+      val array = bigint.toByteArray
+      for {
+        _ <- writeVarInt(array.length, optimizeForPositive = true)
+        _ <- writeBytes(array)
+      } yield ()
+    })(
+      for {
+        length <- readVarInt(optimizeForPositive = true)
+        bytes  <- readBytes(length)
+      } yield new java.math.BigInteger(bytes)
+    )
+
+  implicit val bigIntCodec: BinaryCodec[BigInt] =
+    BinaryCodec.from(
+      javaBigIntegerCodec.contramap(_.bigInteger),
+      javaBigIntegerCodec.map(BigInt(_))
+    )
+
+  implicit val dayOfWeekCodec: BinaryCodec[DayOfWeek] =
+    BinaryCodec.from(
+      byteCodec.contramap(_.getValue.toByte),
+      byteCodec.map(n => DayOfWeek.of(n.toInt))
+    )
+
+  implicit val monthCodec: BinaryCodec[Month] =
+    BinaryCodec.from(
+      byteCodec.contramap(_.getValue.toByte),
+      byteCodec.map(n => Month.of(n.toInt))
+    )
+
+  implicit val yearCodec: BinaryCodec[Year] =
+    BinaryCodec.from(
+      varIntOptimizedForPositiveCodec.contramap(_.getValue),
+      varIntOptimizedForPositiveCodec.map(n => Year.of(n))
+    )
+
+  implicit val monthDayCodec: BinaryCodec[MonthDay] =
+    BinaryCodec.define((monthDay: MonthDay) =>
+      for {
+        _ <- write(monthDay.getMonth)
+        _ <- writeByte(monthDay.getDayOfMonth.toByte)
+      } yield ()
+    )(for {
+      month      <- read[Month]()
+      dayOfMonth <- readByte()
+    } yield MonthDay.of(month, dayOfMonth.toInt))
+
+  implicit val yearMonthCodec: BinaryCodec[YearMonth] =
+    BinaryCodec.define((yearMonth: YearMonth) =>
+      for {
+        _ <- writeVarInt(yearMonth.getYear, optimizeForPositive = true)
+        _ <- write(yearMonth.getMonth)
+      } yield ()
+    )(for {
+      year  <- readVarInt(optimizeForPositive = true)
+      month <- read[Month]()
+    } yield YearMonth.of(year, month))
+
+  implicit val periodCodec: BinaryCodec[Period] =
+    BinaryCodec.define((period: Period) =>
+      for {
+        _ <- writeVarInt(period.getYears, optimizeForPositive = true)
+        _ <- writeVarInt(period.getMonths, optimizeForPositive = true)
+        _ <- writeVarInt(period.getDays, optimizeForPositive = true)
+      } yield ()
+    )(for {
+      years  <- readVarInt(optimizeForPositive = true)
+      months <- readVarInt(optimizeForPositive = true)
+      days   <- readVarInt(optimizeForPositive = true)
+    } yield Period.of(years, months, days))
+
+  implicit val zoneIdCodec: BinaryCodec[ZoneId] =
+    BinaryCodec.define[ZoneId] {
+      case offset: ZoneOffset =>
+        for {
+          _ <- writeByte(0)
+          _ <- writeVarInt(offset.getTotalSeconds, optimizeForPositive = false)
+        } yield ()
+      case region             =>
+        for {
+          _ <- writeByte(1)
+          _ <- write(region.getId)
+        } yield ()
+    }(
+      for {
+        typ    <- readByte()
+        result <-
+          typ match {
+            case 0 =>
+              readVarInt(optimizeForPositive = false).map(totalSeconds => ZoneOffset.ofTotalSeconds(totalSeconds))
+            case 1 => read[String]().map(id => ZoneId.of(id))
+            case 2 => failDeserializerWith(InvalidConstructorId(typ.toInt, "ZoneId"))
+          }
+      } yield result
+    )
+
+  implicit val zoneOffsetCodec: BinaryCodec[ZoneOffset] =
+    BinaryCodec.from(
+      varIntCodec.contramap(_.getTotalSeconds),
+      varIntCodec.map(ZoneOffset.ofTotalSeconds)
+    )
+
+  implicit val durationCodec: BinaryCodec[Duration] =
+    BinaryCodec.define((duration: Duration) =>
+      for {
+        _ <- writeLong(duration.getSeconds)
+        _ <- writeInt(duration.getNano)
+      } yield ()
+    )(for {
+      seconds <- readLong()
+      nanos   <- readInt()
+    } yield Duration.ofSeconds(seconds, nanos.toLong))
+
+  implicit val instantCodec: BinaryCodec[Instant] =
+    BinaryCodec.define((instant: Instant) =>
+      for {
+        _ <- writeLong(instant.getEpochSecond)
+        _ <- writeInt(instant.getNano)
+      } yield ()
+    )(for {
+      seconds <- readLong()
+      nanos   <- readInt()
+    } yield Instant.ofEpochSecond(seconds, nanos.toLong))
+
+  implicit val localDateCodec: BinaryCodec[LocalDate] =
+    BinaryCodec.define((localDate: LocalDate) =>
+      for {
+        _ <- writeVarInt(localDate.getYear, optimizeForPositive = true)
+        _ <- write(localDate.getMonth)
+        _ <- writeByte(localDate.getDayOfMonth.toByte)
+      } yield ()
+    )(for {
+      year       <- readVarInt(optimizeForPositive = true)
+      month      <- read[Month]()
+      dayOfMonth <- readByte()
+    } yield LocalDate.of(year, month, dayOfMonth.toInt))
+
+  implicit val localTimeCodec: BinaryCodec[LocalTime] =
+    BinaryCodec.define((localTime: LocalTime) =>
+      for {
+        _ <- writeByte(localTime.getHour.toByte)
+        _ <- writeByte(localTime.getMinute.toByte)
+        _ <- writeByte(localTime.getSecond.toByte)
+        _ <- writeVarInt(localTime.getNano, optimizeForPositive = true)
+      } yield ()
+    )(for {
+      hour   <- readByte()
+      minute <- readByte()
+      second <- readByte()
+      nano   <- readVarInt(optimizeForPositive = true)
+    } yield LocalTime.of(hour, minute, second, nano))
+
+  implicit val localDateTimeCodec: BinaryCodec[LocalDateTime] =
+    BinaryCodec.define((localDateTime: LocalDateTime) =>
+      for {
+        _ <- write(localDateTime.toLocalDate)
+        _ <- write(localDateTime.toLocalTime)
+      } yield ()
+    )(for {
+      date <- read[LocalDate]()
+      time <- read[LocalTime]()
+    } yield LocalDateTime.of(date, time))
+
+  implicit val offsetTimeCodec: BinaryCodec[OffsetTime] =
+    BinaryCodec.define((offsetTime: OffsetTime) =>
+      for {
+        _ <- write(offsetTime.toLocalTime)
+        _ <- write(offsetTime.getOffset)
+      } yield ()
+    )(for {
+      time   <- read[LocalTime]()
+      offset <- read[ZoneOffset]()
+    } yield OffsetTime.of(time, offset))
+
+  implicit val offsetDateTimeCodec: BinaryCodec[OffsetDateTime] =
+    BinaryCodec.define((offsetDateTime: OffsetDateTime) =>
+      for {
+        _ <- write(offsetDateTime.toLocalDateTime)
+        _ <- write(offsetDateTime.getOffset)
+      } yield ()
+    )(for {
+      dateTime <- read[LocalDateTime]()
+      offset   <- read[ZoneOffset]()
+    } yield OffsetDateTime.of(dateTime, offset))
+
+  implicit val zonedDateTimeCodec: BinaryCodec[ZonedDateTime] =
+    BinaryCodec.define((offsetDateTime: ZonedDateTime) =>
+      for {
+        _ <- write(offsetDateTime.toLocalDateTime)
+        _ <- write(offsetDateTime.getOffset)
+        _ <- write(offsetDateTime.getZone)
+      } yield ()
+    )(for {
+      dateTime <- read[LocalDateTime]()
+      offset   <- read[ZoneOffset]()
+      zone     <- read[ZoneId]()
+    } yield ZonedDateTime.ofStrict(dateTime, offset, zone))
+
   implicit def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]] = new BinaryCodec[Option[T]] {
     override def deserialize(): Deser[Option[T]] =
       for {
@@ -170,7 +387,7 @@ object codecs extends TupleCodecs {
         )
       ),
       initialBuilderState = PersistedThrowable("", "", Array.empty, None),
-      materialize = identity
+      materialize = Right(_)
     )
 
   implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(

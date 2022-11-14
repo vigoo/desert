@@ -30,7 +30,7 @@ trait BinaryDeserializerOps {
   final def readUnknown(): Deser[Any] =
     for {
       typeRegistry <- getInputTypeRegistry
-      typeId       <- readVarInt(optimizeForPositive = true).map(RegisteredTypeId)
+      typeId       <- readVarInt(optimizeForPositive = true).map(RegisteredTypeId.apply)
       result       <- typeRegistry.forId(typeId) match {
                         case Some(registration) =>
                           registration.codec.deserialize()

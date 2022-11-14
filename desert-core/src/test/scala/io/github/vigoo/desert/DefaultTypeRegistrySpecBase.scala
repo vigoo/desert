@@ -1,13 +1,12 @@
 package io.github.vigoo.desert
 
+import io.github.vigoo.desert.DefaultTypeRegistrySpecBase.TestProd
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import zio.test.Assertion._
 import zio.test._
 
 trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
-
-  case class TestProd(x: Double, y: Double)
 
   implicit val codec: BinaryCodec[TestProd]
 
@@ -37,9 +36,9 @@ trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment, Any] =
     suite("DefaultTypeRegistry")(
       test("can register and retrieve codecs for types") {
-        implicit val stringCodec = codecs.stringCodec
-        implicit val doubleCodec = codecs.doubleCodec
-        implicit val setCodec    = codecs.setCodec[Double]
+        implicit val stringCodec: BinaryCodec[String]   = codecs.stringCodec
+        implicit val doubleCodec: BinaryCodec[Double]   = codecs.doubleCodec
+        implicit val setCodec: BinaryCodec[Set[Double]] = codecs.setCodec[Double]
 
         val registry = DefaultTypeRegistry()
           .register[String]
@@ -67,9 +66,9 @@ trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
         assert(registry.forId(RegisteredTypeId(1000)))(isNone)
       },
       test("can skip deprecated type ids during registration") {
-        implicit val stringCodec = codecs.stringCodec
-        implicit val doubleCodec = codecs.doubleCodec
-        implicit val setCodec    = codecs.setCodec[Double]
+        implicit val stringCodec: BinaryCodec[String]   = codecs.stringCodec
+        implicit val doubleCodec: BinaryCodec[Double]   = codecs.doubleCodec
+        implicit val setCodec: BinaryCodec[Set[Double]] = codecs.setCodec[Double]
 
         val registry = DefaultTypeRegistry()
           .register[String]
@@ -85,4 +84,8 @@ trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
         assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), setCodec, classOf[Set[Double]]))))
       }
     )
+}
+
+object DefaultTypeRegistrySpecBase {
+  case class TestProd(x: Double, y: Double)
 }

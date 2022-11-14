@@ -2,7 +2,7 @@ import sbt._
 import sbt.Keys._
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import java.nio.file.{FileAlreadyExistsException, Files}
 import scala.meta._
 
 object TupleCodecGenerator extends AutoPlugin {
@@ -56,7 +56,7 @@ object TupleCodecGenerator extends AutoPlugin {
 
     val tupleBuilders = tuples.map { model =>
       q"""final class ${model.builderType}[..${model.typeParams}] {
-            def asTuple: ${model.appliedTupleType} = ${model.fromFields}
+            def asTuple: Either[DesertFailure, ${model.appliedTupleType}] = Right(${model.fromFields})
 
             ..${model.fieldVars}
           }
@@ -151,6 +151,10 @@ object TupleCodecGenerator extends AutoPlugin {
           }
           """
 
+    try Files.createDirectories(targetFile.toPath.getParent)
+    catch {
+      case _: FileAlreadyExistsException =>
+    }
     Files.write(targetFile.toPath, code.toString.getBytes(StandardCharsets.UTF_8))
   }
 

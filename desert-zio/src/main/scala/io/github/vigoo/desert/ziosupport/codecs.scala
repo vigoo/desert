@@ -1,8 +1,8 @@
-package io.github.vigoo.desert.zio
+package io.github.vigoo.desert.ziosupport
 
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
-import io.github.vigoo.desert.zio.syntax._
+import io.github.vigoo.desert.ziosupport.syntax._
 import io.github.vigoo.desert.BinaryCodec
 import zio.Chunk
 
