@@ -1,43 +1,21 @@
 package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.{
-  BinaryCodec,
-  DeserializationFailure,
-  DeserializingNonExistingChunk,
-  DesertException,
-  DesertFailure,
-  FailedToReadInput,
-  FailedToWriteOutput,
-  FieldRemovedInSerializedVersion,
-  FieldWithoutDefaultValueIsMissing,
-  InputEndedUnexpectedly,
-  InvalidConstructorId,
-  InvalidConstructorName,
-  InvalidRefId,
-  InvalidStringId,
-  InvalidTypeId,
-  NonOptionalFieldSerializedAsNone,
-  SerializationFailure,
-  SerializationUpcastError,
-  SerializingTransientConstructor,
-  TypeNotRegistered,
-  TypeRegistry,
-  UnknownFieldReferenceInEvolutionStep,
-  UnknownSerializedEvolutionStep
-}
+import io.github.vigoo.desert.{BinaryCodec, DeserializationFailure, DeserializingNonExistingChunk, DesertException, DesertFailure, FailedToReadInput, FailedToWriteOutput, FieldRemovedInSerializedVersion, FieldWithoutDefaultValueIsMissing, InputEndedUnexpectedly, InvalidConstructorId, InvalidConstructorName, InvalidRefId, InvalidStringId, InvalidTypeId, NonOptionalFieldSerializedAsNone, SerializationFailure, SerializationUpcastError, SerializingTransientConstructor, TypeNotRegistered, TypeRegistry, UnknownFieldReferenceInEvolutionStep, UnknownSerializedEvolutionStep}
 import io.github.vigoo.desert.syntax._
 import zio.{Cause, Chunk}
-import zio.schema.Schema
+import zio.schema.{Derive, Schema}
 import zio.schema.codec.BinaryCodec.{BinaryDecoder, BinaryEncoder}
 import zio.schema.codec.{DecodeError, Decoder, Encoder}
 import zio.stream.ZPipeline
 
+// TODO: Fix macro or move helper macro to separate compilation unit
+/*
 final class Codec private (typeRegistry: TypeRegistry) extends zio.schema.codec.BinaryCodec {
 
   override def encoderFor[A](schema: Schema[A]): BinaryEncoder[A] =
     new BinaryEncoder[A] {
       override def encode(value: A): Chunk[Byte] =
-        serializeToArray(value, typeRegistry)(DerivedBinaryCodec.derive(schema)) match {
+        serializeToArray(value, typeRegistry)(Derive.derive(DerivedBinaryCodec.deriver)(schema)) match {
           case Left(failure) => throw new DesertException(failure)
           case Right(array)  => Chunk.fromArray(array)
         }
@@ -100,3 +78,4 @@ object Codec {
 
   def withTypeRegistry(typeRegistry: TypeRegistry): Codec = new Codec(typeRegistry)
 }
+*/

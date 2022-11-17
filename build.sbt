@@ -180,8 +180,8 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
+      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -189,12 +189,11 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
           Seq(
             "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
           )
-        case _ => Seq()
+        case _            => Seq()
       }
     }
   )
   .dependsOn(core % "compile->compile;test->test", zio)
-  .enablePlugins(ZioSchemaGenerator)
 
 lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(commonSettings)

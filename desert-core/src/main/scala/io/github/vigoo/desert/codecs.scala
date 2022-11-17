@@ -318,7 +318,7 @@ object codecs extends TupleCodecs {
       zone     <- read[ZoneId]()
     } yield ZonedDateTime.ofStrict(dateTime, offset, zone))
 
-  implicit def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]] = new BinaryCodec[Option[T]] {
+  private[desert] case class OptionBinaryCodec[T]()(implicit val innerCodec: BinaryCodec[T]) extends BinaryCodec[Option[T]] {
     override def deserialize(): Deser[Option[T]] =
       for {
         isDefined <- read[Boolean]()
@@ -331,6 +331,8 @@ object codecs extends TupleCodecs {
         case None        => write(false)
       }
   }
+
+  implicit def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]] = OptionBinaryCodec[T]()
 
   // Throwable
 
