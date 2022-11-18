@@ -22,7 +22,7 @@ import zio.schema.{CaseSet, Derive, Deriver, Schema, StandardType, TypeId}
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
-object DerivedBinaryCodec extends BinaryCodecVersionSpecific {
+object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
   override lazy val deriver = BinaryCodecDeriver().cached.autoAcceptSummoned
 
   private final case class EnumBuilderState(result: Any)
@@ -86,7 +86,7 @@ object DerivedBinaryCodec extends BinaryCodecVersionSpecific {
       new AdtCodec[A, EnumBuilderState](
         evolutionSteps = getEvolutionStepsFromAnnotation(`enum`.annotations),
         typeName = `enum`.id.name,
-        constructors = `enum`.cases.map(_.id).toVector,
+        constructors = `enum`.cases.filterNot(_.annotations.contains(transientConstructor())).map(_.id).toVector,
         transientFields = Map.empty,
         getSerializationCommands = (value: A) =>
           `enum`.cases.zipWithIndex
@@ -244,7 +244,7 @@ object DerivedBinaryCodec extends BinaryCodecVersionSpecific {
         summoned: => Option[BinaryCodec[T]]
     ): BinaryCodec[T] = {
       val (schemas, wrappedInstances) = schemasAndInstances.unzip
-      val instances = wrappedInstances.map(_.unwrap.asInstanceOf[BinaryCodec[Any]])
+      val instances                   = wrappedInstances.map(_.unwrap.asInstanceOf[BinaryCodec[Any]])
       schemasAndInstances.length match {
         case 2 =>
           codecs
@@ -259,7 +259,7 @@ object DerivedBinaryCodec extends BinaryCodecVersionSpecific {
           codecs.TupleFieldReader
             .optionalFieldReader[Any](optional.asInstanceOf[BinaryCodec[Any]])
             .asInstanceOf[codecs.TupleFieldReader[Any]]
-        case _ =>
+        case _                              =>
           codecs.TupleFieldReader.requiredFieldReader[Any](instance.asInstanceOf[BinaryCodec[Any]])
       }
 

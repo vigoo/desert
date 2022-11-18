@@ -4,15 +4,15 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 import io.github.vigoo.desert.BinaryCodec
-import zio.schema.{ Deriver, Schema }
+import zio.schema.{Deriver, Schema}
 
-trait BinaryCodecVersionSpecific {
-  val deriver: Deriver[BinaryCodec]
+trait DerivedBinaryCodecVersionSpecific {
+  def deriver: Deriver[BinaryCodec]
 
-  def derive[T](implicit schema: Schema[T]): BinaryCodec[T] = macro BinaryCodecVersionSpecific.deriveImpl[T]
+  def derive[T](implicit schema: Schema[T]): BinaryCodec[T] = macro DerivedBinaryCodecVersionSpecific.deriveImpl[T]
 }
 
-object BinaryCodecVersionSpecific {
+object DerivedBinaryCodecVersionSpecific {
 
   def deriveImpl[T: c.WeakTypeTag](c: whitebox.Context)(schema: c.Expr[Schema[T]]): c.Tree = {
     import c.universe._

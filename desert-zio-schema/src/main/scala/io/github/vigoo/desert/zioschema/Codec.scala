@@ -1,6 +1,30 @@
 package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.{BinaryCodec, DeserializationFailure, DeserializingNonExistingChunk, DesertException, DesertFailure, FailedToReadInput, FailedToWriteOutput, FieldRemovedInSerializedVersion, FieldWithoutDefaultValueIsMissing, InputEndedUnexpectedly, InvalidConstructorId, InvalidConstructorName, InvalidRefId, InvalidStringId, InvalidTypeId, NonOptionalFieldSerializedAsNone, SerializationFailure, SerializationUpcastError, SerializingTransientConstructor, TypeNotRegistered, TypeRegistry, UnknownFieldReferenceInEvolutionStep, UnknownSerializedEvolutionStep}
+import io.github.vigoo.desert.{
+  BinaryCodec,
+  DeserializationFailure,
+  DeserializingNonExistingChunk,
+  DesertException,
+  DesertFailure,
+  FailedToReadInput,
+  FailedToWriteOutput,
+  FieldRemovedInSerializedVersion,
+  FieldWithoutDefaultValueIsMissing,
+  InputEndedUnexpectedly,
+  InvalidConstructorId,
+  InvalidConstructorName,
+  InvalidRefId,
+  InvalidStringId,
+  InvalidTypeId,
+  NonOptionalFieldSerializedAsNone,
+  SerializationFailure,
+  SerializationUpcastError,
+  SerializingTransientConstructor,
+  TypeNotRegistered,
+  TypeRegistry,
+  UnknownFieldReferenceInEvolutionStep,
+  UnknownSerializedEvolutionStep
+}
 import io.github.vigoo.desert.syntax._
 import zio.{Cause, Chunk}
 import zio.schema.{Derive, Schema}
@@ -78,4 +102,4 @@ object Codec {
 
   def withTypeRegistry(typeRegistry: TypeRegistry): Codec = new Codec(typeRegistry)
 }
-*/
+ */

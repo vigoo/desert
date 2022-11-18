@@ -8,7 +8,7 @@ val scala2 = "2.13.10"
 val scala3 = "3.2.1"
 
 val zioVersion       = "2.0.3"
-val zioSchemaVersion = "0.3.0"
+val zioSchemaVersion = "0.3.0+5-fbb6c5cb-SNAPSHOT"
 
 name := "desert"
 
@@ -39,7 +39,8 @@ lazy val commonSettings = Seq(
     case Some((2, 13)) =>
       Seq(
         "-deprecation",
-        "-unchecked"
+        "-unchecked",
+        "-Yrangepos"
       )
     case Some((3, _))  =>
       Seq(
