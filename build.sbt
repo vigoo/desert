@@ -157,7 +157,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.3.14"
+      "org.typelevel" %% "cats-effect" % "3.4.1"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -180,8 +180,8 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
+      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion % Test
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -189,7 +189,7 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
           Seq(
             "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
           )
-        case _ => Seq()
+        case _            => Seq()
       }
     }
   )
