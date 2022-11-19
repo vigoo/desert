@@ -1,26 +1,112 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.zioschema
 
+import _root_.zio.schema.{DeriveSchema, Schema}
+import io.github.vigoo.desert._
 import io.github.vigoo.desert.codecs._
-import zio.test.Assertion._
-import zio.test._
+import zio.test.Assertion.{equalTo, hasField, hasSameElements}
 import zio.test.magnolia.DeriveGen
+import zio.test.{Gen, Sized, Spec, TestEnvironment, ZIOSpecDefault}
 
-trait EvolutionSpecBase extends ZIOSpecDefault with SerializationProperties {
-  import EvolutionSpecBase._
+object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
+
+  case class TestId(value: String) extends AnyVal
+
+  case class ProdV1(fieldA: String, fieldB: Int)
+
+  object ProdV1 {
+    val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
+  }
+
+  @evolutionSteps(FieldAdded("newField1", true))
+  case class ProdV2(fieldA: String, newField1: Boolean, fieldB: Int)
+
+  object ProdV2 {
+    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
+    val steps                   = Seq(
+      FieldAdded("newField1", true)
+    )
+  }
+
+  @evolutionSteps(FieldAdded("newField1", true), FieldMadeOptional("fieldB"))
+  case class ProdV3(fieldA: String, newField1: Boolean, fieldB: Option[Int])
+
+  object ProdV3 {
+    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
+    val steps                   = Seq(
+      FieldAdded("newField1", true),
+      FieldMadeOptional("fieldB")
+    )
+  }
+
+  @evolutionSteps(FieldAdded("newField1", true), FieldMadeOptional("fieldB"), FieldRemoved("fieldB"))
+  case class ProdV4(fieldA: String, newField1: Boolean)
+
+  object ProdV4 {
+    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
+    val steps                   = Seq(
+      FieldAdded("newField1", true),
+      FieldMadeOptional("fieldB"),
+      FieldRemoved("fieldB")
+    )
+  }
+
+  @evolutionSteps(
+    FieldAdded("newField1", true),
+    FieldMadeOptional("fieldB"),
+    FieldRemoved("fieldB"),
+    FieldMadeTransient("fieldA")
+  )
+  case class ProdV5(
+      @transientField("unset") fieldA: String,
+      newField1: Boolean
+  )
+
+  object ProdV5 {
+    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
+    val steps                   = Seq(
+      FieldAdded("newField1", true),
+      FieldMadeOptional("fieldB"),
+      FieldRemoved("fieldB"),
+      FieldMadeTransient("fieldA")
+    )
+  }
+
+  sealed trait Coprod1
+
+  case class Case11(a: Int) extends Coprod1
+
+  case class Case21(x: String) extends Coprod1
+
+  sealed trait Coprod2
+
+  case class Case12(a: Int) extends Coprod2
+
+  @transientConstructor
+  case class TransientCons() extends Coprod2
+
+  case class Case22(x: String) extends Coprod2
 
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
-  implicit val v1codec: BinaryCodec[ProdV1]
-  implicit val v2codec: BinaryCodec[ProdV2]
-  implicit val v3codec: BinaryCodec[ProdV3]
-  implicit val v4codec: BinaryCodec[ProdV4]
-  implicit val v5codec: BinaryCodec[ProdV5]
+  implicit val schemaProdV1: Schema[ProdV1]   = DeriveSchema.gen
+  implicit val schemaProdV2: Schema[ProdV2]   = DeriveSchema.gen
+  implicit val schemaProdV3: Schema[ProdV3]   = DeriveSchema.gen
+  implicit val schemaProdV4: Schema[ProdV4]   = DeriveSchema.gen
+  implicit val schemaProdV5: Schema[ProdV5]   = DeriveSchema.gen
+  implicit val schemaCoprod1: Schema[Coprod1] = DeriveSchema.gen
+  implicit val schemaCoprod2: Schema[Coprod2] = DeriveSchema.gen
 
-  implicit val c1codec: BinaryCodec[Coprod1]
-
-  implicit val c2codec: BinaryCodec[Coprod2]
-
-  implicit val testIdCodec: BinaryCodec[TestId]
+  implicit val v1codec: BinaryCodec[ProdV1]     = DerivedBinaryCodec.derive
+  implicit val v2codec: BinaryCodec[ProdV2]     = DerivedBinaryCodec.derive
+  implicit val v3codec: BinaryCodec[ProdV3]     = DerivedBinaryCodec.derive
+  implicit val v4codec: BinaryCodec[ProdV4]     = DerivedBinaryCodec.derive
+  implicit val v5codec: BinaryCodec[ProdV5]     = DerivedBinaryCodec.derive
+  implicit val c1codec: BinaryCodec[Coprod1]    = DerivedBinaryCodec.derive
+  implicit val c2codec: BinaryCodec[Coprod2]    = DerivedBinaryCodec.derive
+  implicit val testIdCodec: BinaryCodec[TestId] = BinaryCodec.from(
+    codecs.stringCodec.contramap(_.value),
+    codecs.stringCodec.map(TestId.apply)
+  ) // TODO: derivation support
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Evolution")(
@@ -223,83 +309,5 @@ trait EvolutionSpecBase extends ZIOSpecDefault with SerializationProperties {
         )
       )
     )
-}
 
-object EvolutionSpecBase {
-  case class TestId(value: String) extends AnyVal
-
-  case class ProdV1(fieldA: String, fieldB: Int)
-
-  object ProdV1 {
-    val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
-  }
-
-  @evolutionSteps(FieldAdded("newField1", true))
-  case class ProdV2(fieldA: String, newField1: Boolean, fieldB: Int)
-
-  object ProdV2 {
-    val gen: Gen[Sized, ProdV2] = DeriveGen[ProdV2]
-    val steps                   = Seq(
-      FieldAdded("newField1", true)
-    )
-  }
-
-  @evolutionSteps(FieldAdded("newField1", true), FieldMadeOptional("fieldB"))
-  case class ProdV3(fieldA: String, newField1: Boolean, fieldB: Option[Int])
-
-  object ProdV3 {
-    val gen: Gen[Sized, ProdV3] = DeriveGen[ProdV3]
-    val steps                   = Seq(
-      FieldAdded("newField1", true),
-      FieldMadeOptional("fieldB")
-    )
-  }
-
-  @evolutionSteps(FieldAdded("newField1", true), FieldMadeOptional("fieldB"), FieldRemoved("fieldB"))
-  case class ProdV4(fieldA: String, newField1: Boolean)
-
-  object ProdV4 {
-    val gen: Gen[Sized, ProdV4] = DeriveGen[ProdV4]
-    val steps                   = Seq(
-      FieldAdded("newField1", true),
-      FieldMadeOptional("fieldB"),
-      FieldRemoved("fieldB")
-    )
-  }
-
-  @evolutionSteps(
-    FieldAdded("newField1", true),
-    FieldMadeOptional("fieldB"),
-    FieldRemoved("fieldB"),
-    FieldMadeTransient("fieldA")
-  )
-  case class ProdV5(
-      @transientField("unset") fieldA: String,
-      newField1: Boolean
-  )
-
-  object ProdV5 {
-    val gen: Gen[Sized, ProdV5] = DeriveGen[ProdV5]
-    val steps                   = Seq(
-      FieldAdded("newField1", true),
-      FieldMadeOptional("fieldB"),
-      FieldRemoved("fieldB"),
-      FieldMadeTransient("fieldA")
-    )
-  }
-
-  sealed trait Coprod1
-
-  case class Case11(a: Int) extends Coprod1
-
-  case class Case21(x: String) extends Coprod1
-
-  sealed trait Coprod2
-
-  case class Case12(a: Int) extends Coprod2
-
-  @transientConstructor
-  case class TransientCons() extends Coprod2
-
-  case class Case22(x: String) extends Coprod2
 }

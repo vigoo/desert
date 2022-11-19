@@ -1,17 +1,26 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.golden.TestModel1
-import io.github.vigoo.desert.syntax._
+import _root_.zio.schema.{DeriveSchema, Schema}
+import io.github.vigoo.desert.zioschema.schemas._
+import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.golden._
+import io.github.vigoo.desert.syntax.deserializeFromArray
+import io.github.vigoo.desert.{BinaryCodec, TypeRegistry}
 import zio.ZIO
 import zio.stream.ZStream
 import zio.test.{Spec, TestAspect, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 import java.io.File
 
-trait GoldenStandardBase extends ZIOSpecDefault {
-
+object GoldenStandard extends ZIOSpecDefault {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
-  implicit val testModel1Codec: BinaryCodec[TestModel1]
+
+  private implicit val listElement1Schema: Schema[TestModel1.ListElement1]     = DeriveSchema.gen
+  private implicit val listElement2Schema: Schema[TestModel1.ListElement2]     = DeriveSchema.gen
+  private implicit val listElement2Codec: BinaryCodec[TestModel1.ListElement2] =
+    DerivedBinaryCodec.derive // Required because it's used within a Try
+  private implicit val testModel1Schema: Schema[TestModel1] = DeriveSchema.gen
+  implicit val testModel1Codec: BinaryCodec[TestModel1]     = DerivedBinaryCodec.derive
 
   override def spec: Spec[TestEnvironment, Any] = suite("GoldenStandard")(
     test("dataset1") {

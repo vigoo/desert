@@ -1,43 +1,21 @@
-package io.github.vigoo.desert.zioschema
+/*package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.{
-  BinaryCodec,
-  DeserializationFailure,
-  DeserializingNonExistingChunk,
-  DesertException,
-  DesertFailure,
-  FailedToReadInput,
-  FailedToWriteOutput,
-  FieldRemovedInSerializedVersion,
-  FieldWithoutDefaultValueIsMissing,
-  InputEndedUnexpectedly,
-  InvalidConstructorId,
-  InvalidConstructorName,
-  InvalidRefId,
-  InvalidStringId,
-  InvalidTypeId,
-  NonOptionalFieldSerializedAsNone,
-  SerializationFailure,
-  SerializationUpcastError,
-  SerializingTransientConstructor,
-  TypeNotRegistered,
-  TypeRegistry,
-  UnknownFieldReferenceInEvolutionStep,
-  UnknownSerializedEvolutionStep
-}
+import io.github.vigoo.desert.{BinaryCodec, DeserializationFailure, DeserializingNonExistingChunk, DesertException, DesertFailure, FailedToReadInput, FailedToWriteOutput, FieldRemovedInSerializedVersion, FieldWithoutDefaultValueIsMissing, InputEndedUnexpectedly, InvalidConstructorId, InvalidConstructorName, InvalidRefId, InvalidStringId, InvalidTypeId, NonOptionalFieldSerializedAsNone, SerializationFailure, SerializationUpcastError, SerializingTransientConstructor, TypeNotRegistered, TypeRegistry, UnknownFieldReferenceInEvolutionStep, UnknownSerializedEvolutionStep}
 import io.github.vigoo.desert.syntax._
 import zio.{Cause, Chunk}
-import zio.schema.Schema
+import zio.schema.{Derive, Schema}
 import zio.schema.codec.BinaryCodec.{BinaryDecoder, BinaryEncoder}
 import zio.schema.codec.{DecodeError, Decoder, Encoder}
 import zio.stream.ZPipeline
 
-final class Codec private (typeRegistry: TypeRegistry) extends zio.schema.codec.BinaryCodec {
+import scala.reflect.ClassTag
 
-  override def encoderFor[A](schema: Schema[A]): BinaryEncoder[A] =
+final class Codec private (typeRegistry: TypeRegistry) /* extends zio.schema.codec.BinaryCodec */ {
+
+  /*override */ def encoderFor[A: ClassTag](schema: Schema[A]): BinaryEncoder[A] =
     new BinaryEncoder[A] {
       override def encode(value: A): Chunk[Byte] =
-        serializeToArray(value, typeRegistry)(DerivedBinaryCodec.derive(schema)) match {
+        serializeToArray(value, typeRegistry)(getCodecFor(schema)) match {
           case Left(failure) => throw new DesertException(failure)
           case Right(array)  => Chunk.fromArray(array)
         }
@@ -45,7 +23,7 @@ final class Codec private (typeRegistry: TypeRegistry) extends zio.schema.codec.
       override def streamEncoder: ZPipeline[Any, Nothing, A, Byte] = ???
     }
 
-  override def decoderFor[A](schema: Schema[A]): BinaryDecoder[A] =
+  /*override */ def decoderFor[A: ClassTag](schema: Schema[A]): BinaryDecoder[A] =
     new BinaryDecoder[A] {
       override def decode(whole: Chunk[Byte]): Either[DecodeError, A] =
         deserializeFromArray(whole.toArray, typeRegistry)(getCodecFor(schema)).left.map(toDecodeError)
@@ -53,8 +31,8 @@ final class Codec private (typeRegistry: TypeRegistry) extends zio.schema.codec.
       override def streamDecoder: ZPipeline[Any, DecodeError, Byte, A] = ???
     }
 
-  private def getCodecFor[A](schema: Schema[A]): BinaryCodec[A] =
-    DerivedBinaryCodec.derive(schema) // TODO: cache derived binary codecs
+  private def getCodecFor[A: ClassTag](schema: Schema[A]): BinaryCodec[A] =
+    DerivedBinaryCodec.derive(schema)
 
   private def toDecodeError(desertFailure: DesertFailure): DecodeError =
     desertFailure match {
@@ -100,3 +78,4 @@ object Codec {
 
   def withTypeRegistry(typeRegistry: TypeRegistry): Codec = new Codec(typeRegistry)
 }
+*/

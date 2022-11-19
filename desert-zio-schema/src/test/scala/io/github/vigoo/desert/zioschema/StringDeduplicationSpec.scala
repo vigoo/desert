@@ -1,25 +1,39 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.zioschema
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.BinaryDeserializerOps._
+import io.github.vigoo.desert.BinaryDeserializerOps.read
 import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.BinarySerializerOps._
-import io.github.vigoo.desert.StringDeduplicationSpecBase.{DataV1, DataV2, OuterV1, OuterV2}
-import io.github.vigoo.desert.codecs._
-import zio.test.Assertion._
+import io.github.vigoo.desert.BinarySerializerOps.write
+import io.github.vigoo.desert.codecs.DeduplicatedString
+import io.github.vigoo.desert.{
+  BinaryCodec,
+  FieldAdded,
+  JavaStreamBinaryInput,
+  JavaStreamBinaryOutput,
+  SerializationProperties,
+  SerializerState,
+  TypeRegistry,
+  evolutionSteps
+}
+import zio.schema.{DeriveSchema, Schema}
+import zio.test.Assertion.{equalTo, isLessThan, isRight}
 import zio.test._
 
-trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationProperties {
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+
+object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperties {
+  case class DataV1()
+
+  @evolutionSteps(FieldAdded[String]("newField", "unknown"))
+  case class DataV2(newField: String)
+
+  case class OuterV1(data: DataV1, other: String)
+
+  case class OuterV2(data: DataV2, other: String)
 
   val s1 = "this is a test string"
   val s2 = "and another one"
   val s3 = "and another one"
-
-  implicit val v1codec: BinaryCodec[DataV1]
-  implicit val v2codec: BinaryCodec[DataV2]
-  implicit val outerv1codec: BinaryCodec[OuterV1]
-  implicit val outerv2codec: BinaryCodec[OuterV2]
 
   private val testSer: Ser[Unit] = for {
     _ <- write(DeduplicatedString(s1))
@@ -39,6 +53,16 @@ trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationPrope
       e <- read[DeduplicatedString]()
       f <- read[DeduplicatedString]()
     } yield List(a, b, c, d, e, f).map(_.string)
+
+  implicit val v1Schema: Schema[DataV1]       = DeriveSchema.gen
+  implicit val v2Schema: Schema[DataV2]       = DeriveSchema.gen
+  implicit val outerv1Schema: Schema[OuterV1] = DeriveSchema.gen
+  implicit val outerv2Schema: Schema[OuterV2] = DeriveSchema.gen
+
+  implicit val v1codec: BinaryCodec[DataV1]       = DerivedBinaryCodec.derive
+  implicit val v2codec: BinaryCodec[DataV2]       = DerivedBinaryCodec.derive
+  implicit val outerv1codec: BinaryCodec[OuterV1] = DerivedBinaryCodec.derive
+  implicit val outerv2codec: BinaryCodec[OuterV2] = DerivedBinaryCodec.derive
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("String deduplication")(
@@ -83,16 +107,4 @@ trait StringDeduplicationSpecBase extends ZIOSpecDefault with SerializationPrope
         )
       }
     )
-}
-
-object StringDeduplicationSpecBase {
-
-  case class DataV1()
-
-  @evolutionSteps(FieldAdded[String]("newField", "unknown"))
-  case class DataV2(newField: String)
-
-  case class OuterV1(data: DataV1, other: String)
-
-  case class OuterV2(data: DataV2, other: String)
 }
