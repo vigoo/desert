@@ -8,7 +8,7 @@ val scala2 = "2.13.10"
 val scala3 = "3.2.1"
 
 val zioVersion       = "2.0.3"
-val zioSchemaVersion = "0.2.1+31-977355d7-SNAPSHOT"
+val zioSchemaVersion = "0.3.0"
 
 name := "desert"
 
@@ -180,8 +180,8 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
+      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion % Test
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -189,7 +189,7 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
           Seq(
             "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
           )
-        case _ => Seq()
+        case _            => Seq()
       }
     }
   )
