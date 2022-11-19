@@ -1,11 +1,6 @@
 package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.{
-  BinaryCodec,
-  DefaultTypeRegistry,
-  SerializationProperties,
-  TypeRegistry,
-}
+import io.github.vigoo.desert.{BinaryCodec, DefaultTypeRegistry, SerializationProperties, TypeRegistry}
 import io.github.vigoo.desert.zioschema.schemas._
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault}

@@ -1,9 +1,9 @@
 package io.github.vigoo.desert.zioschema
 
 import _root_.zio.schema.{DeriveSchema, Schema}
-import io.github.vigoo.desert.golden.TestModel1
 import io.github.vigoo.desert.zioschema.schemas._
 import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.golden._
 import io.github.vigoo.desert.syntax.deserializeFromArray
 import io.github.vigoo.desert.{BinaryCodec, TypeRegistry}
 import zio.ZIO
