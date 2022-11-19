@@ -8,7 +8,7 @@ addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % "1.11.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"                  % "0.4.3")
 addSbtPlugin("com.github.sbt"     % "sbt-unidoc"               % "0.5.0")
 addSbtPlugin("com.github.sbt"     % "sbt-ci-release"           % "1.5.10")
-addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.4.6")
+addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.0")
 
 libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.6.0"
 
