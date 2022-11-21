@@ -326,7 +326,4 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
         )
     }
   }
-
-  /*  if (schema == schemas.builtInThrowableCodecPlaceholder) codecs.throwableCodec.asInstanceOf[BinaryCodec[T]] */
-
 }

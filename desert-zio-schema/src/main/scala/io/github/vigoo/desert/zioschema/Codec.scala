@@ -78,4 +78,4 @@ object Codec {
 
   def withTypeRegistry(typeRegistry: TypeRegistry): Codec = new Codec(typeRegistry)
 }
-*/
+ */

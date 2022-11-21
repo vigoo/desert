@@ -103,10 +103,7 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val v5codec: BinaryCodec[ProdV5]     = DerivedBinaryCodec.derive
   implicit val c1codec: BinaryCodec[Coprod1]    = DerivedBinaryCodec.derive
   implicit val c2codec: BinaryCodec[Coprod2]    = DerivedBinaryCodec.derive
-  implicit val testIdCodec: BinaryCodec[TestId] = BinaryCodec.from(
-    codecs.stringCodec.contramap(_.value),
-    codecs.stringCodec.map(TestId.apply)
-  ) // TODO: derivation support
+  implicit val testIdCodec: BinaryCodec[TestId] = DerivedBinaryCodec.deriveForWrapper[TestId]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Evolution")(
