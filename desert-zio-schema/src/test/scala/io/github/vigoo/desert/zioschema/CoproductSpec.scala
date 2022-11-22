@@ -1,7 +1,7 @@
-package io.github.vigoo.desert.shapeless
+package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.{BinaryCodec, SerializationProperties, TypeRegistry}
+import zio.schema.{DeriveSchema, Schema}
 import zio.test.magnolia.DeriveGen
 import zio.test.{Gen, Sized, Spec, TestEnvironment, ZIOSpecDefault}
 
@@ -26,14 +26,11 @@ object CoproductSpec extends ZIOSpecDefault with SerializationProperties {
 
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
-  implicit val v1c1codec: BinaryCodec[Cons1V1.type] = DerivedBinaryCodec.derive
-  implicit val v1c2codec: BinaryCodec[Cons2V1]      = DerivedBinaryCodec.derive
-  implicit val v1codec: BinaryCodec[TypeV1]         = DerivedBinaryCodec.derive
+  implicit val v1Schema: Schema[TypeV1] = DeriveSchema.gen
+  implicit val v2Schema: Schema[TypeV2] = DeriveSchema.gen
 
-  implicit val v2c1codec: BinaryCodec[Cons1V2] = DerivedBinaryCodec.derive
-  implicit val v2c2codec: BinaryCodec[Cons2V2] = DerivedBinaryCodec.derive
-  implicit val v2c3codec: BinaryCodec[Cons2V3] = DerivedBinaryCodec.derive
-  implicit val v2codec: BinaryCodec[TypeV2]    = DerivedBinaryCodec.derive
+  implicit val v1codec: BinaryCodec[TypeV1] = DerivedBinaryCodec.derive
+  implicit val v2codec: BinaryCodec[TypeV2] = DerivedBinaryCodec.derive
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Coproduct codec derivation")(

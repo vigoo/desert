@@ -1,7 +1,15 @@
-package io.github.vigoo.desert.shapeless
+package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.{
+  BinaryCodec,
+  FieldAdded,
+  SerializationProperties,
+  TypeRegistry,
+  evolutionSteps,
+  transientConstructor,
+  transientField
+}
+import zio.schema.{DeriveSchema, Schema}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault}
 
 object TransientSpec extends ZIOSpecDefault with SerializationProperties {
@@ -26,10 +34,11 @@ object TransientSpec extends ZIOSpecDefault with SerializationProperties {
 
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
-  implicit val ttCodec: BinaryCodec[TransientTest]         = DerivedBinaryCodec.derive
-  implicit val case1Codec: BinaryCodec[Case1]              = DerivedBinaryCodec.derive
-  implicit val case3Codec: BinaryCodec[Case3]              = DerivedBinaryCodec.derive
-  implicit val swtCodec: BinaryCodec[SumWithTransientCons] = DerivedBinaryCodec.derive
+  implicit val ttSchema: Schema[TransientTest]         = DeriveSchema.gen[TransientTest]
+  implicit val swtSchema: Schema[SumWithTransientCons] = DeriveSchema.gen[SumWithTransientCons]
+
+  implicit val ttCodec: BinaryCodec[TransientTest]         = DerivedBinaryCodec.derive[TransientTest]
+  implicit val swtCodec: BinaryCodec[SumWithTransientCons] = DerivedBinaryCodec.derive[SumWithTransientCons]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Support for transient modifiers")(

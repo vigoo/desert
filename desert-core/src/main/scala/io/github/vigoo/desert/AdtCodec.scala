@@ -609,7 +609,9 @@ object AdtCodec {
         state  <- getChunkedState
         result <- state.constructorIdToName.get(id) match {
                     case Some(name) => pure[String](name)
-                    case None       => fromEither(Left(InvalidConstructorId(id, state.typeDescription)))
+                    case None       =>
+                      println(s"constructor id: $id, mapping: ${state.constructorIdToName}")
+                      fromEither(Left(InvalidConstructorId(id, state.typeDescription)))
                   }
       } yield result
 

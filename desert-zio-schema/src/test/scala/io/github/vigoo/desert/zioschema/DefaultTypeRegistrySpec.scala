@@ -1,14 +1,13 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.DefaultTypeRegistrySpecBase.TestProd
-import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import zio.test.Assertion._
-import zio.test._
+import io.github.vigoo.desert._
+import zio.schema.{DeriveSchema, Schema}
+import zio.test.Assertion.{equalTo, isNone, isSome}
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
-trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
-
-  implicit val codec: BinaryCodec[TestProd]
+object DefaultTypeRegistrySpec extends ZIOSpecDefault {
+  case class TestProd(x: Double, y: Double)
 
   trait TestInterface
 
@@ -32,6 +31,9 @@ trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
           failDeserializerWith(DeserializationFailure("Invalid type tag in custom TestInterface serializer", None))
       })
   }
+
+  implicit val schema: Schema[TestProd]     = DeriveSchema.gen
+  implicit val codec: BinaryCodec[TestProd] = DerivedBinaryCodec.derive
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("DefaultTypeRegistry")(
@@ -84,8 +86,4 @@ trait DefaultTypeRegistrySpecBase extends ZIOSpecDefault {
         assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), setCodec, classOf[Set[Double]]))))
       }
     )
-}
-
-object DefaultTypeRegistrySpecBase {
-  case class TestProd(x: Double, y: Double)
 }
