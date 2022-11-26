@@ -1,9 +1,9 @@
 package io.github.vigoo.desert.benchmarks
 
+import io.github.vigoo.desert.Evolution.FieldAdded
 import java.util.concurrent.TimeUnit
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.BinarySerialization._
-import io.github.vigoo.desert.{BinaryCodec, FieldAdded, evolutionSteps}
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.{BinaryCodec, evolutionSteps}
 import io.github.vigoo.desert.shapeless._
 import org.openjdk.jmh.annotations._
 

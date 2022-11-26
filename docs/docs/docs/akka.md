@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Akka
-permalink: docs/akka/
 ---
 
 # Akka integration
@@ -9,18 +8,18 @@ The akka module adds some extra codecs and an _akka serializer_.
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-akka" % "0.2.0"
+libraryDependencies += "io.github.vigoo" %% "desert-akka" % "0.3.0"
 ``` 
 
 ### Codecs
-The following codecs are added:
+The module defines the following codecs:
 
 - Codec for *Akka Classic actor references* (`BinaryCodec[ActorRef]`)
 - Codec for *Akka typed actor references* (`BinaryCodec[ActorRef[T]]`)
 - Codec for `ByteString`
 
 ### Syntax
-Some akka-specific syntax has been added to `io.github.vigoo.desert.akka.syntax._`:
+Some akka-specific serializer functions are exposed in the`io.github.vigoo.desert.akkasupport` package:
 
 - `serializeToByteString`
 - `serializeUnknownToByteString`
@@ -32,8 +31,7 @@ Some akka-specific syntax has been added to `io.github.vigoo.desert.akka.syntax.
 
 ```scala mdoc
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.akka._
+import io.github.vigoo.desert.akkasupport._
 
 class DesertSerializer extends DesertSerializerBase {
   override val typeRegistry: TypeRegistry = DefaultTypeRegistry()

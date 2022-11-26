@@ -2,10 +2,8 @@ package io.github.vigoo.desert.benchmarks
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util.concurrent.TimeUnit
-
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.internal.{JavaStreamBinaryInput, JavaStreamBinaryOutput}
 import org.openjdk.jmh.annotations._
 
 import scala.util.Random

@@ -1,7 +1,6 @@
 package io.github.vigoo.desert.shapeless
 
 import io.github.vigoo.desert.{BinaryCodec, DefaultTypeRegistry, SerializationProperties, TypeRegistry}
-import io.github.vigoo.desert.codecs._
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault}
 
 object UnknownTypeSerializationSpec extends ZIOSpecDefault with SerializationProperties {

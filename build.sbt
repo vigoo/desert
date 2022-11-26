@@ -220,6 +220,19 @@ lazy val benchmarks = project
   .enablePlugins(JmhPlugin)
   .dependsOn(core.jvm, shapeless.jvm)
 
+lazy val docsPlugins = project
+  .in(file("docs-plugins"))
+  .settings(commonSettings)
+  .settings(
+    publishArtifact := false,
+    coverageEnabled := false,
+    crossScalaVersions -= scala3,
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "mdoc-cli" % "2.3.6"
+    )
+  )
+  .dependsOn(core.jvm)
+
 lazy val docs = project
   .settings(commonSettings)
   .enablePlugins(GhpagesPlugin)
@@ -273,7 +286,7 @@ lazy val docs = project
     makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg",
     micrositePushSiteWith                      := GitHub4s
   )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
 
 // Temporary fix to avoid including mdoc in the published POM
 

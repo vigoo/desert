@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Evolution
-permalink: docs/evolution/
 ---
 
 # Evolution
@@ -18,8 +17,7 @@ the serialization format:
 
 ```scala mdoc
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.Evolution._
 import io.github.vigoo.desert.shapeless._
 
 case class Point(x: Int, y: Int)
@@ -223,7 +221,7 @@ binary representation of case classes.
 
 Let's examine the output of serializing the above examples!
 
-```scala mdoc
+```scala mdoc:serialized
 val v1 = serializeToArray(PointV1(100, 200))
 ```
 
@@ -233,7 +231,7 @@ val v1 = serializeToArray(PointV1(100, 200))
 - `0, 0, 0, -56` is the fixed 32-bit integer representation of `200`
 - So `PointV1` is always serialized into _9 bytes_
 
-```scala mdoc
+```scala mdoc:serialized
 val v2 = serializeToArray(PointV2(100, 200, 300))
 ```
 
@@ -246,7 +244,7 @@ val v2 = serializeToArray(PointV2(100, 200, 300))
 - The old version can use the chunk size data to skip the unknown fields and only read the first one
 - `PointV2` takes _15 bytes_ by having 3 bytes of header and 12 bytes of data
 
-```scala mdoc
+```scala mdoc:serialized
 val v3 = serializeToArray(PointV3(100, 200, Some(300)))
 ```
 
@@ -264,7 +262,7 @@ always followed by a serialized _field position_, which is again a variable-leng
 - Second chunk is now _5 bytes_, the `1` indicates that it is `Some` and the rest 4 bytes are the 32-bit integer
 - `PointV3` takes _18 bytes_ in total, 5 bytes of header and 13 bytes of data
    
-```scala mdoc
+```scala mdoc:serialized
 val v4 = serializeToArray(PointV4(100, 200))
 ```
 

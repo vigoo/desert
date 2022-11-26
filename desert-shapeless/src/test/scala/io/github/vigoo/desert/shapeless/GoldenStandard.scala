@@ -1,9 +1,7 @@
 package io.github.vigoo.desert.shapeless
 
-import io.github.vigoo.desert.{BinaryCodec, FieldAdded, FieldMadeOptional, FieldMadeTransient, TypeRegistry}
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert._
 import io.github.vigoo.desert.golden._
-import io.github.vigoo.desert.syntax.deserializeFromArray
 import zio.ZIO
 import zio.stream.ZStream
 import zio.test.{Spec, TestAspect, TestEnvironment, ZIOSpecDefault, assertTrue}

@@ -1,8 +1,8 @@
 package io.github.vigoo.desert.zioschema
 
+import io.github.vigoo.desert.Evolution.FieldAdded
 import io.github.vigoo.desert.{
   BinaryCodec,
-  FieldAdded,
   SerializationProperties,
   TypeRegistry,
   evolutionSteps,

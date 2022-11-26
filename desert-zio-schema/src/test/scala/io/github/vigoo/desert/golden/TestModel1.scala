@@ -1,15 +1,8 @@
 package io.github.vigoo.desert.golden
 
+import io.github.vigoo.desert.Evolution.{FieldAdded, FieldMadeOptional, FieldMadeTransient}
 import io.github.vigoo.desert.golden.TestModel1.{ListElement1, ListElement2}
-import io.github.vigoo.desert.{
-  FieldAdded,
-  FieldMadeOptional,
-  FieldMadeTransient,
-  PersistedThrowable,
-  evolutionSteps,
-  transientConstructor,
-  transientField
-}
+import io.github.vigoo.desert.{PersistedThrowable, evolutionSteps, transientConstructor, transientField}
 
 import java.util.UUID
 import scala.util.{Success, Try}
