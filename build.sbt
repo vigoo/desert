@@ -182,7 +182,8 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-zio-test"   % zioSchemaVersion % Test
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -269,7 +270,8 @@ lazy val docs = project
       "<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project"
     ),
     micrositeAnalyticsToken                    := "UA-56320875-2",
-    makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg"
+    makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg",
+    micrositePushSiteWith                      := GitHub4s
   )
   .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm)
 

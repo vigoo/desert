@@ -1,26 +1,12 @@
 package io.github.vigoo.desert.zioschema
 
 import io.github.vigoo.desert.codecs.OptionBinaryCodec
-import io.github.vigoo.desert.{
-  AdtCodec,
-  BinaryCodec,
-  DeserializationFailure,
-  Evolution,
-  InitialVersion,
-  SerializationFailure,
-  SerializingTransientConstructor,
-  codecs,
-  evolutionSteps,
-  transientConstructor,
-  transientField
-}
-import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.ziosupport.codecs._
-import zio.{Chunk, ChunkBuilder, Unsafe}
-import zio.schema.{CaseSet, Derive, Deriver, Schema, StandardType, TypeId}
+import io.github.vigoo.desert._
+import zio.schema.{Deriver, Schema, StandardType}
+import zio.{Chunk, Unsafe}
 
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
 
 object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
   override lazy val deriver = BinaryCodecDeriver().cached.autoAcceptSummoned

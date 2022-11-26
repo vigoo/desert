@@ -5,7 +5,7 @@ import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 
 import scala.util.{Failure, Success, Try}
 
-case class RegisteredType[T](id: RegisteredTypeId, codec: BinaryCodec[T], cls: Class[_]) {
+final case class RegisteredType[T](id: RegisteredTypeId, codec: BinaryCodec[T], cls: Class[_]) {
   def serialize(value: Any): Ser[Unit] =
     Try(value.asInstanceOf[T]) match {
       case Success(upcasted)  => codec.serialize(upcasted)
