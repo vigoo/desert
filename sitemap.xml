@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://vigoo.github.io/desert/docs/akka/</loc>
+<loc>https://vigoo.github.io/desert/docs/akka.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/cats-effect/</loc>
+<loc>https://vigoo.github.io/desert/docs/cats-effect.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/cats-effect/</loc>
+<loc>https://vigoo.github.io/desert/docs/cats.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/codecs/</loc>
+<loc>https://vigoo.github.io/desert/docs/codecs.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/evolution/</loc>
+<loc>https://vigoo.github.io/desert/docs/evolution.html</loc>
 </url>
 <url>
 <loc>https://vigoo.github.io/desert/docs/</loc>
@@ -22,15 +22,18 @@
 <loc>https://vigoo.github.io/desert/</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/input-output/</loc>
+<loc>https://vigoo.github.io/desert/docs/input-output.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/release-notes/</loc>
+<loc>https://vigoo.github.io/desert/docs/release-notes.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/type-registry/</loc>
+<loc>https://vigoo.github.io/desert/docs/shardcake.html</loc>
 </url>
 <url>
-<loc>https://vigoo.github.io/desert/docs/zio/</loc>
+<loc>https://vigoo.github.io/desert/docs/type-registry.html</loc>
+</url>
+<url>
+<loc>https://vigoo.github.io/desert/docs/zio.html</loc>
 </url>
 </urlset>
