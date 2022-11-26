@@ -42,11 +42,11 @@ case class SerializerState(
     }
 }
 object SerializerState {
-  case class StringId(value: Int) extends AnyVal {
+  final case class StringId(value: Int) extends AnyVal {
     def next: StringId = StringId(value + 1)
   }
 
-  case class RefId(value: Int) extends AnyVal {
+  final case class RefId(value: Int) extends AnyVal {
     def next: RefId = RefId(value + 1)
   }
 

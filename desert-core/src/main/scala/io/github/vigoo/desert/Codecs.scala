@@ -314,7 +314,7 @@ trait Codecs extends internal.TupleCodecs {
       zone     <- read[ZoneId]()
     } yield ZonedDateTime.ofStrict(dateTime, offset, zone))
 
-  private[desert] case class OptionBinaryCodec[T]()(implicit val innerCodec: BinaryCodec[T])
+  private[desert] final case class OptionBinaryCodec[T]()(implicit val innerCodec: BinaryCodec[T])
       extends BinaryCodec[Option[T]] {
     override def deserialize(): Deser[Option[T]] =
       for {

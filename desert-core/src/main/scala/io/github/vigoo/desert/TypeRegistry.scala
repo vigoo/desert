@@ -8,7 +8,7 @@ trait TypeRegistry {
 }
 
 object TypeRegistry {
-  case class RegisteredTypeId(value: Int) extends AnyVal {
+  final case class RegisteredTypeId(value: Int) extends AnyVal {
     def next: RegisteredTypeId = RegisteredTypeId(value + 1)
   }
 

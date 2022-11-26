@@ -394,7 +394,7 @@ class AdtCodec[T, BuilderState](
 
 object AdtCodec {
 
-  case class FieldPosition(chunk: Byte, position: Byte) {
+  final case class FieldPosition(chunk: Byte, position: Byte) {
     val toByte: Byte = if (chunk == 0) (-position).toByte else chunk
   }
 
@@ -419,11 +419,11 @@ object AdtCodec {
       val FieldRemovedCode: Int      = -2
     }
 
-    case class FieldAddedToNewChunk(size: Int) extends SerializedEvolutionStep
+    final case class FieldAddedToNewChunk(size: Int) extends SerializedEvolutionStep
 
-    case class FieldMadeOptional(position: FieldPosition) extends SerializedEvolutionStep
+    final case class FieldMadeOptional(position: FieldPosition) extends SerializedEvolutionStep
 
-    case class FieldRemoved(fieldName: String) extends SerializedEvolutionStep
+    final case class FieldRemoved(fieldName: String) extends SerializedEvolutionStep
 
     case object UnknownEvolutionStep extends SerializedEvolutionStep
 
@@ -457,7 +457,7 @@ object AdtCodec {
     def writeOrderedChunks(): Ser[Unit]
   }
 
-  case class ChunkedSerState(
+  final case class ChunkedSerState(
       serializerState: SerializerState,
       typeRegistry: TypeRegistry,
       lastIndexPerChunk: Map[Byte, Byte],
