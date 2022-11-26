@@ -28,57 +28,68 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
     val initial: RecordBuilderState = RecordBuilderState(List.empty)
   }
 
-  // TODO: precalculate things outside of AdtCodec
   private final case class BinaryCodecDeriver() extends Deriver[BinaryCodec] {
     override def deriveRecord[A](
         record: Schema.Record[A],
         fields: => Chunk[Deriver.WrappedF[BinaryCodec, _]],
         summoned: => Option[BinaryCodec[A]]
-    ): BinaryCodec[A] =
-      new AdtCodec[A, RecordBuilderState](
-        evolutionSteps = getEvolutionStepsFromAnnotation(record.annotations),
-        typeName = record.id.name,
-        constructors = Vector(record.id.name),
-        transientFields = getTransientFields(record.fields),
-        getSerializationCommands = (value: A) =>
-          record.fields
-            .zip(fields)
-            .map { case (field, fieldCodec) =>
-              AdtCodec.SerializationCommand.WriteField[Any](
-                field.name,
-                field.get(value),
-                () => fieldCodec.unwrap.asInstanceOf[BinaryCodec[Any]]
-              )
-            }
-            .toList,
-        deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
-          fieldToDeserializationCommand(field, fieldInstance.unwrap)
-        },
-        initialBuilderState = RecordBuilderState.initial,
-        materialize = builderState =>
-          Unsafe
-            .unsafe { implicit u =>
-              record.construct(builderState.asChunk)
-            }
-            .left
-            .map(msg => DeserializationFailure(msg, None))
-      )
+    ): BinaryCodec[A] = {
+      val preparedSerializationCommands =
+        record.fields
+          .zip(fields)
+          .map { case (field, fieldCodec) =>
+            (field.name, field.get, () => fieldCodec.unwrap.asInstanceOf[BinaryCodec[Any]])
+          }
+          .toList
+
+      Unsafe
+        .unsafe { implicit u =>
+          new AdtCodec[A, RecordBuilderState](
+            evolutionSteps = getEvolutionStepsFromAnnotation(record.annotations),
+            typeName = record.id.name,
+            constructors = Vector(record.id.name),
+            transientFields = getTransientFields(record.fields),
+            getSerializationCommands = (value: A) =>
+              preparedSerializationCommands.map { case (fieldName, getter, codec) =>
+                AdtCodec.SerializationCommand.WriteField[Any](
+                  fieldName,
+                  getter(value),
+                  codec
+                )
+              },
+            deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
+              fieldToDeserializationCommand(field, fieldInstance.unwrap)
+            },
+            initialBuilderState = RecordBuilderState.initial,
+            materialize = builderState =>
+              record
+                .construct(builderState.asChunk)
+                .left
+                .map(msg => DeserializationFailure(msg, None))
+          )
+        }
+    }
 
     override def deriveEnum[A](
         `enum`: Schema.Enum[A],
         cases: => Chunk[Deriver.WrappedF[BinaryCodec, _]],
         summoned: => Option[BinaryCodec[A]]
-    ): BinaryCodec[A] =
+    ): BinaryCodec[A] = {
+      val indexedCases       = `enum`.cases.zipWithIndex
+      val isTransientPerCase = `enum`.cases.map { enumCase =>
+        enumCase.annotations.exists(_.isInstanceOf[transientConstructor])
+      }
+
       new AdtCodec[A, EnumBuilderState](
         evolutionSteps = getEvolutionStepsFromAnnotation(`enum`.annotations),
         typeName = `enum`.id.name,
         constructors = `enum`.cases.filterNot(_.annotations.contains(transientConstructor())).map(_.id).toVector,
         transientFields = Map.empty,
         getSerializationCommands = (value: A) =>
-          `enum`.cases.zipWithIndex
+          indexedCases
             .find(_._1.asInstanceOf[Schema.Case[Any, Any]].deconstructOption(value).isDefined) match {
             case Some((matchingCase, index)) =>
-              val isTransient = matchingCase.annotations.contains(transientConstructor())
+              val isTransient = isTransientPerCase(index)
               if (isTransient)
                 List(AdtCodec.SerializationCommand.Fail(SerializingTransientConstructor(matchingCase.id)))
               else
@@ -92,7 +103,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
 
             case None => List.empty
           },
-        deserializationCommands = `enum`.cases.zipWithIndex
+        deserializationCommands = indexedCases
           .filterNot { case (c, _) => isTransient(c) }
           .map { case (c, index) =>
             AdtCodec.DeserializationCommand.ReadConstructor(
@@ -105,6 +116,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
         initialBuilderState = EnumBuilderState.initial,
         materialize = builderState => Right(builderState.result.asInstanceOf[A])
       )
+    }
 
     override def derivePrimitive[A](st: StandardType[A], summoned: => Option[BinaryCodec[A]]): BinaryCodec[A] =
       (st match {
@@ -187,43 +199,46 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
         transform: Schema.Transform[A, B, _],
         fields: => Chunk[Deriver.WrappedF[BinaryCodec, _]],
         summoned: => Option[BinaryCodec[B]]
-    ): BinaryCodec[B] =
-      new AdtCodec[B, RecordBuilderState](
-        evolutionSteps = getEvolutionStepsFromAnnotation(record.annotations),
-        typeName = record.id.name,
-        constructors = Vector(record.id.name),
-        transientFields = getTransientFields(record.fields),
-        getSerializationCommands = (value: B) =>
-          transform.g(value) match {
-            case Left(failure) =>
-              List(AdtCodec.SerializationCommand.Fail(SerializationFailure(failure, None)))
-            case Right(value)  =>
-              record.fields
-                .zip(fields)
-                .map { case (field, fieldCodec) =>
-                  AdtCodec.SerializationCommand.WriteField[Any](
-                    field.name,
-                    field.get(value),
-                    () => fieldCodec.unwrap.asInstanceOf[BinaryCodec[Any]]
-                  )
+    ): BinaryCodec[B] = {
+      val preparedSerializationCommands =
+        record.fields
+          .zip(fields)
+          .map { case (field, fieldCodec) =>
+            (field.name, field.get, () => fieldCodec.unwrap.asInstanceOf[BinaryCodec[Any]])
+          }
+          .toList
+
+      Unsafe
+        .unsafe { implicit u =>
+          new AdtCodec[B, RecordBuilderState](
+            evolutionSteps = getEvolutionStepsFromAnnotation(record.annotations),
+            typeName = record.id.name,
+            constructors = Vector(record.id.name),
+            transientFields = getTransientFields(record.fields),
+            getSerializationCommands = (value: B) =>
+              transform.g(value) match {
+                case Left(failure) =>
+                  List(AdtCodec.SerializationCommand.Fail(SerializationFailure(failure, None)))
+                case Right(value)  =>
+                  preparedSerializationCommands.map { case (fieldName, getter, codec) =>
+                    AdtCodec.SerializationCommand.WriteField(fieldName, getter(value), codec)
+                  }
+              },
+            deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
+              fieldToDeserializationCommand(field, fieldInstance.unwrap)
+            },
+            initialBuilderState = RecordBuilderState.initial,
+            materialize = builderState =>
+              record
+                .construct(builderState.asChunk)
+                .flatMap { a =>
+                  transform.f(a)
                 }
-                .toList
-          },
-        deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
-          fieldToDeserializationCommand(field, fieldInstance.unwrap)
-        },
-        initialBuilderState = RecordBuilderState.initial,
-        materialize = builderState =>
-          Unsafe
-            .unsafe { implicit u =>
-              record.construct(builderState.asChunk)
-            }
-            .flatMap { a =>
-              transform.f(a)
-            }
-            .left
-            .map(msg => DeserializationFailure(msg, None))
-      )
+                .left
+                .map(msg => DeserializationFailure(msg, None))
+          )
+        }
+    }
 
     override def deriveTupleN[T](
         schemasAndInstances: => Chunk[(Schema[_], Deriver.WrappedF[BinaryCodec, _])],
@@ -232,9 +247,609 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
       val (schemas, wrappedInstances) = schemasAndInstances.unzip
       val instances                   = wrappedInstances.map(_.unwrap.asInstanceOf[BinaryCodec[Any]])
       schemasAndInstances.length match {
-        case 2 =>
+        case 2  =>
           codecs
             .tuple2Codec(instances(0), fieldReaderFor(instances(0)), instances(1), fieldReaderFor(instances(1)))
+            .asInstanceOf[BinaryCodec[T]]
+        case 3  =>
+          codecs
+            .tuple3Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 4  =>
+          codecs
+            .tuple4Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 5  =>
+          codecs
+            .tuple5Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 6  =>
+          codecs
+            .tuple6Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 7  =>
+          codecs
+            .tuple7Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 8  =>
+          codecs
+            .tuple8Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 9  =>
+          codecs
+            .tuple9Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 10 =>
+          codecs
+            .tuple10Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 11 =>
+          codecs
+            .tuple11Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 12 =>
+          codecs
+            .tuple12Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 13 =>
+          codecs
+            .tuple13Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 14 =>
+          codecs
+            .tuple14Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 15 =>
+          codecs
+            .tuple15Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 16 =>
+          codecs
+            .tuple16Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 17 =>
+          codecs
+            .tuple17Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 18 =>
+          codecs
+            .tuple18Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16)),
+              instances(17),
+              fieldReaderFor(instances(17))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 19 =>
+          codecs
+            .tuple19Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16)),
+              instances(17),
+              fieldReaderFor(instances(17)),
+              instances(18),
+              fieldReaderFor(instances(18))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 20 =>
+          codecs
+            .tuple20Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16)),
+              instances(17),
+              fieldReaderFor(instances(17)),
+              instances(18),
+              fieldReaderFor(instances(18)),
+              instances(19),
+              fieldReaderFor(instances(19))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 21 =>
+          codecs
+            .tuple21Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16)),
+              instances(17),
+              fieldReaderFor(instances(17)),
+              instances(18),
+              fieldReaderFor(instances(18)),
+              instances(19),
+              fieldReaderFor(instances(19)),
+              instances(20),
+              fieldReaderFor(instances(20))
+            )
+            .asInstanceOf[BinaryCodec[T]]
+        case 22 =>
+          codecs
+            .tuple22Codec(
+              instances(0),
+              fieldReaderFor(instances(0)),
+              instances(1),
+              fieldReaderFor(instances(1)),
+              instances(2),
+              fieldReaderFor(instances(2)),
+              instances(3),
+              fieldReaderFor(instances(3)),
+              instances(4),
+              fieldReaderFor(instances(4)),
+              instances(5),
+              fieldReaderFor(instances(5)),
+              instances(6),
+              fieldReaderFor(instances(6)),
+              instances(7),
+              fieldReaderFor(instances(7)),
+              instances(8),
+              fieldReaderFor(instances(8)),
+              instances(9),
+              fieldReaderFor(instances(9)),
+              instances(10),
+              fieldReaderFor(instances(10)),
+              instances(11),
+              fieldReaderFor(instances(11)),
+              instances(12),
+              fieldReaderFor(instances(12)),
+              instances(13),
+              fieldReaderFor(instances(13)),
+              instances(14),
+              fieldReaderFor(instances(14)),
+              instances(15),
+              fieldReaderFor(instances(15)),
+              instances(16),
+              fieldReaderFor(instances(16)),
+              instances(17),
+              fieldReaderFor(instances(17)),
+              instances(18),
+              fieldReaderFor(instances(18)),
+              instances(19),
+              fieldReaderFor(instances(19)),
+              instances(20),
+              fieldReaderFor(instances(20)),
+              instances(21),
+              fieldReaderFor(instances(21))
+            )
             .asInstanceOf[BinaryCodec[T]]
       }
     }
