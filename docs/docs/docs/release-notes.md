@@ -1,10 +1,23 @@
 ---
 layout: docs
 title: Release notes
-permalink: docs/release-notes/
 ---
 
 # Release notes
+
+## 0.3.0
+- Dependency updates (ZIO 2.0.4, Cats Effect 3.4.1, etc.)
+- ZIO Schema based derivation
+- Scala 3 support
+- Shardcake module
+- Many new built-in codecs
+- Redesigned package structure
+
+## 0.2.3
+- Dependency updates, support for ZIO 2.0.0-RC6
+
+## 0.2.1, 0.2.2 
+- Dependency updates
 
 ## 0.2.0
 - Core migrated to `ZPure`

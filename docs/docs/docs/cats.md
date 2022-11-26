@@ -1,7 +1,6 @@
 ---
 layout: docs
-title: Cats Effect
-permalink: docs/cats-effect/
+title: Cats
 ---
 
 # Cats integration
@@ -10,7 +9,7 @@ The cats module contains some additional codecs for [cats](https://typelevel.org
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-cats" % "0.2.0"
+libraryDependencies += "io.github.vigoo" %% "desert-cats" % "0.3.0"
 ```
 
 then import 
@@ -19,8 +18,7 @@ then import
 import cats.data._
 
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.cats.codecs._
+import io.github.vigoo.desert.catssupport._
 ```
 
 to get codecs for:

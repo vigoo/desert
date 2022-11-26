@@ -1,4 +1,4 @@
-package io.github.vigoo.desert.shardcake
+package io.github.vigoo.desert.shardcakesupport
 
 import com.devsisters.shardcake.interfaces.Serialization
 import io.github.vigoo.desert.ziosupport.{deserializeUnknownFromArray, serializeUnknownToArray}

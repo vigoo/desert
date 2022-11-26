@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Codecs
-permalink: docs/codecs/
 ---
 
 # Codecs
@@ -12,15 +11,17 @@ A `BinaryCodec[T]` defines both the _serializer_ and _deserializer_ for a given 
 trait BinaryCodec[T] extends BinarySerializer[T] with BinaryDeserializer[T]
 ```
 ### Primitive types
-The `io.github.vigoo.desert.codecs` module defines a lot of implicit binary codecs for common types.
+The `io.github.vigoo.desert` package defines a lot of implicit binary codecs for common types.
 
 The following code examples demonstrate this and also shows how the binary representation looks like.
 
 ```scala mdoc
-import io.github.vigoo.desert.{BinaryCodec, transientConstructor, transientField}
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert._
 import io.github.vigoo.desert.shapeless._
+
+import java.time._
+import java.time.temporal.ChronoUnit
+import scala.math._
 ```
 
 ```scala mdoc:serialized
@@ -56,12 +57,80 @@ val unit = serializeToArray(())
 ```
 
 ```scala mdoc:serialized
+val ch = serializeToArray('!')
+```
+
+```scala mdoc:serialized
 val str = serializeToArray("Hello")
 ```
 
 ```scala mdoc:serialized
 val uuid = serializeToArray(java.util.UUID.randomUUID())
 ``` 
+
+```scala mdoc:serialized
+val bd = serializeToArray(BigDecimal(1234567890.1234567890))
+```
+
+```scala mdoc:serialized
+val bi = serializeToArray(BigInt(1234567890))
+```
+
+```scala mdoc:serialized
+val dow = serializeToArray(DayOfWeek.SATURDAY)
+```
+
+```scala mdoc:serialized
+val month = serializeToArray(Month.FEBRUARY)
+```
+
+```scala mdoc:serialized
+val year = serializeToArray(Year.of(2022))
+```
+
+```scala mdoc:serialized
+val monthDay = serializeToArray(MonthDay.of(12, 1))
+```
+
+```scala mdoc:serialized
+val yearMonth = serializeToArray(YearMonth.of(2022, 12))
+```
+
+```scala mdoc:serialized
+val period = serializeToArray(Period.ofWeeks(3))
+```
+
+```scala mdoc:serialized
+val zoneOffset = serializeToArray(ZoneOffset.UTC)
+```
+
+```scala mdoc:serialized
+val duration = serializeToArray(Duration.of(123, ChronoUnit.SECONDS))
+```
+
+```scala mdoc:serialized
+val instant = serializeToArray(Instant.parse("2022-12-01T11:11:00Z"))
+```
+
+```scala mdoc:serialized
+val localDate = serializeToArray(LocalDate.of(2022, 12, 1))
+```
+
+```scala mdoc:serialized
+val localTime = serializeToArray(LocalTime.of(11, 11))
+```
+
+```scala mdoc:serialized
+val localDateTime = serializeToArray(LocalDateTime.of(2022, 12, 1, 11, 11, 0))
+```
+
+```scala mdoc:serialized
+val offsetDateTime = serializeToArray(OffsetDateTime.of(2022, 12, 1, 11, 11, 0, 0, ZoneOffset.UTC))
+```
+
+```scala mdoc:serialized
+val zonedDateTime = serializeToArray(ZonedDateTime.of(2022, 12, 1, 11, 11, 0, 0, ZoneOffset.UTC))
+```
 
 ### Option, Either, Try, Validation
 Common types such as `Option` and `Either` are also supported out of the box. For `Try` it
@@ -347,6 +416,7 @@ which is not used by the generic codecs but can be used in scenarios like this.
 
 ```scala mdoc
 import cats.instances.either._
+import io.github.vigoo.desert.custom._
 
   class Node(val label: String,
              var next: Option[Node]) {

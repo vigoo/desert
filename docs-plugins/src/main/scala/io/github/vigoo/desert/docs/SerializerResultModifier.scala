@@ -31,20 +31,6 @@ class SerializerResultModifier extends PostModifier {
       }
     } catch {
       case _: Throwable =>
-        val (pos, obtained) = ctx.variables.lastOption match {
-          case Some(variable) =>
-            val prettyObtained =
-              s"${variable.staticType} = ${variable.runtimeValue}"
-            (variable.pos, prettyObtained)
-          case None           =>
-            (Position.Range(ctx.originalCode, 0, 0), "nothing")
-        }
-        ctx.reporter.error(
-          pos,
-          s"""type mismatch:
-         expected: Either[DesertFailure, Array[Byte]]
-         obtained: $obtained"""
-        )
         ""
     }
 
