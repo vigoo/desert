@@ -284,6 +284,7 @@ lazy val docs = project
     ),
     micrositeAnalyticsToken                    := "UA-56320875-2",
     makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg",
+    micrositeGithubToken                       := sys.env.get("GITHUB_TOKEN"),
     micrositePushSiteWith                      := GitHub4s
   )
   .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
