@@ -1,4 +1,4 @@
-package io.github.vigoo.desert.akka
+package io.github.vigoo.desert.akkasupport
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
@@ -10,9 +10,8 @@ import akka.actor.{
   ExtendedActorSystem => UntypedExtendedActorSystem,
   Props => UntypedProps
 }
-import io.github.vigoo.desert.DesertException
-import io.github.vigoo.desert.akka.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.akkasupport._
 import zio.test.Assertion._
 import zio.test._
 import zio._

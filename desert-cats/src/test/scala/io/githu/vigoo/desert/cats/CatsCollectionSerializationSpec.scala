@@ -3,8 +3,8 @@ package io.githu.vigoo.desert.cats
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import cats.instances.string._
 import io.github.vigoo.desert.SerializationProperties
-import io.github.vigoo.desert.cats.codecs._
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.catssupport._
+import io.github.vigoo.desert._
 import zio.test._
 
 import scala.collection.immutable.{SortedMap, SortedSet}

@@ -1,20 +1,16 @@
 package io.github.vigoo.desert.zioschema
 
-import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.BinaryDeserializerOps.read
-import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.BinarySerializerOps.write
-import io.github.vigoo.desert.codecs.DeduplicatedString
-import io.github.vigoo.desert.{
-  BinaryCodec,
-  FieldAdded,
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.Evolution._
+import io.github.vigoo.desert.custom._
+import io.github.vigoo.desert.internal.{
+  DeserializationEnv,
   JavaStreamBinaryInput,
   JavaStreamBinaryOutput,
-  SerializationProperties,
-  SerializerState,
-  TypeRegistry,
-  evolutionSteps
+  SerializationEnv,
+  SerializerState
 }
+import io.github.vigoo.desert.{SerializationProperties, TypeRegistry, evolutionSteps}
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isLessThan, isRight}
 import zio.test._

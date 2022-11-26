@@ -1,15 +1,6 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.internal
 
-import io.github.vigoo.desert.SerializerState.{
-  RefAlreadyStored,
-  RefId,
-  RefIsNew,
-  StoreRefResult,
-  StoreStringResult,
-  StringAlreadyStored,
-  StringId,
-  StringIsNew
-}
+import io.github.vigoo.desert.internal.SerializerState._
 
 case class SerializerState(
     stringsById: Map[StringId, String],

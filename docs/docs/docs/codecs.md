@@ -21,16 +21,45 @@ import io.github.vigoo.desert.{BinaryCodec, transientConstructor, transientField
 import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.shapeless._
+```
 
+```scala mdoc:serialized
 val byte = serializeToArray(100.toByte)
+```
+
+```scala mdoc:serialized
 val short = serializeToArray(100.toShort)
+```
+
+```scala mdoc:serialized
 val int = serializeToArray(100)
+```
+
+```scala mdoc:serialized
 val long = serializeToArray(100L)
+```
+
+```scala mdoc:serialized
 val float = serializeToArray(3.14.toFloat)
+```
+
+```scala mdoc:serialized
 val double = serializeToArray(3.14)
+```
+
+```scala mdoc:serialized
 val bool = serializeToArray(true)
+```
+
+```scala mdoc:serialized
 val unit = serializeToArray(())
+```
+
+```scala mdoc:serialized
 val str = serializeToArray("Hello")
+```
+
+```scala mdoc:serialized
 val uuid = serializeToArray(java.util.UUID.randomUUID())
 ``` 
 
@@ -45,12 +74,29 @@ import scala.collection.immutable.SortedSet
 import scala.util._
 import zio.NonEmptyChunk
 import zio.prelude.Validation
+```
 
+```scala mdoc:serialized
 val none = serializeToArray[Option[Int]](None)
+```
+
+```scala mdoc:serialized
 val some = serializeToArray[Option[Int]](Some(100))
+```
+
+```scala mdoc:serialized
 val left = serializeToArray[Either[Boolean, Int]](Left(true))
+```
+
+```scala mdoc:serialized
 val right = serializeToArray[Either[Boolean, Int]](Right(100))
+```
+
+```scala mdoc:serialized
 val valid = serializeToArray[Validation[String, Int]](Validation.succeed(100))
+```
+
+```scala mdoc:serialized
 val invalid = serializeToArray[Validation[String, Int]](Validation.failNonEmptyChunk(NonEmptyChunk("error")))
 ```
 
@@ -60,6 +106,9 @@ val fail = serializeToArray[Try[Int]](Failure(new RuntimeException("Test excepti
 
 ```scala mdoc
 val failDeser = fail.flatMap(data => deserializeFromArray[Try[Int]](data))
+```
+
+```scala mdoc:serialized
 val success = serializeToArray[Try[Int]](Success(100))
 ```
 
@@ -75,8 +124,11 @@ All these collection codecs have one of the two possible representation. If the 
 then it is the number of elements followed by all the items in iteration order, otherwise it is a flat
 list of all the elements wrapped in `Option[T]`. `Vector` and `List` are good examples for the two:
 
-```scala mdoc
+```scala mdoc:serialized
 val vec = serializeToArray(Vector(1, 2, 3, 4))
+```
+
+```scala mdoc:serialized
 val lst = serializeToArray(List(1, 2, 3, 4))
 ```  
 
@@ -86,13 +138,29 @@ Other supported collection types in the `codecs` package:
 import zio.NonEmptyChunk
 import zio.prelude.NonEmptyList
 import zio.prelude.ZSet
+```
 
+```scala mdoc:serialized
 val arr = serializeToArray(Array(1, 2, 3, 4))
-val set = serializeToArray(Set(1, 2, 3, 4))
-val sortedSet = serializeToArray(SortedSet(1, 2, 3, 4))
+```
 
+```scala mdoc:serialized
+val set = serializeToArray(Set(1, 2, 3, 4))
+```
+
+```scala mdoc:serialized
+val sortedSet = serializeToArray(SortedSet(1, 2, 3, 4))
+```
+
+```scala mdoc:serialized
 val nec = serializeToArray(NonEmptyChunk(1, 2, 3, 4))
+```
+
+```scala mdoc:serialized
 val nel = serializeToArray(NonEmptyList(1, 2, 3, 4))
+```
+
+```scala mdoc:serialized
 val nes = serializeToArray(ZSet(1, 2, 3, 4))
 ```
 
@@ -104,9 +172,11 @@ When deduplication is enabled, each serialized
 string gets an ID and if it is serialized once more in the same stream, a negative number in place of the 
 length identifies it.   
 
-```scala mdoc
+```scala mdoc:serialized
 val twoStrings1 = serializeToArray(List("Hello", "Hello"))
+```
 
+```scala mdoc:serialized
 val twoStrings2 = serializeToArray(List(DeduplicatedString("Hello"), DeduplicatedString("Hello")))
 ```
 
@@ -120,7 +190,7 @@ It is enabled internally in desert for some cases, and can be used in _custom se
 The elements of tuples are serialized flat and the whole tuple gets prefixed by `0`, which makes them
 compatible with simple _case classes_:
 
-```scala mdoc
+```scala mdoc:serialized
 val tup = serializeToArray((1, 2, 3)) 
 ```
 
@@ -130,8 +200,13 @@ for serializing an iteration of key-value pairs:
 
 ```scala mdoc
 import scala.collection.immutable.SortedMap
+```
 
+```scala mdoc:serialized
 val map = serializeToArray(Map(1 -> "x", 2 -> "y"))
+```
+
+```scala mdoc:serialized
 val sortedmap = serializeToArray(SortedMap(1 -> "x", 2 -> "y"))
 ```
 
@@ -146,7 +221,9 @@ case class Point(x: Int, y: Int, z: Int)
 object Point {
   implicit val codec: BinaryCodec[Point] = DerivedBinaryCodec.derive
 }
+```
 
+```scala mdoc:serialized
 val pt = serializeToArray(Point(1, 2, 3))
 ```
 
@@ -168,8 +245,13 @@ object Drink {
   implicit val waterCodec: BinaryCodec[Water.type] = DerivedBinaryCodec.derive
   implicit val codec: BinaryCodec[Drink] = DerivedBinaryCodec.derive
 }
+```
 
+```scala mdoc:serialized
 val a = serializeToArray[Drink](Beer("X"))
+```
+
+```scala mdoc:serialized
 val b = serializeToArray[Drink](Water)
 ```
 
@@ -181,9 +263,15 @@ case class Point2(x: Int, y: Int, z: Int, @transientField(None) cachedDistance: 
 object Point2 {
   implicit val codec: BinaryCodec[Point2] = DerivedBinaryCodec.derive
 }
+```
 
+```scala mdoc:serialized
+val serializedPt2 = serializeToArray(Point2(1, 2, 3, Some(3.7416)))
+```
+
+```scala mdoc
 val pt2 = for {
-  data <- serializeToArray(Point2(1, 2, 3, Some(3.7416)))
+  data <- serializedPt2
   result <- deserializeFromArray[Point2](data)
 } yield result
 ```
@@ -204,8 +292,13 @@ object Cases {
   implicit val case2Codec: BinaryCodec[Case2] = DerivedBinaryCodec.derive
   implicit val codec: BinaryCodec[Cases] = DerivedBinaryCodec.derive
 }
+```
 
+```scala mdoc:serialized
 val cs1 = serializeToArray[Cases](Case1())
+```
+
+```scala mdoc:serialized
 val cs2 = serializeToArray[Cases](Case2())
 ```
 
@@ -222,7 +315,9 @@ case class DocumentId(id: Long) // extends AnyVal
 object DocumentId {
   implicit val codec: BinaryCodec[DocumentId] = DerivedBinaryCodec.deriveForWrapper
 }
+```
 
+```scala mdoc:serialized
 val id = serializeToArray(DocumentId(100))
 ``` 
 
@@ -301,6 +396,8 @@ val nodeC = new Node("a", None)
 nodeA.next = Some(nodeB)
 nodeB.next = Some(nodeC)
 nodeC.next = Some(nodeA)
+```
 
+```scala mdoc:serialized
 val result = serializeToArray(Root(nodeA))
 ``` 

@@ -2,7 +2,6 @@ package io.github.vigoo.desert.shardcake
 
 import com.devsisters.shardcake.interfaces.Serialization
 import io.github.vigoo.desert.{BinaryCodec, DefaultTypeRegistry, TypeRegistry}
-import io.github.vigoo.desert.codecs._
 import io.github.vigoo.desert.zioschema._
 import zio._
 import zio.schema.{DeriveSchema, Schema}

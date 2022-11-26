@@ -18,6 +18,7 @@ It encodes 32 bit integers in 1-5 bytes. It is used for all "integer id like" da
 ```scala mdoc
 import java.io.ByteArrayOutputStream
 import io.github.vigoo.desert._
+import io.github.vigoo.desert.internal._
 
 val stream = new ByteArrayOutputStream()
 val output = new JavaStreamBinaryOutput(stream)

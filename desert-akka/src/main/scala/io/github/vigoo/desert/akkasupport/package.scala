@@ -1,30 +1,29 @@
-package io.github.vigoo.desert.akka
+package io.github.vigoo.desert
 
-import akka.util.ByteString
-import io.github.vigoo.desert.{BinaryDeserializer, BinarySerialization, BinarySerializer, DesertFailure, TypeRegistry}
+import _root_.akka.util.ByteString
 
-object syntax {
+package object akkasupport extends Codecs {
   def serializeToByteString[T: BinarySerializer](
       value: T,
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, ByteString] =
-    BinarySerialization.serializeToArray[T](value, typeRegistry).map(ByteString.fromArrayUnsafe)
+    io.github.vigoo.desert.serializeToArray[T](value, typeRegistry).map(ByteString.fromArrayUnsafe)
 
   def serializeUnknownToByteString(
       value: Any,
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, ByteString] =
-    BinarySerialization.serializeUnknownToArray(value, typeRegistry).map(ByteString.fromArrayUnsafe)
+    io.github.vigoo.desert.serializeUnknownToArray(value, typeRegistry).map(ByteString.fromArrayUnsafe)
 
   def deserializeFromByteString[T: BinaryDeserializer](
       input: ByteString,
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, T] =
-    BinarySerialization.deserializeFromArray[T](input.toArray, typeRegistry)
+    io.github.vigoo.desert.deserializeFromArray[T](input.toArray, typeRegistry)
 
   def deserializeUnknownFromByteString(
       input: ByteString,
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, Any] =
-    BinarySerialization.deserializeUnknownFromArray(input.toArray, typeRegistry)
+    io.github.vigoo.desert.deserializeUnknownFromArray(input.toArray, typeRegistry)
 }

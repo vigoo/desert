@@ -1,11 +1,15 @@
 package io.github.vigoo.desert.shapeless
 
-import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.BinaryDeserializerOps.read
-import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.BinarySerializerOps.write
+import io.github.vigoo.desert.Evolution.FieldAdded
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.custom._
+import io.github.vigoo.desert.internal.{
+  DeserializationEnv,
+  JavaStreamBinaryInput,
+  JavaStreamBinaryOutput,
+  SerializationEnv,
+  SerializerState
+}
 import zio.test.Assertion.{equalTo, isLessThan, isRight}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 

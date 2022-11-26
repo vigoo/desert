@@ -1,6 +1,5 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.codecs._
 import zio.Scope
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault}
@@ -11,11 +10,11 @@ object CombinatorsSpec extends ZIOSpecDefault with SerializationProperties {
       test("mapOrFail") {
         val codec = stringCodec.mapOrFail {
           case "good"        => Right(1)
-          case other: String => Left(DeserializationFailure(s"invalid: $other", None))
+          case other: String => Left(DesertFailure.DeserializationFailure(s"invalid: $other", None))
         }
 
         canBeSerializedAndReadBack("good", 1)(stringCodec, codec, TypeRegistry.empty) &&
-        failsWhenReadBack("bad", equalTo(DeserializationFailure("invalid: bad", None)))(
+        failsWhenReadBack("bad", equalTo(DesertFailure.DeserializationFailure("invalid: bad", None)))(
           stringCodec,
           codec,
           TypeRegistry.empty
@@ -24,11 +23,11 @@ object CombinatorsSpec extends ZIOSpecDefault with SerializationProperties {
       test("contramapOrFail") {
         val codec = intCodec.contramapOrFail[String] {
           case "one"         => Right(1)
-          case other: String => Left(SerializationFailure(s"invalid: $other", None))
+          case other: String => Left(DesertFailure.SerializationFailure(s"invalid: $other", None))
         }
 
         canBeSerializedAndReadBack("one", 1)(codec, intCodec, TypeRegistry.empty) &&
-        failsWhenReadBack("two", equalTo(SerializationFailure("invalid: two", None)))(
+        failsWhenReadBack("two", equalTo(DesertFailure.SerializationFailure("invalid: two", None)))(
           codec,
           intCodec,
           TypeRegistry.empty

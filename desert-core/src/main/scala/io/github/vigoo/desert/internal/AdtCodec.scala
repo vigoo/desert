@@ -1,9 +1,8 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.internal
 
-import io.github.vigoo.desert.BinaryDeserializer.{Deser, DeserializationEnv}
-import io.github.vigoo.desert.BinarySerializer.{Ser, SerializationEnv}
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.Evolution._
+import io.github.vigoo.desert.custom._
 import zio.prelude.fx.ZPure
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
@@ -152,7 +151,7 @@ class AdtCodec[T, BuilderState](
                     if (removedFields.contains(name)) {
                       Right(SerializedEvolutionStep.FieldMadeOptional(FieldPosition.removed))
                     } else {
-                      Left(UnknownFieldReferenceInEvolutionStep(name))
+                      Left(DesertFailure.UnknownFieldReferenceInEvolutionStep(name))
                     }
                 }
               case FieldRemoved(name)      =>
@@ -189,7 +188,7 @@ class AdtCodec[T, BuilderState](
         override val removedFields: Set[String] = Set.empty
 
         override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
-          if (version == 0) Right(primaryInput) else Left(DeserializingNonExistingChunk(version))
+          if (version == 0) Right(primaryInput) else Left(DesertFailure.DeserializingNonExistingChunk(version))
       })
     } else {
       for {
@@ -222,7 +221,7 @@ class AdtCodec[T, BuilderState](
           if (version < inputs.length) {
             Right(inputs(version))
           } else {
-            Left(DeserializingNonExistingChunk(version))
+            Left(DesertFailure.DeserializingNonExistingChunk(version))
           }
       }
     }
@@ -253,7 +252,7 @@ class AdtCodec[T, BuilderState](
                 }
               case None        =>
                 ChunkedDeserOps.failWith(
-                  DeserializationFailure(
+                  DesertFailure.DeserializationFailure(
                     s"Field $fieldName is not in the stream and does not have default value",
                     None
                   )
@@ -284,7 +283,7 @@ class AdtCodec[T, BuilderState](
     ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
       // Check if field was removed
       if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.failWith(FieldRemovedInSerializedVersion(fieldName))
+        ChunkedDeserOps.failWith(DesertFailure.FieldRemovedInSerializedVersion(fieldName))
       } else {
         val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
         ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
@@ -294,7 +293,7 @@ class AdtCodec[T, BuilderState](
               case Some(value) =>
                 ChunkedDeserOps.pure(value.asInstanceOf[H])
               case None        =>
-                ChunkedDeserOps.failWith(FieldWithoutDefaultValueIsMissing(fieldName))
+                ChunkedDeserOps.failWith(DesertFailure.FieldWithoutDefaultValueIsMissing(fieldName))
             }
           } else {
             // Field was serialized
@@ -307,7 +306,7 @@ class AdtCodec[T, BuilderState](
                 headValue <- if (isDefined) {
                                ChunkedDeserOps.fromDeser(headCodec.deserialize(), input)
                              } else {
-                               ChunkedDeserOps.failWith(NonOptionalFieldSerializedAsNone(fieldName))
+                               ChunkedDeserOps.failWith(DesertFailure.NonOptionalFieldSerializedAsNone(fieldName))
                              }
               } yield headValue
             } else {
@@ -369,7 +368,7 @@ class AdtCodec[T, BuilderState](
                               ChunkedDeserOps.pure(value)
                             case None        =>
                               ChunkedDeserOps.failWith(
-                                DeserializationFailure(
+                                DesertFailure.DeserializationFailure(
                                   s"Illegal state while processing transient field ${readTransient.fieldName}",
                                   None
                                 )
@@ -401,8 +400,8 @@ object AdtCodec {
 
   object FieldPosition {
     implicit val codec: BinaryCodec[FieldPosition] = BinaryCodec.from[FieldPosition](
-      codecs.byteCodec.contramap(_.toByte),
-      codecs.byteCodec.map { byte =>
+      byteCodec.contramap(_.toByte),
+      byteCodec.map { byte =>
         if (byte <= 0) FieldPosition(0, (-byte).toByte) else FieldPosition(byte, 0)
       }
     )
@@ -444,7 +443,7 @@ object AdtCodec {
                       case Codes.FieldMadeOptionalCode => read[FieldPosition]().map(FieldMadeOptional.apply)
                       case Codes.FieldRemovedCode      => read[DeduplicatedString]().map(_.string).map(FieldRemoved.apply)
                       case size if size > 0            => finishDeserializerWith(FieldAddedToNewChunk(size))
-                      case _                           => failDeserializerWith(UnknownSerializedEvolutionStep(code))
+                      case _                           => failDeserializerWith(DesertFailure.UnknownSerializedEvolutionStep(code))
                     }
         } yield result
       }
@@ -532,7 +531,7 @@ object AdtCodec {
         state  <- getChunkedState
         result <- state.constructorNameToId.get(typeName) match {
                     case Some(id) => pure[Int](id)
-                    case None     => fromEither(Left(InvalidConstructorName(typeName, state.typeDescription)))
+                    case None     => fromEither(Left(DesertFailure.InvalidConstructorName(typeName, state.typeDescription)))
                   }
       } yield result
   }
@@ -609,7 +608,7 @@ object AdtCodec {
         state  <- getChunkedState
         result <- state.constructorIdToName.get(id) match {
                     case Some(name) => pure[String](name)
-                    case None       => fromEither(Left(InvalidConstructorId(id, state.typeDescription)))
+                    case None       => fromEither(Left(DesertFailure.InvalidConstructorId(id, state.typeDescription)))
                   }
       } yield result
 

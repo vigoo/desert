@@ -1,8 +1,8 @@
 package io.github.vigoo.desert.shardcake
 
 import com.devsisters.shardcake.interfaces.Serialization
+import io.github.vigoo.desert.ziosupport.{deserializeUnknownFromArray, serializeUnknownToArray}
 import io.github.vigoo.desert.{DesertException, TypeRegistry}
-import io.github.vigoo.desert.ziosupport.syntax._
 import zio.{Task, ULayer, ZLayer}
 
 object DesertSerialization {

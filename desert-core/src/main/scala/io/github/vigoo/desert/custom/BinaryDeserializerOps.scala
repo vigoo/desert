@@ -1,9 +1,10 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.custom
 
-import io.github.vigoo.desert.BinaryDeserializer.Deser
-import io.github.vigoo.desert.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import _root_.zio.prelude.fx._
+import io.github.vigoo.desert.internal.SerializerState
+import io.github.vigoo.desert.internal.SerializerState.{RefId, StringId}
+import io.github.vigoo.desert._
+import zio.prelude.fx.ZPure
 
 import scala.util.Try
 
@@ -35,14 +36,14 @@ trait BinaryDeserializerOps {
                         case Some(registration) =>
                           registration.codec.deserialize()
                         case None               =>
-                          failDeserializerWith(InvalidTypeId(typeId))
+                          failDeserializerWith(DesertFailure.InvalidTypeId(typeId))
                       }
     } yield result
 
   final def finishDeserializerWith[T](value: T): Deser[T]                    = Deser.fromEither(Right(value))
   final def failDeserializerWith[T](failure: DesertFailure): Deser[T]        = Deser.fromEither(Left(failure))
   final def deserializerFromTry[T](f: Try[T], failMessage: String): Deser[T] =
-    Deser.fromEither(f.toEither.left.map(failure => DeserializationFailure(failMessage, Some(failure))))
+    Deser.fromEither(f.toEither.left.map(failure => DesertFailure.DeserializationFailure(failMessage, Some(failure))))
 
   final def getString(value: StringId): Deser[Option[String]] =
     for {
@@ -78,10 +79,8 @@ trait BinaryDeserializerOps {
         } yield value
       case id =>
         getRef(RefId(id)).flatMap {
-          case None        => failDeserializerWith(InvalidRefId(RefId(id)))
+          case None        => failDeserializerWith(DesertFailure.InvalidRefId(RefId(id)))
           case Some(value) => finishDeserializerWith(value.asInstanceOf[T])
         }
     }
 }
-
-object BinaryDeserializerOps extends BinaryDeserializerOps

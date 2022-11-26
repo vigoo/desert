@@ -16,9 +16,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
   class Impl2 extends TestInterface
 
   object TestInterface {
-
-    import BinaryDeserializerOps._
-    import BinarySerializerOps._
+    import io.github.vigoo.desert.custom._
 
     implicit val codec: BinaryCodec[TestInterface] =
       BinaryCodec.define[TestInterface] {
@@ -28,7 +26,9 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
         case 1 => finishDeserializerWith(new Impl1)
         case 2 => finishDeserializerWith(new Impl2)
         case _ =>
-          failDeserializerWith(DeserializationFailure("Invalid type tag in custom TestInterface serializer", None))
+          failDeserializerWith(
+            DesertFailure.DeserializationFailure("Invalid type tag in custom TestInterface serializer", None)
+          )
       })
   }
 
@@ -38,9 +38,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment, Any] =
     suite("DefaultTypeRegistry")(
       test("can register and retrieve codecs for types") {
-        implicit val stringCodec: BinaryCodec[String]   = codecs.stringCodec
-        implicit val doubleCodec: BinaryCodec[Double]   = codecs.doubleCodec
-        implicit val setCodec: BinaryCodec[Set[Double]] = codecs.setCodec[Double]
+        implicit val doubleSet: BinaryCodec[Set[Double]] = setCodec[Double]
 
         val registry = DefaultTypeRegistry()
           .register[String]
@@ -60,7 +58,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
         assert(regIface)(
           isSome(equalTo(RegisteredType(RegisteredTypeId(3), TestInterface.codec, classOf[TestInterface])))
         ) &&
-        assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), setCodec, classOf[Set[Double]])))) &&
+        assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), doubleSet, classOf[Set[Double]])))) &&
         assert(regUnknown)(isNone) &&
         assert(registry.forId(RegisteredTypeId(1)))(
           isSome(equalTo(RegisteredType(RegisteredTypeId(1), stringCodec, classOf[String])))
@@ -68,9 +66,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
         assert(registry.forId(RegisteredTypeId(1000)))(isNone)
       },
       test("can skip deprecated type ids during registration") {
-        implicit val stringCodec: BinaryCodec[String]   = codecs.stringCodec
-        implicit val doubleCodec: BinaryCodec[Double]   = codecs.doubleCodec
-        implicit val setCodec: BinaryCodec[Set[Double]] = codecs.setCodec[Double]
+        implicit val doubleSet: BinaryCodec[Set[Double]] = setCodec[Double]
 
         val registry = DefaultTypeRegistry()
           .register[String]
@@ -83,7 +79,7 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
         val regSet    = registry.get(Set(0.1, 0.2))
 
         assert(regString)(isSome(equalTo(RegisteredType(RegisteredTypeId(1), stringCodec, classOf[String])))) &&
-        assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), setCodec, classOf[Set[Double]]))))
+        assert(regSet)(isSome(equalTo(RegisteredType(RegisteredTypeId(4), doubleSet, classOf[Set[Double]]))))
       }
     )
 }

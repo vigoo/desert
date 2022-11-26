@@ -108,14 +108,17 @@ trait BinaryInput {
           compressedData   <- readBytes(compressedLength)
           uncompressedData <- {
             try {
-              val inflater         = new Inflater()
-              inflater.setInput(compressedData)
-              val uncompressedData = new Array[Byte](uncompressedLength)
-              inflater.inflate(uncompressedData)
-              inflater.end()
-              Right(uncompressedData)
+              val inflater = new Inflater()
+              try {
+                inflater.setInput(compressedData)
+                val uncompressedData = new Array[Byte](uncompressedLength)
+                inflater.inflate(uncompressedData)
+                Right(uncompressedData)
+              } finally
+                inflater.end()
             } catch {
-              case NonFatal(failure) => Left(DeserializationFailure("Failed to uncompress byte array", Some(failure)))
+              case NonFatal(failure) =>
+                Left(DesertFailure.DeserializationFailure("Failed to uncompress byte array", Some(failure)))
             }
           }
         } yield uncompressedData

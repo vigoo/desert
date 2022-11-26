@@ -1,8 +1,7 @@
-package io.github.vigoo.desert.akka
+package io.github.vigoo.desert.akkasupport
 
 import akka.serialization.Serializer
-import io.github.vigoo.desert.syntax._
-import io.github.vigoo.desert.{DesertException, TypeRegistry}
+import io.github.vigoo.desert._
 
 abstract class DesertSerializerBase extends Serializer {
   override val identifier: Int          = 20551494

@@ -1,8 +1,6 @@
 package io.github.vigoo.desert.catseffect
 
 import cats.effect.IO
-import io.github.vigoo.desert.catseffect.syntax._
-import io.github.vigoo.desert.codecs._
 import zio.ZIO
 import zio.test.Assertion._
 import zio.test._

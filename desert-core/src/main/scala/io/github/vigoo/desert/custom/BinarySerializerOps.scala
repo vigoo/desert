@@ -1,12 +1,11 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.custom
+
+import io.github.vigoo.desert.internal.SerializerState
+import io.github.vigoo.desert.internal.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
+import io.github.vigoo.desert._
+import zio.prelude.fx.ZPure
 
 import java.util.zip.Deflater
-
-import io.github.vigoo.desert.BinaryDeserializer.Deser
-import io.github.vigoo.desert.BinarySerializer.Ser
-import io.github.vigoo.desert.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
-import _root_.zio.prelude.fx._
-
 import scala.util.Try
 
 trait BinarySerializerOps {
@@ -38,7 +37,7 @@ trait BinarySerializerOps {
             _ <- registration.serialize(value)
           } yield ()
         case None               =>
-          failSerializerWith(TypeNotRegistered(value.getClass))
+          failSerializerWith(DesertFailure.TypeNotRegistered(value.getClass))
       }
     }
 
@@ -48,7 +47,7 @@ trait BinarySerializerOps {
   final def finishSerializerWith[T](value: T): Ser[T]                      = Ser.fromEither(Right(value))
   final def failSerializerWith(failure: DesertFailure): Ser[Unit]          = Ser.fromEither(Left(failure))
   final def serializerFromTry[T](f: Try[T], failMessage: String): Deser[T] =
-    Deser.fromEither(f.toEither.left.map(failure => SerializationFailure(failMessage, Some(failure))))
+    Deser.fromEither(f.toEither.left.map(failure => DesertFailure.SerializationFailure(failMessage, Some(failure))))
 
   final def storeString(value: String): Ser[StoreStringResult] =
     for {
@@ -71,5 +70,3 @@ trait BinarySerializerOps {
       case RefIsNew(_)          => writeVarInt(0, optimizeForPositive = true) *> write(value)
     }
 }
-
-object BinarySerializerOps extends BinarySerializerOps

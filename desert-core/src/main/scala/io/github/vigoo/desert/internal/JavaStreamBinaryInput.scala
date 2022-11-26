@@ -1,7 +1,8 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.internal
+
+import io.github.vigoo.desert.{BinaryInput, DesertFailure}
 
 import java.io.{DataInputStream, EOFException, InputStream}
-
 import scala.util.{Failure, Success, Try}
 
 class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
@@ -32,7 +33,7 @@ class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
     } else {
       for {
         readBytes <- handleFailures(dataStream.read(buffer))
-        _         <- assert(readBytes == count, InputEndedUnexpectedly())
+        _         <- assert(readBytes == count, DesertFailure.InputEndedUnexpectedly())
       } yield buffer
     }
   }
@@ -40,8 +41,8 @@ class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
   private def handleFailures[T](f: => T): Either[DesertFailure, T] =
     Try(f) match {
       case Success(value)                => Right(value)
-      case Failure(reason: EOFException) => Left(InputEndedUnexpectedly())
-      case Failure(reason)               => Left(FailedToReadInput(reason))
+      case Failure(reason: EOFException) => Left(DesertFailure.InputEndedUnexpectedly())
+      case Failure(reason)               => Left(DesertFailure.FailedToReadInput(reason))
     }
 
   private def assert(condition: Boolean, failure: DesertFailure): Either[DesertFailure, Unit] =

@@ -1,7 +1,6 @@
 package io.github.vigoo.desert.ziosupport
 
-import io.github.vigoo.desert.BinaryCodec
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert._
 import zio.Chunk
 
 trait LowerPriorityCodecs {

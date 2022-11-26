@@ -1,7 +1,8 @@
-package io.github.vigoo.desert
+package io.github.vigoo.desert.internal
+
+import io.github.vigoo.desert.{BinaryOutput, DesertFailure}
 
 import java.io.{DataOutputStream, OutputStream}
-
 import scala.util.{Failure, Success, Try}
 
 final class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
@@ -40,6 +41,6 @@ final class JavaStreamBinaryOutput(stream: OutputStream) extends BinaryOutput {
   private def handleFailures[T](f: => T): Either[DesertFailure, T] =
     Try(f) match {
       case Success(value)  => Right(value)
-      case Failure(reason) => Left(FailedToWriteOutput(reason))
+      case Failure(reason) => Left(DesertFailure.FailedToWriteOutput(reason))
     }
 }

@@ -1,18 +1,14 @@
-package io.github.vigoo.desert.cats
+package io.github.vigoo.desert
 
 import cats.Order
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import cats.instances.either._
 import cats.syntax.flatMap._
 
-import io.github.vigoo.desert.{BinaryCodec, DeserializationFailure}
-import io.github.vigoo.desert.BinaryDeserializer.Deser
-import io.github.vigoo.desert.BinaryDeserializerOps.{failDeserializerWith, finishDeserializerWith, read}
-import io.github.vigoo.desert.BinarySerializer.Ser
-import io.github.vigoo.desert.BinarySerializerOps.write
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.custom._
 
-object codecs {
+package object catssupport {
   // Cats specific codecs
 
   implicit def validatedCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validated[E, A]] =
@@ -38,7 +34,8 @@ object codecs {
         inner.deserialize().flatMap { list =>
           NonEmptyList.fromList(list) match {
             case Some(value) => finishDeserializerWith(value)
-            case None        => failDeserializerWith(DeserializationFailure("Non empty list is serialized as empty", None))
+            case None        =>
+              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty list is serialized as empty", None))
           }
         }
     )
@@ -52,7 +49,8 @@ object codecs {
         inner.deserialize().flatMap { set =>
           NonEmptySet.fromSet(set) match {
             case Some(value) => finishDeserializerWith(value)
-            case None        => failDeserializerWith(DeserializationFailure("Non empty set is serialized as empty", None))
+            case None        =>
+              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty set is serialized as empty", None))
           }
         }
     )
@@ -66,7 +64,8 @@ object codecs {
         innner.deserialize().flatMap { map =>
           NonEmptyMap.fromMap(map) match {
             case Some(value) => finishDeserializerWith(value)
-            case None        => failDeserializerWith(DeserializationFailure("Non empty map is serialized as empty", None))
+            case None        =>
+              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty map is serialized as empty", None))
           }
         }
     )

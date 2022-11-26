@@ -1,7 +1,6 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.custom._
 import zio.test.Assertion._
 import zio.test._
 

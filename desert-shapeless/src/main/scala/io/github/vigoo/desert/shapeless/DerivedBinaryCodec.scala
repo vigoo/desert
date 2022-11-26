@@ -15,6 +15,6 @@ object DerivedBinaryCodec {
     if (evolutionSteps.isEmpty) {
       f(GenericBinaryCodec.simple)
     } else {
-      f(new GenericBinaryCodec(InitialVersion +: evolutionSteps.toVector))
+      f(new GenericBinaryCodec(Evolution.InitialVersion +: evolutionSteps.toVector))
     }
 }

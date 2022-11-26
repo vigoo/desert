@@ -1,7 +1,5 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.BinarySerialization._
-import io.github.vigoo.desert.codecs._
 import zio.Scope
 import zio.test.Assertion.equalTo
 import zio.test._
