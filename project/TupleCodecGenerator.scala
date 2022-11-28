@@ -95,7 +95,7 @@ object TupleCodecGenerator extends AutoPlugin {
               deserializationCommands = List(
                 ..$deserializationCommands
               ),
-              new ${model.appliedBuilderInit},
+              () => new ${model.appliedBuilderInit},
               _.asTuple
             )
        """

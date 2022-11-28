@@ -8,15 +8,15 @@ import zio.Chunk
 
 trait Codecs extends LowerPriorityCodecs {
 
-  implicit val byteChunkCodec: BinaryCodec[Chunk[Byte]] = BinaryCodec.define[Chunk[Byte]](chunk =>
-    for {
-      _ <- writeVarInt(chunk.size, optimizeForPositive = true)
-      _ <- writeByteChunk(chunk)
-    } yield ()
-  )(
-    for {
-      size  <- readVarInt(optimizeForPositive = true)
-      chunk <- readByteChunk(size)
-    } yield chunk
-  )
+  implicit val byteChunkCodec: BinaryCodec[Chunk[Byte]] = new BinaryCodec[Chunk[Byte]] {
+    override def deserialize()(implicit ctx: DeserializationContext): Chunk[Byte] = {
+      val size = readVarInt(optimizeForPositive = true)
+      readByteChunk(size)
+    }
+
+    override def serialize(value: Chunk[Byte])(implicit context: SerializationContext): Unit = {
+      writeVarInt(value.size, optimizeForPositive = true)
+      writeByteChunk(value)
+    }
+  }
 }

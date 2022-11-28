@@ -10,7 +10,9 @@ A `BinaryCodec[T]` defines both the _serializer_ and _deserializer_ for a given 
 ```scala
 trait BinaryCodec[T] extends BinarySerializer[T] with BinaryDeserializer[T]
 ```
+
 ### Primitive types
+
 The `io.github.vigoo.desert` package defines a lot of implicit binary codecs for common types.
 
 The following code examples demonstrate this and also shows how the binary representation looks like.
@@ -133,6 +135,7 @@ val zonedDateTime = serializeToArray(ZonedDateTime.of(2022, 12, 1, 11, 11, 0, 0,
 ```
 
 ### Option, Either, Try, Validation
+
 Common types such as `Option` and `Either` are also supported out of the box. For `Try` it
 also has a codec for arbitrary `Throwable` instances, although deserializing it does not recreate
 the original throwable just a `PersistedThrowable` instance. In practice this is a much safer approach
@@ -182,11 +185,12 @@ val success = serializeToArray[Try[Int]](Success(100))
 ```
 
 ### Collections
+
 There is a generic `iterableCodec` that can be used to define implicit collection codecs based on
 the Scala 2.13 collection API. For example this is how the `vectorCodec` is defined:
 
 ```scala
-implicit def vectorCodec[A : BinaryCodec]: BinaryCodec[Vector[A]] = iterableCodec[A, Vector[A]]
+implicit def vectorCodec[A: BinaryCodec]: BinaryCodec[Vector[A]] = iterableCodec[A, Vector[A]]
 ```
 
 All these collection codecs have one of the two possible representation. If the size is known in advance
@@ -234,12 +238,13 @@ val nes = serializeToArray(ZSet(1, 2, 3, 4))
 ```
 
 ### String deduplication
+
 For strings the library have a simple deduplication system, without sacrificing any extra
 bytes for cases when strings are not duplicate. In general, the strings are encoded by a variable length
-int representing the length of the string in bytes, followed by its UTF-8 encoding. 
-When deduplication is enabled, each serialized 
-string gets an ID and if it is serialized once more in the same stream, a negative number in place of the 
-length identifies it.   
+int representing the length of the string in bytes, followed by its UTF-8 encoding.
+When deduplication is enabled, each serialized
+string gets an ID and if it is serialized once more in the same stream, a negative number in place of the
+length identifies it.
 
 ```scala mdoc:serialized
 val twoStrings1 = serializeToArray(List("Hello", "Hello"))
@@ -251,11 +256,12 @@ val twoStrings2 = serializeToArray(List(DeduplicatedString("Hello"), Deduplicate
 
 It is not turned on by default because it breaks backward compatibility when evolving data structures.
 If a new string field is added, old versions of the application will skip it and would not assign the
-same ID to the string if it is first seen. 
+same ID to the string if it is first seen.
 
-It is enabled internally in desert for some cases, and can be used in _custom serializers_ freely. 
+It is enabled internally in desert for some cases, and can be used in _custom serializers_ freely.
 
 ### Tuples
+
 The elements of tuples are serialized flat and the whole tuple gets prefixed by `0`, which makes them
 compatible with simple _case classes_:
 
@@ -264,6 +270,7 @@ val tup = serializeToArray((1, 2, 3))
 ```
 
 ### Maps
+
 `Map`, `SortedMap` and `NonEmptyMap` are just another `iterableCodec` built on top of the _tuple support_
 for serializing an iteration of key-value pairs:
 
@@ -280,6 +287,7 @@ val sortedmap = serializeToArray(SortedMap(1 -> "x", 2 -> "y"))
 ```
 
 ### Generic codecs for ADTs
+
 There is a generic derivable codec for algebraic data types, with support for [evolving the type](evolution)
 during the lifecycle of the application.
 
@@ -296,13 +304,15 @@ object Point {
 val pt = serializeToArray(Point(1, 2, 3))
 ```
 
-Note the empty parameter list for `BinaryCodec.derive`. It is where the **evolution steps** are defined, 
-explained on a [separate section](evolution). When it is empty the only additional storage cost is the
-single `0` byte on the beginning, just like with tuples.
+Note that there is no `@evolutionSteps` annotation used for the type. In this case the only additional storage
+cost is a single `0` byte on the beginning just like with tuples. The **evolution steps** are explained on
+a [separate section](evolution).
 
-For _sum types_ the codec is not automatically derived for all the constructors. This is by design, as the
-evolution steps has to be specified one by one per constructor. Other than that it works the same way, 
-with `derive`:
+For _sum types_ the codec is not automatically derived for all the constructors when using the _Shapeless_ based
+derivation. This has mostly historical reasons, as previous versions required passing the _evolution steps_ as
+parameters to the `derive` method. The new _ZIO Schema_ based derivation does not have this limitation.
+
+Other than that it works the same way, with `derive`:
 
 ```scala mdoc
 sealed trait Drink
@@ -325,6 +335,7 @@ val b = serializeToArray[Drink](Water)
 ```
 
 ### Transient fields in generic codecs
+
 It is possible to mark some fields of a _case class_ as **transient**:
 
 ```scala mdoc
@@ -347,9 +358,10 @@ val pt2 = for {
 
 Transient fields are not being serialized and they get a default value contained by the annotation
 during deserialization. Note that the default value is not type checked during compilation, if
-it does not match the field type it causes runtime error. 
+it does not match the field type it causes runtime error.
 
 ### Transient constructors in generic codecs
+
 It is possible to mark whole constructors as **transient**:
 
 ```scala mdoc
@@ -371,11 +383,12 @@ val cs1 = serializeToArray[Cases](Case1())
 val cs2 = serializeToArray[Cases](Case2())
 ```
 
-Transient constructors cannot be serialized. A common use case is for remote accessible actors where 
+Transient constructors cannot be serialized. A common use case is for remote accessible actors where
 some actor messages are known to be local only. By marking them as transient they can hold non-serializable data
 without breaking the serialization of the other, remote messages.
 
 ### Generic codecs for value type wrappers
+
 It is a good practice to use zero-cost value type wrappers around primitive types to represent
 the intention in the type system. `desert` can derive binary codecs for these too:
 
@@ -391,26 +404,25 @@ val id = serializeToArray(DocumentId(100))
 ``` 
 
 ### Custom codecs
-The _serialization_ is a monadic function:
+
+The _serialization_ is a simple scala function using an implicit serialization context:
 
 ```scala
-def serialize(value: T): Ser[Unit]
+def serialize(value: T)(implicit context: SerializationContext): Unit
 ```
 
 while the _deserialization_ is
-```scala
-def deserialize(): Deser[T]
-```
-
-where 
 
 ```scala
-type Ser[T] = ZPure[Nothing, SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
-type Deser[T] = ZPure[Nothing, SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
+def deserialize()(implicit ctx: DeserializationContext): T
 ```
 
-With the `BinaryCodec.define` function it is possible to define a fully custom codec. In the following
-example we define a data type capable of representing cyclic graphs via a mutable `next` field, and 
+The `io.github.vigoo.desert.custom` package contains a set of serialization and
+deserialization functions, all requiring the implicit contexts, that can be uesd
+to implement custom codecs.
+
+By implementing the `BinaryCodec` trait it is possible to define a fully custom codec. In the following
+example we define a data type capable of representing cyclic graphs via a mutable `next` field, and
 a custom codec for deserializing it. It also shows that built-in support for tracking _object references_
 which is not used by the generic codecs but can be used in scenarios like this.
 
@@ -418,8 +430,8 @@ which is not used by the generic codecs but can be used in scenarios like this.
 import cats.instances.either._
 import io.github.vigoo.desert.custom._
 
-  class Node(val label: String,
-             var next: Option[Node]) {
+  final class Node(val label: String,
+                   var next: Option[Node]) {
     override def toString: String = 
       next match {
        case Some(n) => s"<$label -> ${n.label}>"
@@ -427,37 +439,43 @@ import io.github.vigoo.desert.custom._
       }
   }
   object Node {
-    implicit def codec: BinaryCodec[Node] = BinaryCodec.define[Node](
-      // Serializer function
-      node => for {
-        _ <- write(node.label) // write the label using the built-in string codec
-        _ <- node.next match {
-          case Some(value) =>
-            for {
-              _ <- write(true) // next is defined (built-in boolean codec)
-              _ <- storeRefOrObject(value) // store ref-id or serialize next
-            } yield ()
-          case None =>
-            write(false) // next is undefined (built-in boolean codec)
+    implicit lazy val codec: BinaryCodec[Node] =
+      new BinaryCodec[Node] {
+        override def serialize(value: Node)(implicit context: SerializationContext): Unit = {
+          write(value.label) // write the label using the built-in string codec
+          value.next match {
+            case Some(next) =>
+              write(true)  // next is defined (built-in boolean codec)
+              storeRefOrObject(next) // store ref-id or serialize next
+            case None       =>
+              write(false) // next is undefined (built-in boolean codec)
+          }
         }
-      } yield ()
-    )(for { // Deserializer function
-      label <- read[String]()        // read the label using the built-in string codec
-      result = new Node(label, None) // create the new node
-      _ <- storeReadRef(result)      // store the node in the reference map
-      hasNext <- read[Boolean]()     // read if 'next' is defined
-      _ <- if (hasNext ) {
-        // Read next with reference-id support and mutate the result
-        readRefOrValue[Node](storeReadReference = false).map { value => result.next = Some(value) }
-      } else finishDeserializerWith(())
-    } yield result)
+        
+        override def deserialize()(implicit ctx: DeserializationContext): Node = {
+          val label   = read[String]()        // read the label using the built-in string codec
+          val result  = new Node(label, None) // create the new node
+          storeReadRef(result)                // store the node in the reference map
+          val hasNext = read[Boolean]()       // read if 'next' is defined
+          if (hasNext) {
+            // Read next with reference-id support and mutate the result
+            val next = readRefOrValue[Node](storeReadReference = false)
+            result.next = Some(next)
+          }
+          result
+        }
+    }     
   }
 
   case class Root(node: Node)
   object Root {
-    implicit val codec: BinaryCodec[Root] = BinaryCodec.define[Root](
-      root => storeRefOrObject(root.node)
-    )(readRefOrValue[Node](storeReadReference = false).map(Root.apply))
+    implicit val codec: BinaryCodec[Root] = new BinaryCodec[Root] {
+      override def deserialize()(implicit ctx: DeserializationContext): Root =
+        Root(readRefOrValue[Node](storeReadReference = false))
+
+      override def serialize(value: Root)(implicit context: SerializationContext): Unit =
+        storeRefOrObject(value.node)
+    }
   }
 
 val nodeA = new Node("a", None)
@@ -471,3 +489,21 @@ nodeC.next = Some(nodeA)
 ```scala mdoc:serialized
 val result = serializeToArray(Root(nodeA))
 ``` 
+
+### Monadic custom codecs
+
+Previous versions of `desert` exposed a monadic serializer/deserializer API based on `ZPure` with the following
+types:
+
+```scala
+type Ser[T] = ZPure[Nothing, SerializerState, SerializerState, SerializationEnv, DesertFailure, T]
+type Deser[T] = ZPure[Nothing, SerializerState, SerializerState, DeserializationEnv, DesertFailure, T]
+```
+
+For compatibility, the library still defines the monadic version of the serialization functions in the
+`io.github.vigoo.desert.custom.pure` package.
+
+A monadic serializer or deserializer can be converted to a `BinarySerializer` or `BinaryDeserializer` using the
+`fromPure` method.
+
+To achieve higher performance, it is recommended to implement custom codecs using the low level serialization API.

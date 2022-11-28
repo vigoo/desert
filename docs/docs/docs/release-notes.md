@@ -12,6 +12,7 @@ title: Release notes
 - Shardcake module
 - Many new built-in codecs
 - Redesigned package structure
+- Lower level codec API in place of the ZPure one for higher performance 
 
 ## 0.2.3
 - Dependency updates, support for ZIO 2.0.0-RC6

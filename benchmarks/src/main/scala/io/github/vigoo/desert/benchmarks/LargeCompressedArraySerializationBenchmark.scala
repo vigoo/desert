@@ -17,7 +17,12 @@ import org.openjdk.jmh.annotations.{
   Warmup
 }
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.custom.{readCompressedByteArray, writeCompressedBytes}
+import io.github.vigoo.desert.custom.{
+  DeserializationContext,
+  SerializationContext,
+  readCompressedByteArray,
+  writeCompressedBytes
+}
 
 import scala.io.Source
 
@@ -67,8 +72,13 @@ object LargeCompressedArraySerializationBenchmark {
   case class TestData(data: String, level: Int)
 
   object TestData {
-    implicit val binaryCodec: BinaryCodec[TestData] = BinaryCodec.define((data: TestData) =>
-      writeCompressedBytes(data.data.getBytes(StandardCharsets.UTF_8), data.level)
-    )(readCompressedByteArray().map(bytes => TestData(new String(bytes, StandardCharsets.UTF_8), Deflater.BEST_SPEED)))
+    implicit val binaryCodec: BinaryCodec[TestData] =
+      new BinaryCodec[TestData] {
+        override def deserialize()(implicit ctx: DeserializationContext): TestData =
+          TestData(new String(readCompressedByteArray(), StandardCharsets.UTF_8), Deflater.BEST_SPEED)
+
+        override def serialize(value: TestData)(implicit context: SerializationContext): Unit =
+          writeCompressedBytes(value.data.getBytes(StandardCharsets.UTF_8), value.level)
+      }
   }
 }

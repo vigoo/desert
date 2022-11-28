@@ -6,6 +6,6 @@ package io.github.vigoo.desert
   * @param failure
   *   The failure to represent in the exception
   */
-class DesertException(failure: DesertFailure) extends Exception(failure.message) {
+final case class DesertException(failure: DesertFailure) extends Exception(failure.message) {
   failure.cause.foreach(initCause)
 }
