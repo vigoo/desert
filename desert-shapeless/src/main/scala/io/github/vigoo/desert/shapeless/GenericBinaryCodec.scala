@@ -5,7 +5,7 @@ import _root_.shapeless.labelled._
 import _root_.shapeless.ops.hlist._
 import _root_.shapeless.tag._
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
+import io.github.vigoo.desert.internal.AdtCodec
 import io.github.vigoo.desert.shapeless.GenericBinaryCodec._
 
 import scala.collection.immutable.ListMap
@@ -504,7 +504,9 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
       override def commands(value: FieldType[K, MarkedAsTransient[H]] :+: T): List[AdtCodec.SerializationCommand] =
         value match {
           case Inl(_)    =>
-            AdtCodec.SerializationCommand.Fail(SerializingTransientConstructor(witness.value.name)) :: List.empty
+            AdtCodec.SerializationCommand.Fail(
+              DesertFailure.SerializingTransientConstructor(witness.value.name)
+            ) :: List.empty
           case Inr(tail) =>
             tailPlan.commands(tail)
         }
@@ -583,7 +585,7 @@ object GenericBinaryCodec {
 
   /** A common static instance of the binary codec for all types not having any evolution steps
     */
-  val simple = new GenericBinaryCodec(Vector(InitialVersion))
+  val simple = new GenericBinaryCodec(Vector(Evolution.InitialVersion))
 
   final case class BuilderState(
       values: ListMap[String, Any],

@@ -2,7 +2,7 @@ package io.github.vigoo.desert
 
 import scala.util.Try
 
-case class PersistedThrowable(
+final case class PersistedThrowable(
     className: String,
     message: String,
     stackTrace: Array[StackTraceElement],

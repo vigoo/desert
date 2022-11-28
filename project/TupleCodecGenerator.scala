@@ -84,7 +84,7 @@ object TupleCodecGenerator extends AutoPlugin {
 
       q"""implicit def ${model.codecName}[..${model.typeParamsWithConstraints}]: BinaryCodec[${model.appliedTupleType}] =
             new AdtCodec[${model.appliedTupleType}, ${model.appliedBuilderType}](
-              evolutionSteps = Vector(InitialVersion),
+              evolutionSteps = Vector(Evolution.InitialVersion),
               typeName = ${model.tupleFullLit},
               constructors = Vector(${model.tupleLit}),
               transientFields = Map.empty,
@@ -103,7 +103,9 @@ object TupleCodecGenerator extends AutoPlugin {
 
     val code =
       source"""
-          package io.github.vigoo.desert
+          package io.github.vigoo.desert.internal
+
+          import io.github.vigoo.desert._
 
           trait TupleCodecs {
             def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]]
@@ -163,7 +165,7 @@ object TupleCodecGenerator extends AutoPlugin {
       val log = streams.value.log
 
       val sourcesDir = (Compile / sourceManaged).value
-      val targetFile = sourcesDir / "io" / "github" / "vigoo" / "desert" / "TupleCodecs.scala"
+      val targetFile = sourcesDir / "io" / "github" / "vigoo" / "desert" / "internal" / "TupleCodecs.scala"
 
       val cachedFun = FileFunction.cached(
         streams.value.cacheDirectory / "desert-tuple-codecs",

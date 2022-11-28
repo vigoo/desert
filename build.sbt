@@ -7,8 +7,8 @@ import xerial.sbt.Sonatype._
 val scala2 = "2.13.10"
 val scala3 = "3.2.1"
 
-val zioVersion       = "2.0.3"
-val zioSchemaVersion = "0.2.1+31-977355d7-SNAPSHOT"
+val zioVersion       = "2.0.4"
+val zioSchemaVersion = "0.3.1"
 
 name := "desert"
 
@@ -39,7 +39,8 @@ lazy val commonSettings = Seq(
     case Some((2, 13)) =>
       Seq(
         "-deprecation",
-        "-unchecked"
+        "-unchecked",
+        "-Yrangepos"
       )
     case Some((3, _))  =>
       Seq(
@@ -157,7 +158,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.3.14"
+      "org.typelevel" %% "cats-effect" % "3.4.1"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -180,8 +181,9 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
   .settings(
     description := "ZIO Schema based generic derivation and bindings for desert",
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio-schema"            % zioSchemaVersion,
-      "dev.zio"       %% "zio-schema-derivation" % zioSchemaVersion   % Test,
+      "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion,
+      "dev.zio" %% "zio-schema-zio-test"   % zioSchemaVersion % Test
     ),
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -189,19 +191,18 @@ lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema")
           Seq(
             "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
           )
-        case _ => Seq()
+        case _            => Seq()
       }
     }
   )
   .dependsOn(core % "compile->compile;test->test", zio)
-  .enablePlugins(ZioSchemaGenerator)
 
 lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(commonSettings)
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.0.4",
+      "com.devsisters" %% "shardcake-core"        % "2.0.5",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
@@ -218,6 +219,19 @@ lazy val benchmarks = project
   )
   .enablePlugins(JmhPlugin)
   .dependsOn(core.jvm, shapeless.jvm)
+
+lazy val docsPlugins = project
+  .in(file("docs-plugins"))
+  .settings(commonSettings)
+  .settings(
+    publishArtifact := false,
+    coverageEnabled := false,
+    crossScalaVersions -= scala3,
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "mdoc-cli" % "2.3.6"
+    )
+  )
+  .dependsOn(core.jvm)
 
 lazy val docs = project
   .settings(commonSettings)
@@ -269,9 +283,11 @@ lazy val docs = project
       "<a href='https://thenounproject.com/search/?q=Evolution%20&i=2373364'>Evolution</a> by Nithinan Tatah from the Noun Project<br><a href='https://thenounproject.com/search/?q=floppy&i=303328'>Floppy</a> by Jonathan Li from the Noun Project"
     ),
     micrositeAnalyticsToken                    := "UA-56320875-2",
-    makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg"
+    makeSite / includeFilter                   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.txt" | "*.xml" | "*.svg",
+    micrositeGithubToken                       := sys.env.get("GITHUB_TOKEN"),
+    micrositePushSiteWith                      := GitHub4s
   )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
 
 // Temporary fix to avoid including mdoc in the published POM
 

@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: Type Registry
-permalink: docs/type-registry/
 ---
 
 # Type Registry
@@ -14,8 +13,6 @@ can participate in the above described scenario must be explicitly registered to
 
 ```scala mdoc silent
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
 import io.github.vigoo.desert.shapeless._
 
 case class TestProd(value: Int)
@@ -85,7 +82,10 @@ val typeRegistry2 = DefaultTypeRegistry()
   .freeze()
 ```
 
-```scala mdoc
+```scala mdoc:serialized
 val dataOrFailure = serializeToArray(Outer(Impl2(11)), typeRegistry2)
+```
+
+```scala mdoc
 val result = dataOrFailure.flatMap(data => deserializeFromArray[Outer](data, typeRegistry2))
 ```  
