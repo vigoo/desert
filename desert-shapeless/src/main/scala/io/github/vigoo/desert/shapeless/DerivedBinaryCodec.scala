@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 
 object DerivedBinaryCodec {
 
-  def derive[T](evolutionSteps: Evolution*): BinaryCodec[T] = macro Macros.deriveImpl[T]
+  def derive[T]: BinaryCodec[T] = macro Macros.deriveImpl[T]
 
   def deriveForWrapper[T](implicit codec: Lazy[UnwrappedBinaryCodec[T]]): BinaryCodec[T] = codec.value
 
@@ -15,6 +15,6 @@ object DerivedBinaryCodec {
     if (evolutionSteps.isEmpty) {
       f(GenericBinaryCodec.simple)
     } else {
-      f(new GenericBinaryCodec(InitialVersion +: evolutionSteps.toVector))
+      f(new GenericBinaryCodec(Evolution.InitialVersion +: evolutionSteps.toVector))
     }
 }

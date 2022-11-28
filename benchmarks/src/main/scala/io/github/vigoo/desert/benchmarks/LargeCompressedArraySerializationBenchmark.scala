@@ -3,7 +3,6 @@ package io.github.vigoo.desert.benchmarks
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import java.util.zip.Deflater
-
 import io.github.vigoo.desert.BinaryCodec
 import org.openjdk.jmh.annotations.{
   Benchmark,
@@ -17,7 +16,8 @@ import org.openjdk.jmh.annotations.{
   State,
   Warmup
 }
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.custom.{readCompressedByteArray, writeCompressedBytes}
 
 import scala.io.Source
 

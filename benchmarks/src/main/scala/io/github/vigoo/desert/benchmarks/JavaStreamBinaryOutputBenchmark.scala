@@ -3,7 +3,8 @@ package io.github.vigoo.desert.benchmarks
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-import io.github.vigoo.desert.{BinaryOutput, JavaStreamBinaryOutput}
+import io.github.vigoo.desert.BinaryOutput
+import io.github.vigoo.desert.internal.JavaStreamBinaryOutput
 import org.openjdk.jmh.annotations.{
   Benchmark,
   BenchmarkMode,

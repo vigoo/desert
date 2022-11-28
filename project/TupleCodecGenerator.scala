@@ -2,7 +2,7 @@ import sbt._
 import sbt.Keys._
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import java.nio.file.{FileAlreadyExistsException, Files}
 import scala.meta._
 
 object TupleCodecGenerator extends AutoPlugin {
@@ -56,7 +56,7 @@ object TupleCodecGenerator extends AutoPlugin {
 
     val tupleBuilders = tuples.map { model =>
       q"""final class ${model.builderType}[..${model.typeParams}] {
-            def asTuple: ${model.appliedTupleType} = ${model.fromFields}
+            def asTuple: Either[DesertFailure, ${model.appliedTupleType}] = Right(${model.fromFields})
 
             ..${model.fieldVars}
           }
@@ -84,7 +84,7 @@ object TupleCodecGenerator extends AutoPlugin {
 
       q"""implicit def ${model.codecName}[..${model.typeParamsWithConstraints}]: BinaryCodec[${model.appliedTupleType}] =
             new AdtCodec[${model.appliedTupleType}, ${model.appliedBuilderType}](
-              evolutionSteps = Vector(InitialVersion),
+              evolutionSteps = Vector(Evolution.InitialVersion),
               typeName = ${model.tupleFullLit},
               constructors = Vector(${model.tupleLit}),
               transientFields = Map.empty,
@@ -103,7 +103,9 @@ object TupleCodecGenerator extends AutoPlugin {
 
     val code =
       source"""
-          package io.github.vigoo.desert
+          package io.github.vigoo.desert.internal
+
+          import io.github.vigoo.desert._
 
           trait TupleCodecs {
             def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]]
@@ -151,6 +153,10 @@ object TupleCodecGenerator extends AutoPlugin {
           }
           """
 
+    try Files.createDirectories(targetFile.toPath.getParent)
+    catch {
+      case _: FileAlreadyExistsException =>
+    }
     Files.write(targetFile.toPath, code.toString.getBytes(StandardCharsets.UTF_8))
   }
 
@@ -159,7 +165,7 @@ object TupleCodecGenerator extends AutoPlugin {
       val log = streams.value.log
 
       val sourcesDir = (Compile / sourceManaged).value
-      val targetFile = sourcesDir / "io" / "github" / "vigoo" / "desert" / "TupleCodecs.scala"
+      val targetFile = sourcesDir / "io" / "github" / "vigoo" / "desert" / "internal" / "TupleCodecs.scala"
 
       val cachedFun = FileFunction.cached(
         streams.value.cacheDirectory / "desert-tuple-codecs",

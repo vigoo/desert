@@ -1,24 +1,23 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.syntax._
+import io.github.vigoo.desert.custom._
 import zio.test.Assertion._
 import zio.test._
 
 object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
-  case class Root(node: Node)
+  final case class Root(node: Node)
   object Root {
     implicit val codec: BinaryCodec[Root] = BinaryCodec.define[Root](root => storeRefOrObject(root.node))(
       readRefOrValue[Node](storeReadReference = false).map(Root.apply)
     )
   }
 
-  class Node(val label: String, var next: Option[Node]) {
+  final class Node(val label: String, var next: Option[Node]) {
     override def toString: String = s"<$label>"
   }
-  object Node                                           {
+  object Node                                                 {
     implicit def codec: BinaryCodec[Node] = BinaryCodec.define[Node](node =>
       for {
         _ <- write(node.label)

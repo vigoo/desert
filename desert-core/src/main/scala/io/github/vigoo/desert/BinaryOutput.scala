@@ -127,28 +127,30 @@ trait BinaryOutput {
     } else {
       try {
         val deflater = new Deflater(level)
-        deflater.setInput(uncompressedData)
-        deflater.finish()
+        try {
+          deflater.setInput(uncompressedData)
+          deflater.finish()
 
-        val compressedData   = new ArrayBuffer[Array[Byte]](4)
-        val buffer           = new Array[Byte](uncompressedData.length)
-        var compressedLength = 0
-        while (!deflater.finished()) {
-          val length = deflater.deflate(buffer)
-          compressedData.addOne(buffer.slice(0, length))
-          compressedLength += length
-        }
+          val compressedData   = new ArrayBuffer[Array[Byte]](4)
+          val buffer           = new Array[Byte](uncompressedData.length)
+          var compressedLength = 0
+          while (!deflater.finished()) {
+            val length = deflater.deflate(buffer)
+            compressedData.addOne(buffer.slice(0, length))
+            compressedLength += length
+          }
 
-        deflater.end()
-        for {
-          _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
-          _ <- writeVarInt(compressedLength, optimizeForPositive = true)
-          _ <- compressedData.foldLeft[Either[DesertFailure, Unit]](Right(())) { case (r, bs) =>
-                 r.flatMap(_ => writeBytes(bs))
-               }
-        } yield ()
+          for {
+            _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
+            _ <- writeVarInt(compressedLength, optimizeForPositive = true)
+            _ <- compressedData.foldLeft[Either[DesertFailure, Unit]](Right(())) { case (r, bs) =>
+                   r.flatMap(_ => writeBytes(bs))
+                 }
+          } yield ()
+        } finally
+          deflater.end()
       } catch {
-        case NonFatal(failure) => Left(SerializationFailure("Failed to compress data", Some(failure)))
+        case NonFatal(failure) => Left(DesertFailure.SerializationFailure("Failed to compress data", Some(failure)))
       }
     }
 }
