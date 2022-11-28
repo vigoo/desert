@@ -1,8 +1,7 @@
 package io.github.vigoo.desert.ziosupport
 
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.custom.{readBytes, writeBytes}
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
+import io.github.vigoo.desert.custom.{DeserializationContext, SerializationContext, readBytes, writeBytes}
 import zio.Chunk
 
 package object custom {

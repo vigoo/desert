@@ -3,7 +3,7 @@ package io.github.vigoo.desert.zioschema
 import io.github.vigoo.desert.Evolution._
 import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.internal._
-import io.github.vigoo.desert._
+import io.github.vigoo.desert.{custom, _}
 import zio.schema.{DeriveSchema, Schema}
 import zio.test._
 
@@ -58,13 +58,13 @@ object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperti
         val stream                                = new ByteArrayOutputStream()
         val output                                = new JavaStreamBinaryOutput(stream)
         implicit val sctx: SerializationContext   =
-          SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
+          custom.SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
         testSer
         stream.flush()
         val inStream                              = new ByteArrayInputStream(stream.toByteArray)
         val input                                 = new JavaStreamBinaryInput(inStream)
         implicit val dctx: DeserializationContext =
-          DeserializationContext(DeserializationEnv(input, TypeRegistry.empty), SerializerState.create)
+          custom.DeserializationContext(DeserializationEnv(input, TypeRegistry.empty), SerializerState.create)
         val result                                = testDeser
 
         assertTrue(result == List(s1, s2, s3, s1, s2, s3))
@@ -73,7 +73,7 @@ object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperti
         val stream                              = new ByteArrayOutputStream()
         val output                              = new JavaStreamBinaryOutput(stream)
         implicit val sctx: SerializationContext =
-          SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
+          custom.SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
         testSer
         val size                                = stream.toByteArray.length
 

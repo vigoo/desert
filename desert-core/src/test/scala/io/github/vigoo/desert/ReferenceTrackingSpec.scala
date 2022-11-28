@@ -1,7 +1,6 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.custom._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 import zio.test.Assertion._
 import zio.test._
 

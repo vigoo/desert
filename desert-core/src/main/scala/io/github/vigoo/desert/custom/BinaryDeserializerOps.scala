@@ -1,7 +1,6 @@
 package io.github.vigoo.desert.custom
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import io.github.vigoo.desert.internal.DeserializationContext
 import io.github.vigoo.desert.internal.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.{BinaryCodec, BinaryDeserializer, DesertException, DesertFailure}
 

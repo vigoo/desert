@@ -2,7 +2,6 @@ package io.github.vigoo.desert
 
 import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.custom.pure.{Deser, Ser}
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}

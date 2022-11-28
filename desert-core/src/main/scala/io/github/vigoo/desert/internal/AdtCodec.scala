@@ -1,6 +1,6 @@
 package io.github.vigoo.desert.internal
 
-import io.github.vigoo.desert._
+import io.github.vigoo.desert.{custom, _}
 import io.github.vigoo.desert.Evolution._
 import io.github.vigoo.desert.custom._
 
@@ -462,7 +462,7 @@ object AdtCodec {
     final def getSerializationContext(output: BinaryOutput)(implicit
         ctx: ChunkedSerializationContext
     ): SerializationContext =
-      SerializationContext(SerializationEnv(output, ctx.state.typeRegistry), ctx.state.serializerState)
+      custom.SerializationContext(SerializationEnv(output, ctx.state.typeRegistry), ctx.state.serializerState)
 
     final def recordFieldIndex(fieldName: String, chunk: Byte)(implicit ctx: ChunkedSerializationContext): Unit =
       ctx.state.getLastIndexPerChunk(chunk) match {
@@ -493,7 +493,7 @@ object AdtCodec {
     final def toDeserializationContext(input: BinaryInput)(implicit
         ctx: ChunkedDeserializationContext
     ): DeserializationContext =
-      DeserializationContext(DeserializationEnv(input, ctx.state.typeRegistry), ctx.state.serializerState)
+      custom.DeserializationContext(DeserializationEnv(input, ctx.state.typeRegistry), ctx.state.serializerState)
 
     final def recordFieldIndex(fieldName: String, chunk: Byte)(implicit
         ctx: ChunkedDeserializationContext

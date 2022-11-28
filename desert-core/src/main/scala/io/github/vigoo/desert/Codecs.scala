@@ -6,7 +6,7 @@ import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.internal.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
 import _root_.zio.{Chunk, NonEmptyChunk}
 import _root_.zio.prelude.{Associative, NonEmptyList, Validation, ZSet}
-import io.github.vigoo.desert.internal.{AdtCodec, DeserializationContext, OptionBinaryCodec, SerializationContext}
+import io.github.vigoo.desert.internal.{AdtCodec, OptionBinaryCodec}
 
 import java.time._
 import scala.annotation.tailrec

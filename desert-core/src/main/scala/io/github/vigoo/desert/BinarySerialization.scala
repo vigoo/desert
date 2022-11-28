@@ -2,11 +2,9 @@ package io.github.vigoo.desert
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
 import io.github.vigoo.desert.internal.{
-  DeserializationContext,
   DeserializationEnv,
   JavaStreamBinaryInput,
   JavaStreamBinaryOutput,
-  SerializationContext,
   SerializationEnv,
   SerializerState
 }
@@ -19,7 +17,7 @@ trait BinarySerialization {
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, Unit] = {
     implicit val ctx: SerializationContext =
-      SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
+      custom.SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
     try
       Right(write(value))
     catch {
@@ -33,7 +31,7 @@ trait BinarySerialization {
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, Unit] = {
     implicit val ctx: SerializationContext =
-      SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
+      custom.SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
     try
       Right(writeUnknown(value))
     catch {
@@ -46,7 +44,7 @@ trait BinarySerialization {
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, T] = {
     implicit val ctx: DeserializationContext =
-      DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
+      custom.DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
     try
       Right(read())
     catch {
@@ -59,7 +57,7 @@ trait BinarySerialization {
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ): Either[DesertFailure, Any] = {
     implicit val ctx: DeserializationContext =
-      DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
+      custom.DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
     try
       Right(readUnknown())
     catch {

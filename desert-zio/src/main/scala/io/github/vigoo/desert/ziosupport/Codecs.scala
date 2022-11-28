@@ -4,7 +4,6 @@ import io.github.vigoo.desert._
 import io.github.vigoo.desert.ziosupport.custom._
 import io.github.vigoo.desert.BinaryCodec
 import io.github.vigoo.desert.custom._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 import zio.Chunk
 
 trait Codecs extends LowerPriorityCodecs {

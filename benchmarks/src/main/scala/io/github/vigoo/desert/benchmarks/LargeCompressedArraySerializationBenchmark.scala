@@ -17,8 +17,12 @@ import org.openjdk.jmh.annotations.{
   Warmup
 }
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.custom.{readCompressedByteArray, writeCompressedBytes}
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
+import io.github.vigoo.desert.custom.{
+  DeserializationContext,
+  SerializationContext,
+  readCompressedByteArray,
+  writeCompressedBytes
+}
 
 import scala.io.Source
 

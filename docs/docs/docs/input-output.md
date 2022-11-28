@@ -32,11 +32,3 @@ stream.reset()
 output.writeVarInt(-1, optimizeForPositive = true)
 val r3 = stream.toByteArray
 ```
-
-### [Z]IO? 
-The read and write operations on these interfaces are not encapsulated to any effect type like Cats Effect's IO or ZIO,
-they are just `Either[DesertFailure, T]`. This is for performance reasons.
-
-On the other hand the [Cats Effect module](cats-effect) and the [ZIO module](zio) both define
-IO versions of the higher level serialization/deserialization functions. Usage of `desert` should be in low level
-enough to treat these operations as a single effect.

@@ -2,7 +2,7 @@ package io.github.vigoo.desert.zioschema
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
+import io.github.vigoo.desert.custom.{DeserializationContext, SerializationContext}
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isNone, isSome}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}

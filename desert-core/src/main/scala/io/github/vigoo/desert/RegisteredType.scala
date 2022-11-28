@@ -1,8 +1,8 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import io.github.vigoo.desert.custom.failSerializerWith
-import io.github.vigoo.desert.internal.{SerializationContext, SerializationEnv, SerializerState}
+import io.github.vigoo.desert.custom.{SerializationContext, failSerializerWith}
+import io.github.vigoo.desert.internal.{SerializationEnv, SerializerState}
 
 import scala.util.{Failure, Success, Try}
 

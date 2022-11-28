@@ -1,12 +1,8 @@
 package io.github.vigoo.desert.custom.pure
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
-import io.github.vigoo.desert.internal.{
-  DeserializationContext,
-  DeserializationEnv,
-  PureSerializerState,
-  SerializerState
-}
+import io.github.vigoo.desert.custom.DeserializationContext
+import io.github.vigoo.desert.internal.{DeserializationEnv, PureSerializerState, SerializerState}
 import io.github.vigoo.desert.internal.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.{
   BinaryCodec,
@@ -14,7 +10,8 @@ import io.github.vigoo.desert.{
   BinaryInput,
   DesertException,
   DesertFailure,
-  TypeRegistry
+  TypeRegistry,
+  custom
 }
 import zio.prelude.fx.ZPure
 
@@ -56,7 +53,7 @@ trait PureBinaryDeserializerOps {
   ): Deser[(T, PureSerializerState)] = {
     val mutableState                         = SerializerState.create
     mutableState.resetTo(state)
-    implicit val ctx: DeserializationContext = DeserializationContext(env, mutableState)
+    implicit val ctx: DeserializationContext = custom.DeserializationContext(env, mutableState)
     try {
       val result = deserializer.deserialize()
       finishDeserializerWith((result, mutableState.toPure))

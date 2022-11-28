@@ -3,7 +3,6 @@ package io.github.vigoo.desert
 import cats.Order
 import cats.data.{NonEmptyList, NonEmptyMap, NonEmptySet, Validated}
 import io.github.vigoo.desert.custom._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 
 package object catssupport {
   // Cats specific codecs

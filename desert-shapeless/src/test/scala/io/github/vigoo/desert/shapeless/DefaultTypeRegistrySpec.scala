@@ -2,7 +2,7 @@ package io.github.vigoo.desert.shapeless
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
+import io.github.vigoo.desert.custom.{DeserializationContext, SerializationContext}
 import zio.test._
 import zio.test.Assertion._
 

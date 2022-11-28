@@ -2,7 +2,7 @@ package io.github.vigoo.desert.shapeless
 
 import io.github.vigoo.desert._
 import _root_.shapeless._
-import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
+import io.github.vigoo.desert.custom.{DeserializationContext, SerializationContext}
 
 abstract class UnwrappedBinaryCodec[T] extends BinaryCodec[T]
 
