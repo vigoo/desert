@@ -15,7 +15,7 @@ class DefaultTypeRegistry(byId: Map[RegisteredTypeId, RegisteredType[_]], ordere
 }
 
 object DefaultTypeRegistry {
-  case class DefaultTypeRegistryBuilder(
+  final case class DefaultTypeRegistryBuilder(
       byId: Map[RegisteredTypeId, RegisteredType[_]],
       ordered: List[RegisteredType[_]],
       lastId: RegisteredTypeId

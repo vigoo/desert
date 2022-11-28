@@ -1,7 +1,6 @@
 ---
 layout: docs
 title: ZIO
-permalink: docs/zio/
 ---
 
 # ZIO integration
@@ -11,17 +10,16 @@ in ZIO effects.
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-zio" % "0.2.0"
+libraryDependencies += "io.github.vigoo" %% "desert-zio" % "0.3.0"
 ```
 
-### Syntax
+### API
 
-Import the zio-specific syntax module: 
+Import the zio-specific interface: 
 
 ```scala mdoc
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.zio.syntax._
+import io.github.vigoo.desert.ziosupport._
 ```
 
 to get variants like

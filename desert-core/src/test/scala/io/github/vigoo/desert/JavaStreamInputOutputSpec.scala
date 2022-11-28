@@ -1,7 +1,8 @@
 package io.github.vigoo.desert
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import io.github.vigoo.desert.internal.{JavaStreamBinaryInput, JavaStreamBinaryOutput}
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import zio.test.Assertion._
 import zio.test._
 

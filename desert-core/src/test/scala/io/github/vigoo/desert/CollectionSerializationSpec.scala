@@ -1,6 +1,5 @@
 package io.github.vigoo.desert
 
-import io.github.vigoo.desert.codecs._
 import zio.NonEmptyChunk
 import zio.prelude.{NonEmptyList, Validation, ZSet}
 import zio.test._
@@ -32,7 +31,7 @@ object CollectionSerializationSpec extends ZIOSpecDefault with SerializationProp
       test("try")(
         canBeSerialized(
           Gen.either(Gen.throwable, Gen.string).map(_.toTry),
-          Some({ source: Try[String] =>
+          Some({ (source: Try[String]) =>
             import Assertion._
 
             source match {

@@ -1,10 +1,9 @@
 package io.github.vigoo.desert.benchmarks
 
+import io.github.vigoo.desert.Evolution.FieldAdded
 import java.util.concurrent.TimeUnit
-
-import io.github.vigoo.desert.codecs._
-import io.github.vigoo.desert.BinarySerialization._
-import io.github.vigoo.desert.{BinaryCodec, FieldAdded}
+import io.github.vigoo.desert._
+import io.github.vigoo.desert.{BinaryCodec, evolutionSteps}
 import io.github.vigoo.desert.shapeless._
 import org.openjdk.jmh.annotations._
 
@@ -87,29 +86,30 @@ object GenericComplexSerializationBenchmark {
 
   case class Color(r: Byte, g: Byte, b: Byte)
   object Color {
-    implicit val codec: BinaryCodec[Color] = DerivedBinaryCodec.derive()
+    implicit val codec: BinaryCodec[Color] = DerivedBinaryCodec.derive
   }
 
   case class Style(background: Color, foreground: Color)
   object Style {
-    implicit val codec: BinaryCodec[Style] = DerivedBinaryCodec.derive()
+    implicit val codec: BinaryCodec[Style] = DerivedBinaryCodec.derive
   }
 
   sealed trait Item
   case class Text(value: String)                                                 extends Item
+  @evolutionSteps(FieldAdded("style", Style(Color(0, 0, 0), Color(255.toByte, 255.toByte, 255.toByte))))
   case class Rectangle(x: Double, y: Double, w: Double, h: Double, style: Style) extends Item
   case class Block(items: Map[ItemId, Item])                                     extends Item
 
   object Item {
-    implicit val textCodec: BinaryCodec[Text]           = DerivedBinaryCodec.derive()
+    implicit val textCodec: BinaryCodec[Text]           = DerivedBinaryCodec.derive
     implicit val rectangleCodec: BinaryCodec[Rectangle] =
-      DerivedBinaryCodec.derive(FieldAdded("style", Style(Color(0, 0, 0), Color(255.toByte, 255.toByte, 255.toByte))))
-    implicit val blockCodec: BinaryCodec[Block]         = DerivedBinaryCodec.derive()
-    implicit val itemCodec: BinaryCodec[Item]           = DerivedBinaryCodec.derive()
+      DerivedBinaryCodec.derive
+    implicit val blockCodec: BinaryCodec[Block]         = DerivedBinaryCodec.derive
+    implicit val itemCodec: BinaryCodec[Item]           = DerivedBinaryCodec.derive
   }
 
   case class Root(title: String, items: Map[ItemId, Item])
   object Root {
-    implicit val codec: BinaryCodec[Root] = DerivedBinaryCodec.derive()
+    implicit val codec: BinaryCodec[Root] = DerivedBinaryCodec.derive
   }
 }

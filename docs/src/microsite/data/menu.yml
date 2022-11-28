@@ -19,6 +19,8 @@ options:
     url: docs/cats-effect
   - title: "Integrations: Akka"
     url: docs/akka
+  - title: "Integrations: Shardcake"
+    url: docs/shardcake
   - title: "Release notes"
     url: docs/release-notes
   - title: API reference
