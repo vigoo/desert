@@ -218,7 +218,7 @@ lazy val benchmarks = project
     crossScalaVersions -= scala3
   )
   .enablePlugins(JmhPlugin)
-  .dependsOn(core.jvm, shapeless.jvm)
+  .dependsOn(core.jvm, shapeless.jvm, zioSchema.jvm)
 
 lazy val docsPlugins = project
   .in(file("docs-plugins"))

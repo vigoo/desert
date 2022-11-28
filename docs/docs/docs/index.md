@@ -5,10 +5,11 @@ title: Getting started
 
 # Getting started with desert
 
-Desert is a _binary serialization library_ for Scala, focusing on creating small binaries 
+Desert is a _binary serialization library_ for Scala, focusing on creating small binaries
 while still enabling binary compatible evolution of the data model.
- 
-It is suitable for use cases such as Akka _remoting_ and _persistence_.
+
+It is suitable for use cases such as Akka _remoting_ and _persistence_, and for any kind
+of short or long term storage.
 
 First add `desert` as a dependency:
 
@@ -41,6 +42,7 @@ import io.github.vigoo.desert._
 
 val x = "Hello world"
 ```
+
 ```scala mdoc:serialized
 val dataOrFailure = serializeToArray(x)
 ```
@@ -54,20 +56,35 @@ val y = dataOrFailure.flatMap(data => deserializeFromArray[String](data))
 This works because there is an implicit `BinaryCodec` for `String` in scope, imported from the `desert` package. Read
 the [codecs page](codecs) to learn about the available codecs and how to define custom ones.
 
+#### Shapeless or ZIO Schema?
+
+The library has two derivation implementations. The _Shapeless_ based is the original one and is more mature, but
+only works with Scala 2. The ZIO Schema based derivation works both with Scala 2 and Scala 3 and it is planned to
+be the only available implementation in future versions.
+
+There are only small differences in using the two implementations:
+
+- For _Shapeless_ based derivation you have to define an implicit codec _for each constructor_ of a sealed trait
+- For _ZIO Schema_ based derivation you have to derive a `Schema` for each type as well
+
 ### Low level input/output
 
 The above example shows the convenient functions to work on arrays directly, but they have a more generic
-version working on the low level `BinaryInput` and `BinaryOutput` interfaces. These are described on the [input/output page](input-output). 
+version working on the low level `BinaryInput` and `BinaryOutput` interfaces. These are described on
+the [input/output page](input-output).
 
 ### Evolution
+
 One of the primary features of the library is the support for _evolving the data model_. The possibilities
 are described on a [separate page](evolution).
 
 ### Type registry
+
 For cases when the exact type to be deserialized is not known at compile type, the possibilities
- can be registered to a [type registry](type-registry).
+can be registered to a [type registry](type-registry).
 
 ### Integrations
+
 There are three additional modules providing integrations to different environments:
 
 - [Akka](akka) codecs and _Akka Serializer_ implementation

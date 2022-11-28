@@ -1,19 +1,19 @@
 package io.github.vigoo.desert.benchmarks
 
 import io.github.vigoo.desert.Evolution.FieldAdded
-import java.util.concurrent.TimeUnit
+import io.github.vigoo.desert.zioschema._
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.{BinaryCodec, evolutionSteps}
-import io.github.vigoo.desert.shapeless._
 import org.openjdk.jmh.annotations._
+import zio.schema._
 
+import java.util.concurrent.TimeUnit
 import scala.util.Random
 
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-class GenericComplexSerializationBenchmark {
-  import GenericComplexSerializationBenchmark._
+class GenericComplexSerializationZioSchemaBenchmark {
+  import GenericComplexSerializationZioSchemaBenchmark._
 
   var testDocument: Root          = _
   var serializedData: Array[Byte] = _
@@ -75,20 +75,32 @@ class GenericComplexSerializationBenchmark {
     deserializeFromArray[Root](serializedData)
 }
 
-object GenericComplexSerializationBenchmark {
+object Profile extends App {
+  val benchmark = new GenericComplexSerializationZioSchemaBenchmark
+  benchmark.size = 12
+  benchmark.seed = 34253
+  benchmark.createTestDocument()
+  while (true)
+    println(benchmark.deserializeComplexDataStructure().toOption.get.title)
+}
+
+object GenericComplexSerializationZioSchemaBenchmark {
 
   case class ItemId(value: String) extends AnyVal
   object ItemId {
+    implicit val schema: Schema[ItemId]     = DeriveSchema.gen[ItemId]
     implicit val codec: BinaryCodec[ItemId] = DerivedBinaryCodec.deriveForWrapper[ItemId]
   }
 
   case class Color(r: Byte, g: Byte, b: Byte)
   object Color {
+    implicit val schema: Schema[Color]     = DeriveSchema.gen[Color]
     implicit val codec: BinaryCodec[Color] = DerivedBinaryCodec.derive
   }
 
   case class Style(background: Color, foreground: Color)
   object Style {
+    implicit val schema: Schema[Style]     = DeriveSchema.gen[Style]
     implicit val codec: BinaryCodec[Style] = DerivedBinaryCodec.derive
   }
 
@@ -99,15 +111,13 @@ object GenericComplexSerializationBenchmark {
   case class Block(items: Map[ItemId, Item])                                     extends Item
 
   object Item {
-    implicit val textCodec: BinaryCodec[Text]           = DerivedBinaryCodec.derive
-    implicit val rectangleCodec: BinaryCodec[Rectangle] =
-      DerivedBinaryCodec.derive
-    implicit val blockCodec: BinaryCodec[Block]         = DerivedBinaryCodec.derive
-    implicit val itemCodec: BinaryCodec[Item]           = DerivedBinaryCodec.derive
+    implicit val schema: Schema[Item]         = DeriveSchema.gen[Item]
+    implicit val itemCodec: BinaryCodec[Item] = DerivedBinaryCodec.derive
   }
 
   case class Root(title: String, items: Map[ItemId, Item])
   object Root {
+    implicit val schema: Schema[Root]     = DeriveSchema.gen[Root]
     implicit val codec: BinaryCodec[Root] = DerivedBinaryCodec.derive
   }
 }

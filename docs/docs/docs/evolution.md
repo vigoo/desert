@@ -4,13 +4,15 @@ title: Evolution
 ---
 
 # Evolution
-One of the primary features of `desert` is to support data type evolution via its generic codec for 
+
+One of the primary features of `desert` is to support data type evolution via its generic codec for
 ADTs, and with some other design decisions.
 
-In this section we review what kind of changes can be done to the data model without breaking binary 
+In this section we review what kind of changes can be done to the data model without breaking binary
 compatibility.
 
 ### Tuples vs products
+
 As already mentioned on the [codecs page](codecs), tuples and non-evolved case classes are binary
 compatible. This means that it is possible to convert a tuple to a case class without breaking
 the serialization format:
@@ -34,6 +36,7 @@ val ex1 = for {
 ```
 
 ### Primitives vs wrappers
+
 Codecs derived with `deriveForWrapper` are also fully compatible with their underlying primitive
 type, so it is fully safe to evolve the date model to make use of more and more value type wrappers:
 
@@ -52,6 +55,7 @@ val ex2 = for {
 ```
 
 ### Collections
+
 Collection codecs share their binary representation via `iterableCodec` and they can be freely
 replaced:
 
@@ -65,8 +69,9 @@ val ex3 = for {
 ``` 
 
 ### Adding a new field
+
 If a _case class_ gets extended by a new field, it has to be explicitly marked with an **evolution step**
-passed as a parameter to the `derive` function. For addig a new field, this defines a _default value_ to be
+stored in the `@evolutionSteps` annotation. For adding a new field, this defines a _default value_ to be
 used when deserializing an old data. With this the old and the new data model remains fully compatible:
 
 - If the old version reads a new data, it skips the new field
@@ -92,12 +97,13 @@ val ex4 = for {
 } yield (oldPt, newPt)
 ``` 
 
-Note that the added field does not have to be last position of the case class. 
+Note that the added field does not have to be last position of the case class.
 
 ### Making a field optional
+
 Another supported evolution step is _making a field optional_. This can be an intermediate step
-before completely removing an obsolete field. Once again this change has to be recorded in the parameter list for `derive`. With that, we get 
-the following capabilities:
+before completely removing an obsolete field. Once again this change has to be recorded in the `@evolutionSteps`
+annotation. With that, we get the following capabilities:
 
 - If the old version reads the new data, and it is `Some(x)`, it will be read as `x`
 - If the old version reads the new data, and it is `None` the serialization fails
@@ -129,6 +135,7 @@ val ex5fail = for {
 Note that any field can be made optional, not just the one which was added later like in this example.
 
 ### Removing a field
+
 The third supported evolution step is _removing a field_. Here backward compatibility has a limitation:
 
 - New version can read old data by simply skipping the removed field
@@ -159,6 +166,7 @@ val ex6fail = for {
 ```
 
 ### Transient fields
+
 Adding a new transient field does not change the binary representation.
 
 Making an existing field transient can be recorded as an _evolution step_ called `FieldMadeTransient`.
@@ -189,16 +197,19 @@ val ex7fail = for {
 ```
 
 ### Adding a new constructor
-Adding a new constructor to a _sealed trait_ is allowed, but it has to be added to the end of the 
+
+Adding a new constructor to a _sealed trait_ is allowed, but it has to be added to the end of the
 list to maintain _constructor ID order_. For the same reason it is currently not supported to remove
-a constructor either. Each constructor can be evolved separately with the above methods as they have 
-their own evolution steps.  
+a constructor either. Each constructor can be evolved separately with the above methods as they have
+their own evolution steps.
 
 ### Adding a new transient constructor
+
 Constructors marked with `transientConstructor` are not getting an associated _constructor ID_ so they can
 be inserted or get removed freely.
 
 ### Type registry placeholders
+
 When using _type identifiers_ with the [type registry](type-registry) and a previously registered
 type has been removed from the code, it's place can be kept assigned by using `registerPlaceholder`
 in the registration:
@@ -216,7 +227,8 @@ val typeRegistry2 = DefaultTypeRegistry()
 ```
 
 ### Generic product evolution encoding
-This section gives an overview of how the above described evolution steps are being encoded in the 
+
+This section gives an overview of how the above described evolution steps are being encoded in the
 binary representation of case classes.
 
 Let's examine the output of serializing the above examples!
@@ -236,9 +248,11 @@ val v2 = serializeToArray(PointV2(100, 200, 300))
 ```
 
 - The first byte is **version** (or in other words, the number of evolution steps) which is now `1`
-- Because the version is non-zero, the next item to read is a _variable-width integer_ representing the chunk size of the original version-0 data
+- Because the version is non-zero, the next item to read is a _variable-width integer_ representing the chunk size of
+  the original version-0 data
 - In this case it takes 1 byte: `16` which represents `8`, the sum of the two 32 bit fields `x` and `y`
-- Following it the next item is again a _variable-width integer_ representing the chunk size for the single newly added field `z`
+- Following it the next item is again a _variable-width integer_ representing the chunk size for the single newly added
+  field `z`
 - It is again 1 byte: `8` which means `4`
 - The rest is the first chunk containing the fields from _V1_ and then the next chunk containing the field from _V2_
 - The old version can use the chunk size data to skip the unknown fields and only read the first one
@@ -250,30 +264,39 @@ val v3 = serializeToArray(PointV3(100, 200, Some(300)))
 
 - The first byte is now `2` as we added a new evolution step
 - The header part starts with almost the same two values, encoded as `16, 10`
-- The first chunk is still 8 byte long, but the next one is now `10` which means `5`, because the `Option` wrapper adds an extra byte to differentiate `None` or `Some`
-- After the two variable integers we have a third one corresponding to the third evolution step. But as it did not add any new fields, it is not a chunk size, but a special 
-negative number marking the field as optional.
+- The first chunk is still 8 byte long, but the next one is now `10` which means `5`, because the `Option` wrapper adds
+  an extra byte to differentiate `None` or `Some`
+- After the two variable integers we have a third one corresponding to the third evolution step. But as it did not add
+  any new fields, it is not a chunk size, but a special
+  negative number marking the field as optional.
 - This is the value `1` which in fact represents `-1` in the variable-length integer encoding. This code is
-always followed by a serialized _field position_, which is again a variable-length integer, in this case `1` aka `-1` again.
-  - Negative field positions address a non-first chunk
-  - Positive field positions address a field in the first chunk
-  - This is for space efficiency. The first chunk is kept flat without any chunk size info needed so non-evolved data type serialization is almost zero cost.
+  always followed by a serialized _field position_, which is again a variable-length integer, in this case `1` aka `-1`
+  again.
+    - Negative field positions address a non-first chunk
+    - Positive field positions address a field in the first chunk
+    - This is for space efficiency. The first chunk is kept flat without any chunk size info needed so non-evolved data
+      type serialization is almost zero cost.
 - The rest is the data itself, first chunk is still _8 bytes_
 - Second chunk is now _5 bytes_, the `1` indicates that it is `Some` and the rest 4 bytes are the 32-bit integer
 - `PointV3` takes _18 bytes_ in total, 5 bytes of header and 13 bytes of data
-   
+
 ```scala mdoc:serialized
 val v4 = serializeToArray(PointV4(100, 200))
 ```
 
 - The first byte is now `3`
 - The first chunk size is still `16` because we removed the field from the second chunk
-- The next integer still represents the chunk size for the second evolution step, which was adding the field _z_. But as it has been later removed, the chunk size is now `0`
+- The next integer still represents the chunk size for the second evolution step, which was adding the field _z_. But as
+  it has been later removed, the chunk size is now `0`
 - The third variable integer in the header part is `1` representing that a field has been removed.
-- It is followed by the _field position_ which in `V3` was `-1` pointing to the second chunk. But as that is removed now, it is a special value `-128`, which is `FieldPosition.removed`
-- The fourth variable integer is again a special code, encoded as `3` representing the value `-2`. This is the code for field removal.
-- It is followed by a _serialized string_ containing the removed field's name. String deduplication is enabled here as it was described in the [codecs page](codecs).
-- As this is the first occurrence of the string `"z"` it is encoded as `2, 122`. 
+- It is followed by the _field position_ which in `V3` was `-1` pointing to the second chunk. But as that is removed
+  now, it is a special value `-128`, which is `FieldPosition.removed`
+- The fourth variable integer is again a special code, encoded as `3` representing the value `-2`. This is the code for
+  field removal.
+- It is followed by a _serialized string_ containing the removed field's name. String deduplication is enabled here as
+  it was described in the [codecs page](codecs).
+- As this is the first occurrence of the string `"z"` it is encoded as `2, 122`.
 - The rest 8 bytes are the first chunk containing `x` and `y`
-- So `PointV4` in this example takes _16 bytes_ in total, where 8 bytes are header and 8 bytes are data. The exact size depends on the string IDs so it can change in real world situations.
+- So `PointV4` in this example takes _16 bytes_ in total, where 8 bytes are header and 8 bytes are data. The exact size
+  depends on the string IDs so it can change in real world situations.
 

@@ -2,9 +2,9 @@ package io.github.vigoo.desert.zioschema
 
 import io.github.vigoo.desert.ziosupport._
 import io.github.vigoo.desert._
-import io.github.vigoo.desert.internal.AdtCodec
+import io.github.vigoo.desert.internal.{AdtCodec, OptionBinaryCodec}
 import zio.schema.{Deriver, Schema, StandardType}
-import zio.{Chunk, Unsafe}
+import zio.{Chunk, ChunkBuilder, Unsafe}
 
 import scala.annotation.tailrec
 
@@ -17,15 +17,17 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
     val initial: EnumBuilderState = EnumBuilderState(null)
   }
 
-  private final case class RecordBuilderState(fields: List[Any]) {
-    def storeField(value: Any): RecordBuilderState =
-      this.copy(fields = value :: fields)
+  private final case class RecordBuilderState(fields: ChunkBuilder[Any]) {
+    def storeField(value: Any): RecordBuilderState = {
+      fields.addOne(value)
+      this
+    }
 
-    def asChunk: Chunk[Any] = Chunk.fromIterable(fields).reverse
+    def asChunk: Chunk[Any] = fields.result()
   }
 
   private object RecordBuilderState {
-    val initial: RecordBuilderState = RecordBuilderState(List.empty)
+    def initial(fieldCount: Int): RecordBuilderState = RecordBuilderState(ChunkBuilder.make(fieldCount))
   }
 
   private final case class BinaryCodecDeriver() extends Deriver[BinaryCodec] {
@@ -60,7 +62,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
             deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
               fieldToDeserializationCommand(field, fieldInstance.unwrap)
             },
-            initialBuilderState = RecordBuilderState.initial,
+            initialBuilderState = () => RecordBuilderState.initial(record.fields.size),
             materialize = builderState =>
               record
                 .construct(builderState.asChunk)
@@ -113,7 +115,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
             )
           }
           .toList,
-        initialBuilderState = EnumBuilderState.initial,
+        initialBuilderState = () => EnumBuilderState.initial,
         materialize = builderState => Right(builderState.result.asInstanceOf[A])
       )
     }
@@ -227,7 +229,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
             deserializationCommands = record.fields.zip(fields).toList.map { case (field, fieldInstance) =>
               fieldToDeserializationCommand(field, fieldInstance.unwrap)
             },
-            initialBuilderState = RecordBuilderState.initial,
+            initialBuilderState = () => RecordBuilderState.initial(fieldSize(record)),
             materialize = builderState =>
               record
                 .construct(builderState.asChunk)
@@ -239,6 +241,34 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
           )
         }
     }
+
+    private def fieldSize(value: Schema.Record[_]): Int =
+      value match {
+        case Schema.GenericRecord(_, _, _)                                                              => value.fields.size
+        case _: Schema.CaseClass0[_]                                                                    => 0
+        case _: Schema.CaseClass1[_, _]                                                                 => 1
+        case _: Schema.CaseClass2[_, _, _]                                                              => 2
+        case _: Schema.CaseClass3[_, _, _, _]                                                           => 3
+        case _: Schema.CaseClass4[_, _, _, _, _]                                                        => 4
+        case _: Schema.CaseClass5[_, _, _, _, _, _]                                                     => 5
+        case _: Schema.CaseClass6[_, _, _, _, _, _, _]                                                  => 6
+        case _: Schema.CaseClass7[_, _, _, _, _, _, _, _]                                               => 7
+        case _: Schema.CaseClass8[_, _, _, _, _, _, _, _, _]                                            => 8
+        case _: Schema.CaseClass9[_, _, _, _, _, _, _, _, _, _]                                         => 9
+        case _: Schema.CaseClass10[_, _, _, _, _, _, _, _, _, _, _]                                     => 10
+        case _: Schema.CaseClass11[_, _, _, _, _, _, _, _, _, _, _, _]                                  => 11
+        case _: Schema.CaseClass12[_, _, _, _, _, _, _, _, _, _, _, _, _]                               => 12
+        case _: Schema.CaseClass13[_, _, _, _, _, _, _, _, _, _, _, _, _, _]                            => 13
+        case _: Schema.CaseClass14[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                         => 14
+        case _: Schema.CaseClass15[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                      => 15
+        case _: Schema.CaseClass16[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                   => 16
+        case _: Schema.CaseClass17[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]                => 17
+        case _: Schema.CaseClass18[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]             => 18
+        case _: Schema.CaseClass19[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]          => 19
+        case _: Schema.CaseClass20[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]       => 20
+        case _: Schema.CaseClass21[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]    => 21
+        case _: Schema.CaseClass22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => 22
+      }
 
     override def deriveTupleN[T](
         schemasAndInstances: => Chunk[(Schema[_], Deriver.WrappedF[BinaryCodec, _])],
@@ -852,10 +882,10 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
     private def isTransient(c: Schema.Case[_, _]): Boolean =
       c.annotations.contains(transientConstructor())
 
-    private def getTransientFields(fields: Chunk[Schema.Field[_, _]]): Map[Symbol, Any] =
+    private def getTransientFields(fields: Chunk[Schema.Field[_, _]]): Map[String, Any] =
       fields.flatMap { field =>
         field.annotations.collect { case transientField(defaultValue) =>
-          Symbol(field.name) -> defaultValue
+          field.name -> defaultValue
         }
       }.toMap
 

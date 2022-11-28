@@ -2,44 +2,63 @@ package io.github.vigoo.desert.internal
 
 import io.github.vigoo.desert.internal.SerializerState._
 
-case class SerializerState(
-    stringsById: Map[StringId, String],
-    idsByString: Map[String, StringId],
-    refsById: Map[RefId, AnyRef],
-    idsByRef: Map[AnyRef, RefId],
-    lastStringId: StringId,
-    lastRefId: RefId
-) {
+import scala.collection.mutable
 
-  def storeString(value: String): (SerializerState, StoreStringResult) =
+final class SerializerState private (
+    stringsById: mutable.Map[StringId, String],
+    idsByString: mutable.Map[String, StringId],
+    refsById: mutable.Map[RefId, AnyRef],
+    idsByRef: mutable.Map[AnyRef, RefId],
+    private var lastStringId: StringId,
+    private var lastRefId: RefId
+) {
+  def getStringById(id: StringId): Option[String] = stringsById.get(id)
+  def getRefById(id: RefId): Option[AnyRef]       = refsById.get(id)
+
+  def storeString(value: String): StoreStringResult =
     idsByString.get(value) match {
-      case Some(id) => (this, StringAlreadyStored(id))
+      case Some(id) => StringAlreadyStored(id)
       case None     =>
         val id = lastStringId.next
-        (
-          copy(
-            stringsById = stringsById + (id    -> value),
-            idsByString = idsByString + (value -> id),
-            lastStringId = id
-          ),
-          StringIsNew(id)
-        )
+        lastStringId = id
+        stringsById += (id    -> value)
+        idsByString += (value -> id)
+        StringIsNew(id)
     }
 
-  def storeRef(value: AnyRef): (SerializerState, StoreRefResult) =
+  def storeRef(value: AnyRef): StoreRefResult =
     idsByRef.get(value) match {
-      case Some(id) => (this, RefAlreadyStored(id))
+      case Some(id) => RefAlreadyStored(id)
       case None     =>
         val id = lastRefId.next
-        (
-          copy(
-            refsById = refsById + (id    -> value),
-            idsByRef = idsByRef + (value -> id),
-            lastRefId = id
-          ),
-          RefIsNew(id)
-        )
+        lastRefId = id
+        refsById += (id    -> value)
+        idsByRef += (value -> id)
+        RefIsNew(id)
     }
+
+  def toPure: PureSerializerState =
+    PureSerializerState(
+      stringsById = stringsById.toMap,
+      idsByString = idsByString.toMap,
+      refsById = refsById.toMap,
+      idsByRef = idsByRef.toMap,
+      lastStringId = lastStringId,
+      lastRefId = lastRefId
+    )
+
+  def resetTo(pure: PureSerializerState): Unit = {
+    stringsById.clear()
+    stringsById.addAll(pure.stringsById)
+    idsByString.clear()
+    idsByString.addAll(pure.idsByString)
+    refsById.clear()
+    refsById.addAll(pure.refsById)
+    idsByRef.clear()
+    idsByRef.addAll(pure.idsByRef)
+    lastStringId = pure.lastStringId
+    lastRefId = pure.lastRefId
+  }
 }
 object SerializerState {
   final case class StringId(value: Int) extends AnyVal {
@@ -50,11 +69,11 @@ object SerializerState {
     def next: RefId = RefId(value + 1)
   }
 
-  val initial: SerializerState = SerializerState(
-    stringsById = Map.empty,
-    idsByString = Map.empty,
-    refsById = Map.empty,
-    idsByRef = Map.empty,
+  def create: SerializerState = new SerializerState(
+    stringsById = mutable.Map.empty,
+    idsByString = mutable.Map.empty,
+    refsById = mutable.Map.empty,
+    idsByRef = mutable.Map.empty,
     lastStringId = StringId(0),
     lastRefId = RefId(0)
   )

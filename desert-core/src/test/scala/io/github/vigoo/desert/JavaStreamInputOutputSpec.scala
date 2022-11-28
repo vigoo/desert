@@ -1,10 +1,9 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.internal.{JavaStreamBinaryInput, JavaStreamBinaryOutput}
+import zio.test._
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import zio.test.Assertion._
-import zio.test._
 
 object JavaStreamInputOutputSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment, Any] =
@@ -31,7 +30,7 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
           check(Gen.vectorOf(Gen.byte)) { bytes =>
             testWriteAndRead(
               _.writeCompressedByteArray(bytes.toArray),
-              _.readCompressedByteArray().map(_.toVector),
+              _.readCompressedByteArray().toVector,
               bytes
             )
           }
@@ -41,7 +40,7 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
 
   private def testWriteAndRead[T](
       write: BinaryOutput => Unit,
-      read: BinaryInput => Either[DesertFailure, T],
+      read: BinaryInput => T,
       expected: T
   ): TestResult = {
     val outStream = new ByteArrayOutputStream()
@@ -54,6 +53,6 @@ object JavaStreamInputOutputSpec extends ZIOSpecDefault {
     val input     = new JavaStreamBinaryInput(inStream)
     val readValue = read(input)
 
-    assert(readValue)(isRight(equalTo(expected)))
+    assertTrue(readValue == expected)
   }
 }

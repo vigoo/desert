@@ -15,39 +15,55 @@ trait BinarySerialization {
       value: T,
       output: BinaryOutput,
       typeRegistry: TypeRegistry = TypeRegistry.empty
-  ): Either[DesertFailure, Unit] =
-    write[T](value)
-      .provideService(SerializationEnv(output, typeRegistry))
-      .either
-      .runResult(SerializerState.initial)
+  ): Either[DesertFailure, Unit] = {
+    implicit val ctx: SerializationContext =
+      custom.SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
+    try
+      Right(write(value))
+    catch {
+      case DesertException(e) => Left(e)
+    }
+  }
 
   def serializeUnknown(
       value: Any,
       output: BinaryOutput,
       typeRegistry: TypeRegistry = TypeRegistry.empty
-  ): Either[DesertFailure, Unit] =
-    writeUnknown(value)
-      .provideService(SerializationEnv(output, typeRegistry))
-      .either
-      .runResult(SerializerState.initial)
+  ): Either[DesertFailure, Unit] = {
+    implicit val ctx: SerializationContext =
+      custom.SerializationContext(SerializationEnv(output, typeRegistry), SerializerState.create)
+    try
+      Right(writeUnknown(value))
+    catch {
+      case DesertException(e) => Left(e)
+    }
+  }
 
   def deserialize[T: BinaryDeserializer](
       input: BinaryInput,
       typeRegistry: TypeRegistry = TypeRegistry.empty
-  ): Either[DesertFailure, T] =
-    read[T]()
-      .provideService(DeserializationEnv(input, typeRegistry))
-      .either
-      .runResult(SerializerState.initial)
+  ): Either[DesertFailure, T] = {
+    implicit val ctx: DeserializationContext =
+      custom.DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
+    try
+      Right(read())
+    catch {
+      case DesertException(e) => Left(e)
+    }
+  }
 
   def deserializeUnknown(
       input: BinaryInput,
       typeRegistry: TypeRegistry = TypeRegistry.empty
-  ): Either[DesertFailure, Any] =
-    readUnknown()
-      .provideService(DeserializationEnv(input, typeRegistry))
-      .either
-      .runResult(SerializerState.initial)
+  ): Either[DesertFailure, Any] = {
+    implicit val ctx: DeserializationContext =
+      custom.DeserializationContext(DeserializationEnv(input, typeRegistry), SerializerState.create)
+    try
+      Right(readUnknown())
+    catch {
+      case DesertException(e) => Left(e)
+    }
+  }
 
   def serializeToStream[T: BinarySerializer](
       value: T,
