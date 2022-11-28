@@ -15,33 +15,33 @@ trait BinaryInput {
 
   /** Reads one byte from the input
     */
-  def readByte(): Either[DesertFailure, Byte]
+  def readByte(): Byte
 
   /** Reads a 16-bit integer from the input
     */
-  def readShort(): Either[DesertFailure, Short]
+  def readShort(): Short
 
   /** Reads a 32-bit integer from the input
     */
-  def readInt(): Either[DesertFailure, Int]
+  def readInt(): Int
 
   /** Reads a 64-bit integer from the input
     */
-  def readLong(): Either[DesertFailure, Long]
+  def readLong(): Long
 
   /** Reads a 32-bit floating point value from the input
     */
-  def readFloat(): Either[DesertFailure, Float]
+  def readFloat(): Float
 
   /** Reads a 64-bit floating point value from the input
     */
-  def readDouble(): Either[DesertFailure, Double]
+  def readDouble(): Double
 
   /** Reads N bytes from the input into an array
     * @param count
     *   Number of bytes to read
     */
-  def readBytes(count: Int): Either[DesertFailure, Array[Byte]]
+  def readBytes(count: Int): Array[Byte]
 
   /** Reads a variable-length encoded 32-bit integer from the input
     *
@@ -54,43 +54,37 @@ trait BinaryInput {
     *   If true, the encoding was optimized for positive integers. This parameter must match the one passed to the
     *   [[BinaryOutput.writeVarInt]]
     */
-  def readVarInt(optimizeForPositive: Boolean): Either[DesertFailure, Int] = {
-    val readResult = readByte().flatMap { b0 =>
+  def readVarInt(optimizeForPositive: Boolean): Int = {
+    val r = {
+      val b0 = readByte()
       val r0 = b0 & 0x7f
       if ((b0 & 0x80) != 0) {
-        readByte().flatMap { b1 =>
-          val r1 = r0 | (b1 & 0x7f) << 7
-          if ((b1 & 0x80) != 0) {
-            readByte().flatMap { b2 =>
-              val r2 = r1 | (b2 & 0x7f) << 14
-              if ((b2 & 0x80) != 0) {
-                readByte().flatMap { b3 =>
-                  val r3 = r2 | (b3 & 0x7f) << 21
-                  if ((b3 & 0x80) != 0) {
-                    readByte().flatMap { b4 =>
-                      val r4 = r3 | (b4 & 0x7f) << 28
-                      Right(r4)
-                    }
-                  } else {
-                    Right(r3)
-                  }
-                }
-              } else {
-                Right(r2)
-              }
+        val b1 = readByte()
+        val r1 = r0 | (b1 & 0x7f) << 7
+        if ((b1 & 0x80) != 0) {
+          val b2 = readByte()
+          val r2 = r1 | (b2 & 0x7f) << 14
+          if ((b2 & 0x80) != 0) {
+            val b3 = readByte()
+            val r3 = r2 | (b3 & 0x7f) << 21
+            if ((b3 & 0x80) != 0) {
+              val b4 = readByte()
+              r3 | (b4 & 0x7f) << 28
+            } else {
+              r3
             }
           } else {
-            Right(r1)
+            r2
           }
+        } else {
+          r1
         }
       } else {
-        Right(r0)
+        r0
       }
     }
 
-    readResult.map { r =>
-      if (optimizeForPositive) r else (r >>> 1) ^ -(r & 1)
-    }
+    if (optimizeForPositive) r else (r >>> 1) ^ -(r & 1)
   }
 
   /** Reads a compressed byte array from the input
@@ -98,30 +92,28 @@ trait BinaryInput {
     * It assumes to have two variable-length integer representing the uncompressed and the compressed data length
     * followed by the ZIP-compressed array of bytes. Counterpart of [[BinaryOutput.writeCompressedByteArray]]
     */
-  def readCompressedByteArray(): Either[DesertFailure, Array[Byte]] =
-    readVarInt(optimizeForPositive = true).flatMap { uncompressedLength =>
-      if (uncompressedLength == 0) {
-        Right(Array[Byte]())
-      } else {
-        for {
-          compressedLength <- readVarInt(optimizeForPositive = true)
-          compressedData   <- readBytes(compressedLength)
-          uncompressedData <- {
-            try {
-              val inflater = new Inflater()
-              try {
-                inflater.setInput(compressedData)
-                val uncompressedData = new Array[Byte](uncompressedLength)
-                inflater.inflate(uncompressedData)
-                Right(uncompressedData)
-              } finally
-                inflater.end()
-            } catch {
-              case NonFatal(failure) =>
-                Left(DesertFailure.DeserializationFailure("Failed to uncompress byte array", Some(failure)))
-            }
-          }
-        } yield uncompressedData
+  def readCompressedByteArray(): Array[Byte] = {
+    val uncompressedLength = readVarInt(optimizeForPositive = true)
+    if (uncompressedLength == 0) {
+      Array[Byte]()
+    } else {
+      val compressedLength = readVarInt(optimizeForPositive = true)
+      val compressedData   = readBytes(compressedLength)
+      try {
+        val inflater = new Inflater()
+        try {
+          inflater.setInput(compressedData)
+          val uncompressedData = new Array[Byte](uncompressedLength)
+          inflater.inflate(uncompressedData)
+          uncompressedData
+        } finally
+          inflater.end()
+      } catch {
+        case NonFatal(failure) =>
+          throw DesertException(
+            DesertFailure.DeserializationFailure("Failed to uncompress byte array", Some(failure))
+          )
       }
     }
+  }
 }

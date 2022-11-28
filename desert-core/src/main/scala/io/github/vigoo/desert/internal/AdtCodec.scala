@@ -3,19 +3,19 @@ package io.github.vigoo.desert.internal
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.Evolution._
 import io.github.vigoo.desert.custom._
-import zio.prelude.fx.ZPure
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import scala.annotation.nowarn
+import scala.collection.mutable
 
 class AdtCodec[T, BuilderState](
     evolutionSteps: Vector[Evolution],
     typeName: String,
     constructors: Vector[String],
-    transientFields: Map[Symbol, Any],
+    transientFields: Map[String, Any],
     getSerializationCommands: T => List[AdtCodec.SerializationCommand],
     deserializationCommands: List[AdtCodec.DeserializationCommand[BuilderState]],
-    initialBuilderState: BuilderState,
+    initialBuilderState: () => BuilderState,
     materialize: BuilderState => Either[DesertFailure, T]
 ) extends BinaryCodec[T] {
   import AdtCodec._
@@ -47,69 +47,54 @@ class AdtCodec[T, BuilderState](
   private val constructorNameToId = constructors.zipWithIndex.toMap
   private val constructorIdToName = constructors.zipWithIndex.map { case (name, id) => (id, name) }.toMap
 
-  override def serialize(value: T): Ser[Unit] =
-    for {
-      _             <- writeByte(version)
-      primaryOutput <- getOutput
-      chunkedOutput  = createChunkedOutput(primaryOutput)
-      state         <- getSerializerState
-      typeRegistry  <- getOutputTypeRegistry
-      initialState   = ChunkedSerState(
-                         state,
-                         typeRegistry,
-                         lastIndexPerChunk = Map.empty,
-                         fieldIndices = Map.empty,
-                         constructorNameToId,
-                         constructorIdToName,
-                         typeDescription = typeName,
-                         readConstructorName = None,
-                         transientFields
-                       )
-      commands       = getSerializationCommands(value)
-      finalState    <- Ser.fromEither(
-                         ChunkedSerOps
-                           .foreach(commands)(serialize)
-                           .provideService(chunkedOutput)
-                           .getState
-                           .map(_._1)
-                           .either
-                           .runResult(initialState)
-                       )
-      _             <- chunkedOutput.writeEvolutionHeader(finalState.fieldIndices)
-      _             <- chunkedOutput.writeOrderedChunks()
-      _             <- setSerializerState(finalState.serializerState)
-    } yield ()
+  override def serialize(value: T)(implicit ctx: SerializationContext): Unit = {
+    writeByte(version)
+    val primaryOutput                                    = ctx.env.output
+    val chunkedOutput                                    = createChunkedOutput(primaryOutput)
+    val typeRegistry                                     = ctx.env.typeRegistry
+    val chunkedState                                     = new ChunkedSerState(
+      ctx.state,
+      typeRegistry,
+      lastIndexPerChunk = mutable.Map.empty,
+      fieldIndices = mutable.Map.empty,
+      constructorNameToId,
+      constructorIdToName,
+      typeDescription = typeName,
+      readConstructorName = None,
+      transientFields
+    )
+    implicit val chunkedCtx: ChunkedSerializationContext = ChunkedSerializationContext(chunkedState, chunkedOutput)
+    val commands                                         = getSerializationCommands(value)
+    for (command <- commands)
+      serialize(command)
+    chunkedOutput.writeEvolutionHeader(chunkedState.fieldIndices)
+    chunkedOutput.writeOrderedChunks()
+  }
 
-  override def deserialize(): Deser[T] =
-    for {
-      storedVersion                  <- readByte()
-      primaryInput                   <- getInput
-      chunkedInput                   <- createChunkedInput(primaryInput, storedVersion)
-      state                          <- getDeserializerState
-      typeRegistry                   <- getInputTypeRegistry
-      initialState                    = ChunkedSerState(
-                                          state,
-                                          typeRegistry,
-                                          lastIndexPerChunk = Map.empty,
-                                          fieldIndices = Map.empty,
-                                          constructorNameToId,
-                                          constructorIdToName,
-                                          typeDescription = typeName,
-                                          readConstructorName = None,
-                                          transientFields
-                                        )
-      result                         <- Deser.fromEither(
-                                          ChunkedDeserOps
-                                            .foldLeft(deserializationCommands)(initialBuilderState)(deserialize)
-                                            .provideService(chunkedInput)
-                                            .getState
-                                            .either
-                                            .runResult(initialState)
-                                        )
-      (finalState, finalBuilderState) = result
-      _                              <- setDeserializerState(finalState.serializerState)
-      materializedResult             <- Deser.fromEither(materialize(finalBuilderState))
-    } yield materializedResult
+  override def deserialize()(implicit ctx: DeserializationContext): T = {
+    val storedVersion                                      = readByte()
+    val primaryInput                                       = ctx.env.input
+    val chunkedInput                                       = createChunkedInput(primaryInput, storedVersion)
+    val typeRegistry                                       = ctx.env.typeRegistry
+    val chunkedState                                       = new ChunkedSerState(
+      ctx.state,
+      typeRegistry,
+      lastIndexPerChunk = mutable.Map.empty,
+      fieldIndices = mutable.Map.empty,
+      constructorNameToId,
+      constructorIdToName,
+      typeDescription = typeName,
+      readConstructorName = None,
+      transientFields
+    )
+    implicit val chunkedCtx: ChunkedDeserializationContext = ChunkedDeserializationContext(chunkedState, chunkedInput)
+    val finalBuilderState                                  = deserializationCommands.foldLeft(initialBuilderState())(deserialize)
+
+    materialize(finalBuilderState) match {
+      case Left(failure) => throw DesertException(failure)
+      case Right(value)  => value
+    }
+  }
 
   private def createChunkedOutput(primaryOutput: BinaryOutput): ChunkedOutput =
     if (version == 0) {
@@ -117,9 +102,11 @@ class AdtCodec[T, BuilderState](
       new ChunkedOutput {
         override def outputFor(version: Byte): BinaryOutput = primaryOutput
 
-        override def writeEvolutionHeader(fieldIndices: Map[String, FieldPosition]): Ser[Unit] = finishSerializer()
+        override def writeEvolutionHeader(fieldIndices: mutable.Map[String, FieldPosition])(implicit
+            ctx: SerializationContext
+        ): Unit = {}
 
-        override def writeOrderedChunks(): Ser[Unit] = finishSerializer()
+        override def writeOrderedChunks()(implicit ctx: SerializationContext): Unit = {}
       }
     } else {
       new ChunkedOutput {
@@ -128,83 +115,81 @@ class AdtCodec[T, BuilderState](
 
         override def outputFor(version: Byte): BinaryOutput = outputs(version)
 
-        override def writeEvolutionHeader(fieldIndices: Map[String, FieldPosition]): Ser[Unit] =
-          (0 to version).foldLeft(finishSerializer()) { case (s, v) =>
-            val serializedEvolutionStep = evolutionSteps(v) match {
-              case InitialVersion          =>
-                val size = {
-                  streams(v).flush()
-                  streams(v).size()
-                }
-                Right(SerializedEvolutionStep.FieldAddedToNewChunk(size))
-              case FieldAdded(_, _)        =>
-                val size = {
-                  streams(v).flush()
-                  streams(v).size()
-                }
-                Right(SerializedEvolutionStep.FieldAddedToNewChunk(size))
-              case FieldMadeOptional(name) =>
-                fieldIndices.get(name) match {
-                  case Some(fieldPosition) =>
-                    Right(SerializedEvolutionStep.FieldMadeOptional(fieldPosition))
-                  case None                =>
-                    if (removedFields.contains(name)) {
-                      Right(SerializedEvolutionStep.FieldMadeOptional(FieldPosition.removed))
-                    } else {
-                      Left(DesertFailure.UnknownFieldReferenceInEvolutionStep(name))
-                    }
-                }
-              case FieldRemoved(name)      =>
-                Right(SerializedEvolutionStep.FieldRemoved(name))
-              case _                       =>
-                Right(SerializedEvolutionStep.UnknownEvolutionStep)
-            }
-            serializedEvolutionStep match {
-              case Left(failure) =>
-                s *> failSerializerWith(failure)
-              case Right(step)   =>
-                s *> write[SerializedEvolutionStep](step)
-            }
+        override def writeEvolutionHeader(
+            fieldIndices: mutable.Map[String, FieldPosition]
+        )(implicit ctx: SerializationContext): Unit =
+          for (v <- 0 to version) {
+            val serializedEvolutionStep: SerializedEvolutionStep =
+              evolutionSteps(v) match {
+                case InitialVersion          =>
+                  val size = {
+                    streams(v).flush()
+                    streams(v).size()
+                  }
+                  SerializedEvolutionStep.FieldAddedToNewChunk(size)
+                case FieldAdded(_, _)        =>
+                  val size = {
+                    streams(v).flush()
+                    streams(v).size()
+                  }
+                  SerializedEvolutionStep.FieldAddedToNewChunk(size)
+                case FieldMadeOptional(name) =>
+                  fieldIndices.get(name) match {
+                    case Some(fieldPosition) =>
+                      SerializedEvolutionStep.FieldMadeOptional(fieldPosition)
+                    case None                =>
+                      if (removedFields.contains(name)) {
+                        SerializedEvolutionStep.FieldMadeOptional(FieldPosition.removed)
+                      } else {
+                        throw DesertException(DesertFailure.UnknownFieldReferenceInEvolutionStep(name))
+                      }
+                  }
+                case FieldRemoved(name)      =>
+                  SerializedEvolutionStep.FieldRemoved(name)
+                case _                       =>
+                  SerializedEvolutionStep.UnknownEvolutionStep
+              }
+            write(serializedEvolutionStep)
           }
 
-        override def writeOrderedChunks(): Ser[Unit] =
-          streams.foldLeft(finishSerializer()) { case (m, stream) =>
-            m *> writeBytes({
-              stream.flush()
-              stream.toByteArray
-            })
+        override def writeOrderedChunks()(implicit ctx: SerializationContext): Unit =
+          for (stream <- streams) {
+            stream.flush()
+            writeBytes(stream.toByteArray)
           }
       }
     }
 
-  private def createChunkedInput(primaryInput: BinaryInput, storedVer: Byte): Deser[ChunkedInput] =
+  private def createChunkedInput(primaryInput: BinaryInput, storedVer: Byte)(implicit
+      ctx: DeserializationContext
+  ): ChunkedInput =
     if (storedVer == 0) {
       // Simple mode: deserializing directly from the input stream
-      finishDeserializerWith(new ChunkedInput {
+      new ChunkedInput {
         override val storedVersion: Byte = storedVer
 
         override val madeOptionalAt: Map[FieldPosition, Byte] = Map.empty
 
         override val removedFields: Set[String] = Set.empty
 
-        override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
-          if (version == 0) Right(primaryInput) else Left(DesertFailure.DeserializingNonExistingChunk(version))
-      })
+        override def inputFor(version: Byte): BinaryInput =
+          if (version == 0) primaryInput
+          else throw DesertException(DesertFailure.DeserializingNonExistingChunk(version))
+      }
     } else {
-      for {
-        serializedEvolutionSteps <-
-          (0 to storedVer).foldLeft(finishDeserializerWith(Vector.empty[SerializedEvolutionStep])) { case (m, _) =>
-            m.flatMap(vec => read[SerializedEvolutionStep]().map(vec :+ _))
-          }
-        chunks                   <- serializedEvolutionSteps.foldLeft(finishDeserializerWith(Vector.empty[Array[Byte]])) {
-                                      case (m, SerializedEvolutionStep.FieldAddedToNewChunk(size)) =>
-                                        m.flatMap { vec =>
-                                          readBytes(size).map(vec :+ _)
-                                        }
-                                      case (m, _)                                                  => m.map(vec => vec :+ Array[Byte](0))
-                                    }
-      } yield new ChunkedInput {
-        private val streams = chunks.map(new ByteArrayInputStream(_)).toArray
+      val serializedEvolutionSteps = new Array[SerializedEvolutionStep](storedVer + 1)
+      for (v <- 0 to storedVer)
+        serializedEvolutionSteps(v) = read[SerializedEvolutionStep]()
+      val chunks = new Array[Array[Byte]](serializedEvolutionSteps.length)
+      for (v <- 0 to storedVer)
+        serializedEvolutionSteps(v) match {
+          case SerializedEvolutionStep.FieldAddedToNewChunk(size) =>
+            chunks(v) = readBytes(size)
+          case _                                                  =>
+            chunks(v) = Array.empty[Byte]
+        }
+      new ChunkedInput {
+        private val streams = chunks.map(new ByteArrayInputStream(_))
         private val inputs  = streams.map(new JavaStreamBinaryInput(_))
 
         override val storedVersion: Byte = storedVer
@@ -217,11 +202,11 @@ class AdtCodec[T, BuilderState](
         override val removedFields: Set[String] =
           serializedEvolutionSteps.collect { case SerializedEvolutionStep.FieldRemoved(name) => name }.toSet
 
-        override def inputFor(version: Byte): Either[DesertFailure, BinaryInput] =
+        override def inputFor(version: Byte): BinaryInput =
           if (version < inputs.length) {
-            Right(inputs(version))
+            inputs(version)
           } else {
-            Left(DesertFailure.DeserializingNonExistingChunk(version))
+            throw DesertException(DesertFailure.DeserializingNonExistingChunk(version))
           }
       }
     }
@@ -230,165 +215,136 @@ class AdtCodec[T, BuilderState](
       fieldName: String,
       headCodec: BinaryCodec[H],
       optHeadCodec: BinaryCodec[Option[H]]
-  ): ChunkedDeser[Option[H]] =
-    ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.pure(None)
-      } else {
-        val chunk    = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
+  )(implicit ctx: ChunkedDeserializationContext): Option[H] =
+    if (ctx.input.removedFields.contains(fieldName)) {
+      None
+    } else {
+      val chunk    = fieldGenerations.getOrElse(fieldName, 0: Byte)
+      val optSince = madeOptionalAt.getOrElse(fieldName, 0: Byte)
 
-        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { _ =>
-          if (chunkedInput.storedVersion < chunk) {
-            // This field was not serialized
-            fieldDefaults.get(fieldName) match {
-              case Some(value) =>
-                if (optSince <= chunk) {
-                  // It was originally Option[H]
-                  ChunkedDeserOps.pure(value.asInstanceOf[Option[H]])
-                } else {
-                  // It was made optional after it was added
-                  ChunkedDeserOps.pure(Some(value.asInstanceOf[H]))
-                }
-              case None        =>
-                ChunkedDeserOps.failWith(
-                  DesertFailure.DeserializationFailure(
-                    s"Field $fieldName is not in the stream and does not have default value",
-                    None
-                  )
-                )
-
-            }
-          } else {
-            // This field was serialized
-            if (chunkedInput.storedVersion < optSince) {
-              // Expect H in the input stream and wrap with Some()
-              for {
-                input     <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(headCodec.deserialize(), input)
-              } yield Some(headValue)
+      ChunkedDeserOps.recordFieldIndex(fieldName, chunk)
+      if (ctx.input.storedVersion < chunk) {
+        // This field was not serialized
+        fieldDefaults.get(fieldName) match {
+          case Some(value) =>
+            if (optSince <= chunk) {
+              // It was originally Option[H]
+              value.asInstanceOf[Option[H]]
             } else {
-              // Expect Option[H] in the input stream
-              for {
-                input     <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(optHeadCodec.deserialize(), input)
-              } yield headValue
+              // It was made optional after it was added
+              Some(value.asInstanceOf[H])
             }
-          }
+          case None        =>
+            throw DesertException(
+              DesertFailure.DeserializationFailure(
+                s"Field $fieldName is not in the stream and does not have default value",
+                None
+              )
+            )
+        }
+      } else {
+        val input         = ctx.input.inputFor(chunk)
+        implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
+
+        // This field was serialized
+        if (ctx.input.storedVersion < optSince) {
+          // Expect H in the input stream and wrap with Some()
+          Some(headCodec.deserialize())
+        } else {
+          // Expect Option[H] in the input stream
+          optHeadCodec.deserialize()
         }
       }
     }
 
-  private def readFieldIfExists[H](fieldName: String, headCodec: BinaryCodec[H]): ChunkedDeser[H] =
-    ChunkedDeserOps.getChunkedInput.flatMap { chunkedInput =>
-      // Check if field was removed
-      if (chunkedInput.removedFields.contains(fieldName)) {
-        ChunkedDeserOps.failWith(DesertFailure.FieldRemovedInSerializedVersion(fieldName))
+  private def readFieldIfExists[H](fieldName: String, headCodec: BinaryCodec[H])(implicit
+      ctx: ChunkedDeserializationContext
+  ): H =
+    if (ctx.input.removedFields.contains(fieldName))
+      throw DesertException(DesertFailure.FieldRemovedInSerializedVersion(fieldName))
+    else {
+      val chunk         = fieldGenerations.getOrElse(fieldName, 0: Byte)
+      val fieldPosition = ChunkedDeserOps.recordFieldIndex(fieldName, chunk)
+      if (ctx.input.storedVersion < chunk) {
+        // Field was not serialized
+        fieldDefaults.get(fieldName) match {
+          case Some(value) =>
+            value.asInstanceOf[H]
+          case None        =>
+            throw DesertException(DesertFailure.FieldWithoutDefaultValueIsMissing(fieldName))
+        }
       } else {
-        val chunk = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        ChunkedDeserOps.recordFieldIndex(fieldName, chunk).flatMap { fieldPosition =>
-          if (chunkedInput.storedVersion < chunk) {
-            // Field was not serialized
-            fieldDefaults.get(fieldName) match {
-              case Some(value) =>
-                ChunkedDeserOps.pure(value.asInstanceOf[H])
-              case None        =>
-                ChunkedDeserOps.failWith(DesertFailure.FieldWithoutDefaultValueIsMissing(fieldName))
-            }
-          } else {
-            // Field was serialized
+        // Field was serialized
+        val input         = ctx.input.inputFor(chunk)
+        implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
 
-            if (chunkedInput.madeOptionalAt.contains(fieldPosition)) {
-              // The field was made optional in by a newer version, reading as Option[H]
-              for {
-                input     <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                isDefined <- ChunkedDeserOps.fromDeser(booleanCodec.deserialize(), input)
-                headValue <- if (isDefined) {
-                               ChunkedDeserOps.fromDeser(headCodec.deserialize(), input)
-                             } else {
-                               ChunkedDeserOps.failWith(DesertFailure.NonOptionalFieldSerializedAsNone(fieldName))
-                             }
-              } yield headValue
-            } else {
-              // Default case, reading the field from the given chunk
-              for {
-                input     <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(chunk))
-                headValue <- ChunkedDeserOps.fromDeser(headCodec.deserialize(), input)
-              } yield headValue
-            }
-          }
+        if (ctx.input.madeOptionalAt.contains(fieldPosition)) {
+          // The field was made optional in by a newer version, reading as Option[H]
+
+          val isDefined = read[Boolean]()
+          if (isDefined)
+            headCodec.deserialize()
+          else
+            throw DesertException(DesertFailure.NonOptionalFieldSerializedAsNone(fieldName))
+        } else {
+          // Default case, reading the field from the given chunk
+          headCodec.deserialize()
         }
       }
     }
 
-  private def serialize(command: SerializationCommand): ChunkedSer[Unit] =
+  private def serialize(command: SerializationCommand)(implicit ctx: ChunkedSerializationContext): Unit =
     command match {
       case SerializationCommand.WriteField(fieldName, value, codec)             =>
-        for {
-          chunkedOutput <- ChunkedSerOps.getChunkedOutput
-          chunk          = fieldGenerations.getOrElse(fieldName, 0: Byte)
-          output         = chunkedOutput.outputFor(chunk)
-          _             <- ChunkedSerOps.fromSer(
-                             codec().serialize(value),
-                             output
-                           )
-          _             <- ChunkedSerOps.recordFieldIndex(fieldName, chunk)
-        } yield ()
+        val chunk         = fieldGenerations.getOrElse(fieldName, 0: Byte)
+        val output        = ctx.output.outputFor(chunk)
+        implicit val sctx = ChunkedSerOps.getSerializationContext(output)
+        codec().serialize(value)
+        ChunkedSerOps.recordFieldIndex(fieldName, chunk)
       case SerializationCommand.WriteConstructor(constructorName, value, codec) =>
-        for {
-          chunkedOutput <- ChunkedSerOps.getChunkedOutput
-          output         = chunkedOutput.outputFor(0)
-          constructorId <- ChunkedSerOps.getConstructorId(constructorName)
-          _             <- ChunkedSerOps.fromSer(
-                             writeVarInt(constructorId, optimizeForPositive = true) *>
-                               codec().serialize(value),
-                             output
-                           )
-        } yield ()
+        val output        = ctx.output.outputFor(0)
+        implicit val sctx = ChunkedSerOps.getSerializationContext(output)
+        val constructorId = ChunkedSerOps.getConstructorId(constructorName)
+        writeVarInt(constructorId, optimizeForPositive = true)
+        codec().serialize(value)
       case SerializationCommand.Fail(failure)                                   =>
-        ChunkedSerOps.failWith(failure)
+        throw DesertException(failure)
     }
 
   @nowarn("msg=.*eliminated by erasure") private def deserialize(
       builderState: BuilderState,
       command: DeserializationCommand[BuilderState]
-  ): ChunkedDeser[BuilderState] =
+  )(implicit ctx: ChunkedDeserializationContext): BuilderState =
     command match {
       case DeserializationCommand.Read(fieldName, codec, store) =>
-        readFieldIfExists(fieldName, codec()).map(value => store(value, builderState))
+        store(readFieldIfExists(fieldName, codec()), builderState)
 
       case DeserializationCommand.ReadOptional(fieldName, codec, optCodec, store) =>
-        readOptionalFieldIfExists(fieldName, codec(), optCodec()).map(value => store(value, builderState))
+        store(readOptionalFieldIfExists(fieldName, codec(), optCodec()), builderState)
 
       case readTransient: DeserializationCommand.ReadTransient[Any, BuilderState] =>
-        for {
-          chunkedState <- ChunkedDeserOps.getChunkedState
-          headValue    <- chunkedState.transientFields.get(Symbol(readTransient.fieldName)) match {
-                            case Some(value) =>
-                              ChunkedDeserOps.pure(value)
-                            case None        =>
-                              ChunkedDeserOps.failWith(
-                                DesertFailure.DeserializationFailure(
-                                  s"Illegal state while processing transient field ${readTransient.fieldName}",
-                                  None
-                                )
-                              )
-                          }
-        } yield readTransient.store(headValue, builderState)
+        val value =
+          ctx.state.getTransient(readTransient.fieldName) match {
+            case Some(value) => value
+            case None        =>
+              throw DesertException(
+                DesertFailure.DeserializationFailure(
+                  s"Illegal state while processing transient field ${readTransient.fieldName}",
+                  None
+                )
+              )
+          }
+        readTransient.store(value, builderState)
 
       case DeserializationCommand.ReadConstructor(expectedConstructorName, codec, store) =>
-        for {
-          chunkedInput    <- ChunkedDeserOps.getChunkedInput
-          input           <- ChunkedDeserOps.fromEither(chunkedInput.inputFor(0))
-          constructorName <- ChunkedDeserOps.readOrGetConstructorName(input)
-          result          <- if (expectedConstructorName == constructorName) {
-                               ChunkedDeserOps
-                                 .fromDeser(codec().deserialize(), input)
-                                 .map(headValue => store(headValue, builderState))
-                             } else {
-                               ChunkedDeserOps.pure(builderState)
-                             }
-        } yield result
+        val input           = ctx.input.inputFor(0)
+        val constructorName = ChunkedDeserOps.readOrGetConstructorName(input)
+        if (expectedConstructorName == constructorName) {
+          implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
+          store(codec().deserialize(), builderState)
+        } else {
+          builderState
+        }
     }
 }
 
@@ -428,112 +384,99 @@ object AdtCodec {
     case object UnknownEvolutionStep extends SerializedEvolutionStep
 
     implicit val codec: BinaryCodec[SerializedEvolutionStep] =
-      BinaryCodec.define[SerializedEvolutionStep] {
-        case FieldAddedToNewChunk(size)  => writeVarInt(size, optimizeForPositive = false)
-        case FieldMadeOptional(position) =>
-          writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false) *> write(position)
-        case FieldRemoved(fieldName)     =>
-          writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false) *> write(DeduplicatedString(fieldName))
-        case UnknownEvolutionStep        => writeVarInt(Codes.Unknown, optimizeForPositive = false)
-      } {
-        for {
-          code   <- readVarInt(optimizeForPositive = false)
-          result <- code match {
-                      case Codes.Unknown               => finishDeserializerWith(UnknownEvolutionStep)
-                      case Codes.FieldMadeOptionalCode => read[FieldPosition]().map(FieldMadeOptional.apply)
-                      case Codes.FieldRemovedCode      => read[DeduplicatedString]().map(_.string).map(FieldRemoved.apply)
-                      case size if size > 0            => finishDeserializerWith(FieldAddedToNewChunk(size))
-                      case _                           => failDeserializerWith(DesertFailure.UnknownSerializedEvolutionStep(code))
-                    }
-        } yield result
+      new BinaryCodec[SerializedEvolutionStep] {
+        override def deserialize()(implicit ctx: DeserializationContext): SerializedEvolutionStep = {
+          val code = readVarInt(optimizeForPositive = false)
+          code match {
+            case Codes.Unknown               => UnknownEvolutionStep
+            case Codes.FieldMadeOptionalCode => FieldMadeOptional(read[FieldPosition]())
+            case Codes.FieldRemovedCode      => FieldRemoved(read[DeduplicatedString]().string)
+            case size if size > 0            => FieldAddedToNewChunk(size)
+            case _                           => failDeserializerWith(DesertFailure.UnknownSerializedEvolutionStep(code))
+          }
+        }
+
+        override def serialize(value: SerializedEvolutionStep)(implicit context: SerializationContext): Unit =
+          value match {
+            case FieldAddedToNewChunk(size)  =>
+              writeVarInt(size, optimizeForPositive = false)
+            case FieldMadeOptional(position) =>
+              writeVarInt(Codes.FieldMadeOptionalCode, optimizeForPositive = false)
+              write(position)
+            case FieldRemoved(fieldName)     =>
+              writeVarInt(Codes.FieldRemovedCode, optimizeForPositive = false)
+              write(DeduplicatedString(fieldName))
+            case UnknownEvolutionStep        =>
+              writeVarInt(Codes.Unknown, optimizeForPositive = false)
+          }
       }
   }
 
   trait ChunkedOutput {
     def outputFor(version: Byte): BinaryOutput
 
-    def writeEvolutionHeader(fieldIndices: Map[String, FieldPosition]): Ser[Unit]
+    def writeEvolutionHeader(fieldIndices: mutable.Map[String, FieldPosition])(implicit ctx: SerializationContext): Unit
 
-    def writeOrderedChunks(): Ser[Unit]
+    def writeOrderedChunks()(implicit ctx: SerializationContext): Unit
   }
 
-  final case class ChunkedSerState(
-      serializerState: SerializerState,
-      typeRegistry: TypeRegistry,
-      lastIndexPerChunk: Map[Byte, Byte],
-      fieldIndices: Map[String, FieldPosition],
+  final class ChunkedSerState(
+      val serializerState: SerializerState,
+      val typeRegistry: TypeRegistry,
+      lastIndexPerChunk: mutable.Map[Byte, Byte],
+      val fieldIndices: mutable.Map[String, FieldPosition],
       constructorNameToId: Map[String, Int],
       constructorIdToName: Map[Int, String],
       typeDescription: String,
-      readConstructorName: Option[String],
-      transientFields: Map[Symbol, Any]
-  )
-
-  type ChunkedSer[+T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedOutput, DesertFailure, T]
-
-  object ChunkedSerOps {
-    final def getChunkedOutput: ChunkedSer[ChunkedOutput] = ZPure.service[ChunkedSerState, ChunkedOutput]
-
-    final def getChunkedState: ChunkedSer[ChunkedSerState] = ZPure.get
-
-    final def setChunkedState(newState: ChunkedSerState): ChunkedSer[Unit] = ZPure.set(newState)
-
-    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedSer[T] = ZPure.succeed(value).absolve
-
-    final def pure[T](value: T): ChunkedSer[T] = fromEither(Right[DesertFailure, T](value))
-
-    final def unit: ChunkedSer[Unit] = pure(())
-
-    final def failWith[T](failure: DesertFailure): ChunkedSer[T] = fromEither(Left(failure))
-
-    final def foreach[T](values: List[T])(f: T => ChunkedSer[Unit]): ChunkedSer[Unit] =
-      ZPure.forEach(values)(f).unit
-
-    final def fromSer[T](value: Ser[T], output: BinaryOutput): ChunkedSer[T] =
-      for {
-        chunkedState         <- getChunkedState
-        runResult            <- fromEither(
-                                  value
-                                    .provideService(SerializationEnv(output, chunkedState.typeRegistry))
-                                    .getState
-                                    .either
-                                    .runResult(chunkedState.serializerState)
-                                )
-        (resultState, result) = runResult
-        _                    <- setChunkedState(chunkedState.copy(serializerState = resultState))
-      } yield result
-
-    final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedSer[Unit] =
-      ZPure.modify { state =>
-        state.lastIndexPerChunk.get(chunk) match {
-          case Some(lastIndex) =>
-            val newIndex: Byte = (lastIndex + 1).toByte
-            (
-              (),
-              state.copy(
-                lastIndexPerChunk = state.lastIndexPerChunk.updated(chunk, newIndex),
-                fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, newIndex))
-              )
-            )
-          case None            =>
-            (
-              (),
-              state.copy(
-                lastIndexPerChunk = state.lastIndexPerChunk + (chunk -> 0),
-                fieldIndices = state.fieldIndices + (fieldName       -> FieldPosition(chunk, 0))
-              )
-            )
-        }
+      var readConstructorName: Option[String],
+      transientFields: Map[String, Any]
+  ) {
+    def getConstructorId(typeName: String): Int =
+      constructorNameToId.get(typeName) match {
+        case Some(value) => value
+        case None        => throw DesertException(DesertFailure.InvalidConstructorName(typeName, typeDescription))
       }
 
-    final def getConstructorId(typeName: String): ChunkedSer[Int] =
-      for {
-        state  <- getChunkedState
-        result <- state.constructorNameToId.get(typeName) match {
-                    case Some(id) => pure[Int](id)
-                    case None     => fromEither(Left(DesertFailure.InvalidConstructorName(typeName, state.typeDescription)))
-                  }
-      } yield result
+    def getConstructorName(id: Int): String =
+      constructorIdToName.get(id) match {
+        case Some(value) => value
+        case None        => throw DesertException(DesertFailure.InvalidConstructorId(id, typeDescription))
+      }
+
+    def getLastIndexPerChunk(chunk: Byte): Option[Byte] =
+      lastIndexPerChunk.get(chunk)
+
+    def updateLastIndex(chunk: Byte, newIndex: Byte): Unit =
+      lastIndexPerChunk.update(chunk, newIndex)
+
+    def addIndex(fieldName: String, position: FieldPosition): Unit =
+      fieldIndices.update(fieldName, position)
+
+    def getTransient(fieldName: String): Option[Any] =
+      transientFields.get(fieldName)
+  }
+
+  final case class ChunkedSerializationContext(state: ChunkedSerState, output: ChunkedOutput)
+
+  object ChunkedSerOps {
+    final def getSerializationContext(output: BinaryOutput)(implicit
+        ctx: ChunkedSerializationContext
+    ): SerializationContext =
+      SerializationContext(SerializationEnv(output, ctx.state.typeRegistry), ctx.state.serializerState)
+
+    final def recordFieldIndex(fieldName: String, chunk: Byte)(implicit ctx: ChunkedSerializationContext): Unit =
+      ctx.state.getLastIndexPerChunk(chunk) match {
+        case Some(lastIndex) =>
+          val newIndex: Byte = (lastIndex + 1).toByte
+          ctx.state.updateLastIndex(chunk, newIndex)
+          ctx.state.addIndex(fieldName, FieldPosition(chunk, newIndex))
+        case None            =>
+          ctx.state.updateLastIndex(chunk, 0)
+          ctx.state.addIndex(fieldName, FieldPosition(chunk, 0))
+      }
+
+    final def getConstructorId(typeName: String)(implicit ctx: ChunkedSerializationContext): Int =
+      ctx.state.getConstructorId(typeName)
   }
 
   trait ChunkedInput {
@@ -541,91 +484,47 @@ object AdtCodec {
     val madeOptionalAt: Map[FieldPosition, Byte]
     val removedFields: Set[String]
 
-    def inputFor(version: Byte): Either[DesertFailure, BinaryInput]
+    def inputFor(version: Byte): BinaryInput
   }
 
-  type ChunkedDeser[+T] = ZPure[Nothing, ChunkedSerState, ChunkedSerState, ChunkedInput, DesertFailure, T]
+  final case class ChunkedDeserializationContext(state: ChunkedSerState, input: ChunkedInput)
 
   object ChunkedDeserOps {
-    final def getChunkedInput: ChunkedDeser[ChunkedInput] = ZPure.service
+    final def toDeserializationContext(input: BinaryInput)(implicit
+        ctx: ChunkedDeserializationContext
+    ): DeserializationContext =
+      DeserializationContext(DeserializationEnv(input, ctx.state.typeRegistry), ctx.state.serializerState)
 
-    final def getChunkedState: ChunkedDeser[ChunkedSerState] = ZPure.get
-
-    final def setChunkedState(newState: ChunkedSerState): ChunkedDeser[Unit] = ZPure.set(newState)
-
-    final def fromEither[T](value: Either[DesertFailure, T]): ChunkedDeser[T] = ZPure.succeed(value).absolve
-
-    final def pure[T](value: T): ChunkedDeser[T] = fromEither(Right[DesertFailure, T](value))
-
-    final def failWith[T](failure: DesertFailure): ChunkedDeser[T] = fromEither(Left(failure))
-
-    final def foldLeft[S, A](values: List[A])(init: S)(f: (S, A) => ChunkedDeser[S]): ChunkedDeser[S] =
-      values.foldLeft(pure(init)) { case (getState, value) =>
-        getState.flatMap(f(_, value))
+    final def recordFieldIndex(fieldName: String, chunk: Byte)(implicit
+        ctx: ChunkedDeserializationContext
+    ): FieldPosition =
+      ctx.state.getLastIndexPerChunk(chunk) match {
+        case Some(lastIndex) =>
+          val newIndex: Byte = (lastIndex + 1).toByte
+          val fp             = FieldPosition(chunk, newIndex)
+          ctx.state.updateLastIndex(chunk, newIndex)
+          ctx.state.addIndex(fieldName, fp)
+          fp
+        case None            =>
+          val fp = FieldPosition(chunk, 0)
+          ctx.state.updateLastIndex(chunk, 0)
+          ctx.state.addIndex(fieldName, fp)
+          fp
       }
 
-    final def fromDeser[T](value: Deser[T], input: BinaryInput): ChunkedDeser[T] =
-      for {
-        chunkedState         <- getChunkedState
-        runResult            <- fromEither(
-                                  value
-                                    .provideService(DeserializationEnv(input, chunkedState.typeRegistry))
-                                    .getState
-                                    .either
-                                    .runResult(chunkedState.serializerState)
-                                )
-        (resultState, result) = runResult
-        _                    <- setChunkedState(chunkedState.copy(serializerState = resultState))
-      } yield result
+    final def getConstructorName(id: Int)(implicit ctx: ChunkedDeserializationContext): String =
+      ctx.state.getConstructorName(id)
 
-    final def recordFieldIndex(fieldName: String, chunk: Byte): ChunkedDeser[FieldPosition] =
-      for {
-        state               <- getChunkedState
-        (newState, position) = state.lastIndexPerChunk.get(chunk) match {
-                                 case Some(lastIndex) =>
-                                   val newIndex: Byte = (lastIndex + 1).toByte
-                                   (
-                                     state.copy(
-                                       lastIndexPerChunk = state.lastIndexPerChunk.updated(chunk, newIndex),
-                                       fieldIndices = state.fieldIndices + (fieldName -> FieldPosition(chunk, newIndex))
-                                     ),
-                                     FieldPosition(chunk, newIndex)
-                                   )
-                                 case None            =>
-                                   (
-                                     state.copy(
-                                       lastIndexPerChunk = state.lastIndexPerChunk + (chunk -> 0),
-                                       fieldIndices = state.fieldIndices + (fieldName       -> FieldPosition(chunk, 0))
-                                     ),
-                                     FieldPosition(chunk, 0)
-                                   )
-                               }
-        _                   <- setChunkedState(newState)
-      } yield position
-
-    final def getConstructorName(id: Int): ChunkedDeser[String] =
-      for {
-        state  <- getChunkedState
-        result <- state.constructorIdToName.get(id) match {
-                    case Some(name) => pure[String](name)
-                    case None       => fromEither(Left(DesertFailure.InvalidConstructorId(id, state.typeDescription)))
-                  }
-      } yield result
-
-    final def readOrGetConstructorName(input: BinaryInput): ChunkedDeser[String] =
-      for {
-        state           <- getChunkedState
-        constructorName <- state.readConstructorName match {
-                             case Some(value) => pure(value)
-                             case None        =>
-                               for {
-                                 constructorId   <-
-                                   ChunkedDeserOps.fromDeser(readVarInt(optimizeForPositive = true), input)
-                                 constructorName <- ChunkedDeserOps.getConstructorName(constructorId)
-                                 _               <- setChunkedState(state.copy(readConstructorName = Some(constructorName)))
-                               } yield constructorName
-                           }
-      } yield constructorName
+    final def readOrGetConstructorName(input: BinaryInput)(implicit ctx: ChunkedDeserializationContext): String =
+      ctx.state.readConstructorName match {
+        case Some(value) => value
+        case None        =>
+          implicit val dctx   = toDeserializationContext(input)
+          val constructorId   = readVarInt(optimizeForPositive = true)
+          val constructorName = getConstructorName(constructorId)
+          ctx.state.readConstructorName = Some(constructorName)
+          constructorName
+      }
   }
 
   sealed trait SerializationCommand

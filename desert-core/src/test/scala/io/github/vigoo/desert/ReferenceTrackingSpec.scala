@@ -1,6 +1,7 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.custom._
+import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 import zio.test.Assertion._
 import zio.test._
 
@@ -9,37 +10,46 @@ object ReferenceTrackingSpec extends ZIOSpecDefault with SerializationProperties
 
   final case class Root(node: Node)
   object Root {
-    implicit val codec: BinaryCodec[Root] = BinaryCodec.define[Root](root => storeRefOrObject(root.node))(
-      readRefOrValue[Node](storeReadReference = false).map(Root.apply)
-    )
+    implicit val codec: BinaryCodec[Root] = new BinaryCodec[Root] {
+      override def deserialize()(implicit ctx: DeserializationContext): Root =
+        Root(readRefOrValue[Node](storeReadReference = false))
+
+      override def serialize(value: Root)(implicit context: SerializationContext): Unit =
+        storeRefOrObject(value.node)
+    }
   }
 
   final class Node(val label: String, var next: Option[Node]) {
     override def toString: String = s"<$label>"
   }
-  object Node                                                 {
-    implicit def codec: BinaryCodec[Node] = BinaryCodec.define[Node](node =>
-      for {
-        _ <- write(node.label)
-        _ <- node.next match {
-               case Some(value) =>
-                 for {
-                   _ <- write(true)
-                   _ <- storeRefOrObject(value)
-                 } yield ()
-               case None        =>
-                 write(false)
-             }
-      } yield ()
-    )(for {
-      label   <- read[String]()
-      result   = new Node(label, None)
-      _       <- storeReadRef(result)
-      hasNext <- read[Boolean]()
-      _       <- if (hasNext) {
-                   readRefOrValue[Node](storeReadReference = false).map(value => result.next = Some(value))
-                 } else finishDeserializerWith(())
-    } yield result)
+
+  object Node {
+
+    implicit lazy val codec: BinaryCodec[Node] =
+      new BinaryCodec[Node] {
+        override def deserialize()(implicit ctx: DeserializationContext): Node = {
+          val label   = read[String]()
+          val result  = new Node(label, None)
+          storeReadRef(result)
+          val hasNext = read[Boolean]()
+          if (hasNext) {
+            val next = readRefOrValue[Node](storeReadReference = false)
+            result.next = Some(next)
+          }
+          result
+        }
+
+        override def serialize(value: Node)(implicit context: SerializationContext): Unit = {
+          write(value.label)
+          value.next match {
+            case Some(next) =>
+              write(true)
+              storeRefOrObject(next)
+            case None       =>
+              write(false)
+          }
+        }
+      }
   }
 
   override def spec: Spec[TestEnvironment, Any] =

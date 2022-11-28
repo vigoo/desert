@@ -4,14 +4,16 @@ import io.github.vigoo.desert.Evolution.FieldAdded
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.internal.{
+  DeserializationContext,
   DeserializationEnv,
   JavaStreamBinaryInput,
   JavaStreamBinaryOutput,
+  SerializationContext,
   SerializationEnv,
   SerializerState
 }
 import zio.test.Assertion.{equalTo, isLessThan, isRight}
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert, assertTrue}
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
@@ -29,64 +31,56 @@ object StringDeduplicationSpec extends ZIOSpecDefault with SerializationProperti
   val s2 = "and another one"
   val s3 = "and another one"
 
-  private val testSer: Ser[Unit] = for {
-    _ <- write(DeduplicatedString(s1))
-    _ <- write(DeduplicatedString(s2))
-    _ <- write(DeduplicatedString(s3))
-    _ <- write(DeduplicatedString(s1))
-    _ <- write(DeduplicatedString(s2))
-    _ <- write(DeduplicatedString(s3))
-  } yield ()
-
-  private val testDeser: Deser[List[String]] =
-    for {
-      a <- read[DeduplicatedString]()
-      b <- read[DeduplicatedString]()
-      c <- read[DeduplicatedString]()
-      d <- read[DeduplicatedString]()
-      e <- read[DeduplicatedString]()
-      f <- read[DeduplicatedString]()
-    } yield List(a, b, c, d, e, f).map(_.string)
-
   implicit val v1codec: BinaryCodec[DataV1]       = DerivedBinaryCodec.derive
   implicit val v2codec: BinaryCodec[DataV2]       = DerivedBinaryCodec.derive
   implicit val outerv1codec: BinaryCodec[OuterV1] = DerivedBinaryCodec.derive
   implicit val outerv2codec: BinaryCodec[OuterV2] = DerivedBinaryCodec.derive
 
+  private def testSer(implicit ctx: SerializationContext): Unit = {
+    write(DeduplicatedString(s1))
+    write(DeduplicatedString(s2))
+    write(DeduplicatedString(s3))
+    write(DeduplicatedString(s1))
+    write(DeduplicatedString(s2))
+    write(DeduplicatedString(s3))
+  }
+
+  private def testDeser(implicit ctx: DeserializationContext): List[String] =
+    List(
+      read[DeduplicatedString](),
+      read[DeduplicatedString](),
+      read[DeduplicatedString](),
+      read[DeduplicatedString](),
+      read[DeduplicatedString](),
+      read[DeduplicatedString]()
+    ).map(_.string)
+
   override def spec: Spec[TestEnvironment, Any] =
     suite("String deduplication")(
       test("reads back duplicated strings correctly") {
-        val stream = new ByteArrayOutputStream()
-        val output = new JavaStreamBinaryOutput(stream)
-        val result = testSer
-          .provideService(SerializationEnv(output, TypeRegistry.empty))
-          .either
-          .runResult(SerializerState.initial)
-          .flatMap { _ =>
-            stream.flush()
-            val inStream = new ByteArrayInputStream(stream.toByteArray)
-            val input    = new JavaStreamBinaryInput(inStream)
-            testDeser
-              .provideService(DeserializationEnv(input, TypeRegistry.empty))
-              .either
-              .runResult(SerializerState.initial)
-          }
+        val stream                                = new ByteArrayOutputStream()
+        val output                                = new JavaStreamBinaryOutput(stream)
+        implicit val sctx: SerializationContext   =
+          SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
+        testSer
+        stream.flush()
+        val inStream                              = new ByteArrayInputStream(stream.toByteArray)
+        val input                                 = new JavaStreamBinaryInput(inStream)
+        implicit val dctx: DeserializationContext =
+          DeserializationContext(DeserializationEnv(input, TypeRegistry.empty), SerializerState.create)
+        val result                                = testDeser
 
-        assert(result)(isRight(equalTo(List(s1, s2, s3, s1, s2, s3))))
+        assertTrue(result == List(s1, s2, s3, s1, s2, s3))
       },
       test("reduces the serialized size") {
-        val stream = new ByteArrayOutputStream()
-        val output = new JavaStreamBinaryOutput(stream)
-        val size   = testSer
-          .provideService(SerializationEnv(output, TypeRegistry.empty))
-          .either
-          .runResult(SerializerState.initial)
-          .map { _ =>
-            stream.flush()
-            stream.toByteArray.length
-          }
+        val stream                              = new ByteArrayOutputStream()
+        val output                              = new JavaStreamBinaryOutput(stream)
+        implicit val sctx: SerializationContext =
+          SerializationContext(SerializationEnv(output, TypeRegistry.empty), SerializerState.create)
+        testSer
+        val size                                = stream.toByteArray.length
 
-        assert(size)(isRight(isLessThan((s1.length + s2.length) * 2)))
+        assertTrue(size < (s1.length + s2.length) * 2)
       },
       test("default string serialization does not breaks data evolution") {
         implicit val typeRegistry: TypeRegistry = TypeRegistry.empty

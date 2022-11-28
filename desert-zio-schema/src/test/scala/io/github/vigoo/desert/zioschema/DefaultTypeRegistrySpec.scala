@@ -2,6 +2,7 @@ package io.github.vigoo.desert.zioschema
 
 import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import io.github.vigoo.desert._
+import io.github.vigoo.desert.internal.{DeserializationContext, SerializationContext}
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isNone, isSome}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
@@ -19,17 +20,23 @@ object DefaultTypeRegistrySpec extends ZIOSpecDefault {
     import io.github.vigoo.desert.custom._
 
     implicit val codec: BinaryCodec[TestInterface] =
-      BinaryCodec.define[TestInterface] {
-        case _: Impl1 => writeByte(1)
-        case _: Impl2 => writeByte(2)
-      }(readByte().flatMap {
-        case 1 => finishDeserializerWith(new Impl1)
-        case 2 => finishDeserializerWith(new Impl2)
-        case _ =>
-          failDeserializerWith(
-            DesertFailure.DeserializationFailure("Invalid type tag in custom TestInterface serializer", None)
-          )
-      })
+      new BinaryCodec[TestInterface] {
+        override def deserialize()(implicit ctx: DeserializationContext): TestInterface =
+          readByte() match {
+            case 1 => new Impl1
+            case 2 => new Impl2
+            case _ =>
+              throw DesertException(
+                DesertFailure.DeserializationFailure("Invalid type tag in custom TestInterface serializer", None)
+              )
+          }
+
+        override def serialize(value: TestInterface)(implicit context: SerializationContext): Unit =
+          value match {
+            case _: Impl1 => writeByte(1)
+            case _: Impl2 => writeByte(2)
+          }
+      }
   }
 
   implicit val schema: Schema[TestProd]     = DeriveSchema.gen
