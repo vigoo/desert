@@ -1,7 +1,6 @@
 package io.github.vigoo.desert
 
 import io.github.vigoo.desert.custom._
-import io.github.vigoo.desert.custom.pure.{Deser, Ser}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -24,16 +23,7 @@ trait BinarySerializer[T] { self =>
     }
 }
 
-object BinarySerializer {
-  def fromPure[T](serializer: T => Ser[T]): BinarySerializer[T] =
-    new BinarySerializer[T] {
-      override def serialize(value: T)(implicit ctx: SerializationContext): Unit =
-        serializer(value).either.provideService(ctx.env).run(ctx.state.toPure) match {
-          case (_, Left(failure))      => throw DesertException(failure)
-          case (resultState, Right(_)) => ctx.state.resetTo(resultState)
-        }
-    }
-}
+object BinarySerializer
 
 trait BinaryDeserializer[T] {
   self =>
@@ -55,18 +45,7 @@ trait BinaryDeserializer[T] {
     }
 }
 
-object BinaryDeserializer {
-  def fromPure[T](deserializer: Deser[T]): BinaryDeserializer[T] =
-    new BinaryDeserializer[T] {
-      override def deserialize()(implicit ctx: DeserializationContext): T =
-        deserializer.either.provideService(ctx.env).run(ctx.state.toPure) match {
-          case (_, Left(failure))          => throw DesertException(failure)
-          case (resultState, Right(value)) =>
-            ctx.state.resetTo(resultState)
-            value
-        }
-    }
-}
+object BinaryDeserializer
 
 trait BinaryCodec[T] extends BinarySerializer[T] with BinaryDeserializer[T]
 

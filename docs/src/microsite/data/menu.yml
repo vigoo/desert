@@ -13,6 +13,8 @@ options:
     url: docs/type-registry
   - title: "Integrations: ZIO"
     url: docs/zio
+  - title: "Integrations: ZIO Prelude"
+    url: docs/zio-prelude
   - title: "Integrations: Cats"
     url: docs/cats
   - title: "Integrations: Cats Effect"

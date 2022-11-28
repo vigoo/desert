@@ -102,12 +102,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-    description := "A Scala binary serialization library",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion,
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
-    )
+    description := "A Scala binary serialization library"
   )
   .jsSettings(coverageEnabled := false)
   .enablePlugins(TupleCodecGenerator)
@@ -169,10 +164,26 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-    description := "ZIO API and codecs for desert"
+    description := "ZIO API and codecs for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio"         % zioVersion,
+      "dev.zio" %% "zio-streams" % zioVersion
+    )
   )
   .jsSettings(coverageEnabled := false)
   .dependsOn(core)
+
+lazy val zioPrelude = CrossProject("desert-zio-prelude", file("desert-zio-prelude"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    description := "ZIO Prelude codecs and monadic API for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test", zio)
 
 lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -287,7 +298,7 @@ lazy val docs = project
     micrositeGithubToken                       := sys.env.get("GITHUB_TOKEN"),
     micrositePushSiteWith                      := GitHub4s
   )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, zioPrelude.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
 
 // Temporary fix to avoid including mdoc in the published POM
 
