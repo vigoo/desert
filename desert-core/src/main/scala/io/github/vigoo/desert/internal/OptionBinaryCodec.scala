@@ -1,6 +1,6 @@
 package io.github.vigoo.desert.internal
 
-import io.github.vigoo.desert.BinaryCodec
+import io.github.vigoo.desert._
 import io.github.vigoo.desert.custom.{read, write}
 
 private[desert] final case class OptionBinaryCodec[T]()(implicit val innerCodec: BinaryCodec[T])

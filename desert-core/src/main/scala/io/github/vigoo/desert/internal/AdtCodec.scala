@@ -243,8 +243,8 @@ class AdtCodec[T, BuilderState](
             )
         }
       } else {
-        val input         = ctx.input.inputFor(chunk)
-        implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
+        val input                                 = ctx.input.inputFor(chunk)
+        implicit val dctx: DeserializationContext = ChunkedDeserOps.toDeserializationContext(input)
 
         // This field was serialized
         if (ctx.input.storedVersion < optSince) {
@@ -275,8 +275,8 @@ class AdtCodec[T, BuilderState](
         }
       } else {
         // Field was serialized
-        val input         = ctx.input.inputFor(chunk)
-        implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
+        val input                                 = ctx.input.inputFor(chunk)
+        implicit val dctx: DeserializationContext = ChunkedDeserOps.toDeserializationContext(input)
 
         if (ctx.input.madeOptionalAt.contains(fieldPosition)) {
           // The field was made optional in by a newer version, reading as Option[H]
@@ -296,15 +296,15 @@ class AdtCodec[T, BuilderState](
   private def serialize(command: SerializationCommand)(implicit ctx: ChunkedSerializationContext): Unit =
     command match {
       case SerializationCommand.WriteField(fieldName, value, codec)             =>
-        val chunk         = fieldGenerations.getOrElse(fieldName, 0: Byte)
-        val output        = ctx.output.outputFor(chunk)
-        implicit val sctx = ChunkedSerOps.getSerializationContext(output)
+        val chunk                               = fieldGenerations.getOrElse(fieldName, 0: Byte)
+        val output                              = ctx.output.outputFor(chunk)
+        implicit val sctx: SerializationContext = ChunkedSerOps.getSerializationContext(output)
         codec().serialize(value)
         ChunkedSerOps.recordFieldIndex(fieldName, chunk)
       case SerializationCommand.WriteConstructor(constructorName, value, codec) =>
-        val output        = ctx.output.outputFor(0)
-        implicit val sctx = ChunkedSerOps.getSerializationContext(output)
-        val constructorId = ChunkedSerOps.getConstructorId(constructorName)
+        val output                              = ctx.output.outputFor(0)
+        implicit val sctx: SerializationContext = ChunkedSerOps.getSerializationContext(output)
+        val constructorId                       = ChunkedSerOps.getConstructorId(constructorName)
         writeVarInt(constructorId, optimizeForPositive = true)
         codec().serialize(value)
       case SerializationCommand.Fail(failure)                                   =>
@@ -340,7 +340,7 @@ class AdtCodec[T, BuilderState](
         val input           = ctx.input.inputFor(0)
         val constructorName = ChunkedDeserOps.readOrGetConstructorName(input)
         if (expectedConstructorName == constructorName) {
-          implicit val dctx = ChunkedDeserOps.toDeserializationContext(input)
+          implicit val dctx: DeserializationContext = ChunkedDeserOps.toDeserializationContext(input)
           store(codec().deserialize(), builderState)
         } else {
           builderState
@@ -519,9 +519,9 @@ object AdtCodec {
       ctx.state.readConstructorName match {
         case Some(value) => value
         case None        =>
-          implicit val dctx   = toDeserializationContext(input)
-          val constructorId   = readVarInt(optimizeForPositive = true)
-          val constructorName = getConstructorName(constructorId)
+          implicit val dctx: DeserializationContext = toDeserializationContext(input)
+          val constructorId                         = readVarInt(optimizeForPositive = true)
+          val constructorName                       = getConstructorName(constructorId)
           ctx.state.readConstructorName = Some(constructorName)
           constructorName
       }
