@@ -264,7 +264,8 @@ lazy val docs = project
       cats.js,
       benchmarks,
       shapeless.js,
-      zioSchema.js
+      zioPrelude.js,
+      zioSchema.js,
     ),
     git.remoteRepo                             := "git@github.com:vigoo/desert.git",
     micrositeUrl                               := "https://vigoo.github.io",
