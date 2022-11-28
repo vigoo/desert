@@ -20,6 +20,7 @@ The following code examples demonstrate this and also shows how the binary repre
 ```scala mdoc
 import io.github.vigoo.desert._
 import io.github.vigoo.desert.shapeless._
+import io.github.vigoo.desert.zioprelude._
 
 import java.time._
 import java.time.temporal.ChronoUnit

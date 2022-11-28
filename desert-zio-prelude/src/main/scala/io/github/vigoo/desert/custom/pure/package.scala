@@ -1,7 +1,7 @@
 package io.github.vigoo.desert.custom
 
-import io.github.vigoo.desert.{DesertException, DesertFailure}
 import io.github.vigoo.desert.internal.{DeserializationEnv, PureSerializerState, SerializationEnv}
+import io.github.vigoo.desert.{DesertException, DesertFailure}
 import zio.prelude.fx.ZPure
 
 package object pure extends PureBinarySerializerOps with PureBinaryDeserializerOps {

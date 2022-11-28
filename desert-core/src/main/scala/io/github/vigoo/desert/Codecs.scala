@@ -4,8 +4,6 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.internal.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
-import _root_.zio.{Chunk, NonEmptyChunk}
-import _root_.zio.prelude.{Associative, NonEmptyList, Validation, ZSet}
 import io.github.vigoo.desert.internal.{AdtCodec, OptionBinaryCodec}
 
 import java.time._
@@ -554,66 +552,5 @@ trait Codecs extends internal.TupleCodecs {
         case Failure(reason) => write(false); write(reason)
         case Success(value)  => write(true); write(value)
       }
-  }
-
-  // ZIO prelude specific codecs
-
-  implicit def nonEmptyChunkCodec[A: BinaryCodec]: BinaryCodec[NonEmptyChunk[A]] = {
-    val inner = iterableCodec[A, Chunk[A]](BinaryCodec[A], Chunk.iterableFactory)
-    BinaryCodec.from(
-      inner.contramap(_.toChunk),
-      new BinaryDeserializer[NonEmptyChunk[A]] {
-        override def deserialize()(implicit ctx: DeserializationContext): NonEmptyChunk[A] = {
-          val chunk = inner.deserialize()
-          NonEmptyChunk.fromChunk(chunk) match {
-            case Some(nonEmptyChunk) => nonEmptyChunk
-            case None                =>
-              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty chunk is serialized as empty", None))
-          }
-        }
-      }
-    )
-  }
-
-  implicit def validationCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validation[E, A]] =
-    new BinaryCodec[Validation[E, A]] {
-      override def deserialize()(implicit ctx: DeserializationContext): Validation[E, A] = {
-        val isValid = read[Boolean]()
-        if (isValid)
-          Validation.succeed(read[A]())
-        else {
-          val errors = read[NonEmptyChunk[E]]()
-          Validation.validateAll(errors.map(Validation.fail(_))).map(_.asInstanceOf[A])
-        }
-      }
-
-      override def serialize(value: Validation[E, A])(implicit context: SerializationContext): Unit =
-        value match {
-          case Validation.Failure(_, value) => write(false); write(value)
-          case Validation.Success(_, value) => write(true); write(value)
-        }
-    }
-
-  implicit def nonEmptyListCodec[A: BinaryCodec]: BinaryCodec[NonEmptyList[A]] = {
-    val inner = listCodec[A]
-    BinaryCodec.from(
-      inner.contramap(_.toList),
-      new BinaryDeserializer[NonEmptyList[A]] {
-        override def deserialize()(implicit ctx: DeserializationContext): NonEmptyList[A] =
-          inner.deserialize() match {
-            case x :: xs => NonEmptyList.fromIterable(x, xs)
-            case Nil     =>
-              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty list is serialized as empty", None))
-          }
-      }
-    )
-  }
-
-  implicit def zsetCodec[A: BinaryCodec, B: BinaryCodec]: BinaryCodec[ZSet[A, B]] = {
-    val inner = mapCodec[A, B]
-    BinaryCodec.from(
-      inner.contramap(_.toMap),
-      inner.map(ZSet.fromMap)
-    )
   }
 }
