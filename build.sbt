@@ -153,7 +153,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.4.1"
+      "org.typelevel" %% "cats-effect" % "3.4.2"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -265,7 +265,7 @@ lazy val docs = project
       benchmarks,
       shapeless.js,
       zioPrelude.js,
-      zioSchema.js,
+      zioSchema.js
     ),
     git.remoteRepo                             := "git@github.com:vigoo/desert.git",
     micrositeUrl                               := "https://vigoo.github.io",
