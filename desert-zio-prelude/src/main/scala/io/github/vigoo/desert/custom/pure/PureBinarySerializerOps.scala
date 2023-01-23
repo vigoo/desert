@@ -3,7 +3,15 @@ package io.github.vigoo.desert.custom.pure
 import io.github.vigoo.desert.custom.SerializationContext
 import io.github.vigoo.desert.internal.SerializerState.{RefAlreadyStored, RefIsNew, StoreRefResult, StoreStringResult}
 import io.github.vigoo.desert.internal.{PureSerializerState, SerializationEnv, SerializerState}
-import io.github.vigoo.desert.{BinaryCodec, BinaryOutput, BinarySerializer, DesertException, DesertFailure, TypeRegistry, custom}
+import io.github.vigoo.desert.{
+  BinaryCodec,
+  BinaryOutput,
+  BinarySerializer,
+  DesertException,
+  DesertFailure,
+  TypeRegistry,
+  custom
+}
 import zio.prelude.fx.ZPure
 
 import java.util.zip.Deflater
