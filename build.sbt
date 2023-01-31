@@ -5,7 +5,7 @@ import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
 val scala2 = "2.13.10"
-val scala3 = "3.2.1"
+val scala3 = "3.2.2"
 
 val zioVersion       = "2.0.5"
 val zioSchemaVersion = "0.4.2"
