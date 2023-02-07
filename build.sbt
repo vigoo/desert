@@ -5,9 +5,9 @@ import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
 val scala2 = "2.13.10"
-val scala3 = "3.2.1"
+val scala3 = "3.2.2"
 
-val zioVersion       = "2.0.5"
+val zioVersion       = "2.0.6"
 val zioSchemaVersion = "0.4.2"
 
 name := "desert"
@@ -140,7 +140,7 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"        % "2.9.0",
-      "dev.zio"       %% "zio-interop-cats" % "23.0.0.0" % Test
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.1" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
