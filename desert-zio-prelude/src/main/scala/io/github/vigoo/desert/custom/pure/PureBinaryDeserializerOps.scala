@@ -4,7 +4,15 @@ import io.github.vigoo.desert.TypeRegistry.RegisteredTypeId
 import io.github.vigoo.desert.custom.DeserializationContext
 import io.github.vigoo.desert.internal.SerializerState.{RefId, StringId}
 import io.github.vigoo.desert.internal.{DeserializationEnv, PureSerializerState, SerializerState}
-import io.github.vigoo.desert.{BinaryCodec, BinaryDeserializer, BinaryInput, DesertException, DesertFailure, TypeRegistry, custom}
+import io.github.vigoo.desert.{
+  BinaryCodec,
+  BinaryDeserializer,
+  BinaryInput,
+  DesertException,
+  DesertFailure,
+  TypeRegistry,
+  custom
+}
 import zio.prelude.fx.ZPure
 
 import scala.util.Try

@@ -20,7 +20,7 @@ object Main extends ZIOAppDefault {
 
   def run: ZIO[ZIOAppArgs, Any, ExitCode] = {
     val paramSpec = for {
-      _ <- metadata("golden-dataset-generator")
+      _         <- metadata("golden-dataset-generator")
       targetDir <- parameter[Path]("target directory to put the generated binaries in", "TARGETDIR")
     } yield Params(targetDir)
 
@@ -29,12 +29,14 @@ object Main extends ZIOAppDefault {
         params <- parameters[Params]
 
         dataset1 <- serializeToChunk(TestModel1.value1)
-        _ <- saveChunkAs(params.targetDir, "dataset1.bin", dataset1)
+        _        <- saveChunkAs(params.targetDir, "dataset1.bin", dataset1)
       } yield ExitCode.success
 
-    program.provideSome[ZIOAppArgs](
-      parametersFromArgs(paramSpec).printUsageInfoOnFailure
-    ).catchSome { _: ParserFailure => ZIO.succeed(ExitCode.failure) }
+    program
+      .provideSome[ZIOAppArgs](
+        parametersFromArgs(paramSpec).printUsageInfoOnFailure
+      )
+      .catchSome { _: ParserFailure => ZIO.succeed(ExitCode.failure) }
   }
 
   private def saveChunkAs(targetDir: Path, filename: String, data: Chunk[Byte]): ZIO[Any, IOException, Unit] =
