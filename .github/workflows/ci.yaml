@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: ['2.13.10', "3.2.1"]
+        scala: ['2.13.10', "3.2.2"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,8 +19,8 @@ jobs:
       - name: Coursier cache
         uses: coursier/cache-action@v5
       - name: Build and test
-        if: ${{ matrix.scala == '3.2.1' }}
+        if: ${{ matrix.scala == '3.2.2' }}
         run: sbt ++${{ matrix.scala }} clean desert-core/test desert-coreJS/test desert-akka/test desert-cats/test desert-catsJS/test desert-cats-effect/test desert-cats-effectJS/test desert-zio/test desert-zioJS/test desert-zio-schema/test desert-zio-schemaJS/test desert-shardcake/test
       - name: Build and test
-        if: ${{ matrix.scala != '3.2.1' }}
+        if: ${{ matrix.scala != '3.2.2' }}
         run: sbt ++${{ matrix.scala }} clean coverage test coverageReport && bash <(curl -s https://codecov.io/bash)
