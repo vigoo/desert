@@ -441,7 +441,10 @@ trait Codecs extends internal.TupleCodecs {
     )
 
   implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(
-    persistedThrowableCodec.contramap(PersistedThrowable.apply),
+    persistedThrowableCodec.contramap {
+      case persistedThrowable: PersistedThrowable => persistedThrowable
+      case throwable: Throwable => PersistedThrowable(throwable)
+    },
     persistedThrowableCodec.map(persisted => persisted)
   )
 
