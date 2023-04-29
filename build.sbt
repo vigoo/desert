@@ -140,7 +140,7 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"        % "2.9.0",
-      "dev.zio"       %% "zio-interop-cats" % "23.0.0.4" % Test
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.5" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
