@@ -12,7 +12,7 @@ addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.2")
 
 libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.8.10"
 
-libraryDependencies += "org.scoverage" %% "scalac-scoverage-plugin" % "2.0.10" cross (CrossVersion.full)
+libraryDependencies += "org.scoverage" %% "scalac-scoverage-plugin" % "2.0.11" cross (CrossVersion.full)
 
 ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
