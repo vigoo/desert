@@ -1,54 +1,53 @@
 package io.github.vigoo.desert.internal
 
-import io.github.vigoo.desert.{BinaryInput, DesertFailure}
+import io.github.vigoo.desert.{BinaryInput, DesertException, DesertFailure}
 
 import java.io.{DataInputStream, EOFException, InputStream}
-import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 
 class JavaStreamBinaryInput(stream: InputStream) extends BinaryInput {
   private val dataStream = new DataInputStream(stream)
 
-  override final def readByte(): Either[DesertFailure, Byte] =
-    handleFailures(dataStream.readByte())
+  override final def readByte(): Byte =
+    try dataStream.readByte()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override final def readShort(): Either[DesertFailure, Short] =
-    handleFailures(dataStream.readShort())
+  override final def readShort(): Short =
+    try dataStream.readShort()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override final def readInt(): Either[DesertFailure, Int] =
-    handleFailures(dataStream.readInt())
+  override final def readInt(): Int =
+    try dataStream.readInt()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override final def readLong(): Either[DesertFailure, Long] =
-    handleFailures(dataStream.readLong())
+  override final def readLong(): Long =
+    try dataStream.readLong()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override def readFloat(): Either[DesertFailure, Float] =
-    handleFailures(dataStream.readFloat())
+  override def readFloat(): Float =
+    try dataStream.readFloat()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override def readDouble(): Either[DesertFailure, Double] =
-    handleFailures(dataStream.readDouble())
+  override def readDouble(): Double =
+    try dataStream.readDouble()
+    catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
 
-  override final def readBytes(count: Int): Either[DesertFailure, Array[Byte]] = {
+  override final def readBytes(count: Int): Array[Byte] = {
     val buffer = new Array[Byte](count)
-    if (count == 0) {
-      Right(buffer)
-    } else {
-      for {
-        readBytes <- handleFailures(dataStream.read(buffer))
-        _         <- assert(readBytes == count, DesertFailure.InputEndedUnexpectedly())
-      } yield buffer
+    if (count > 0) {
+      val readBytes =
+        try dataStream.read(buffer)
+        catch { case NonFatal(e) => throw new DesertException(wrapError(e)) }
+      if (readBytes != count) {
+        throw new DesertException(DesertFailure.InputEndedUnexpectedly())
+      }
     }
+    buffer
   }
 
-  private def handleFailures[T](f: => T): Either[DesertFailure, T] =
-    Try(f) match {
-      case Success(value)                => Right(value)
-      case Failure(reason: EOFException) => Left(DesertFailure.InputEndedUnexpectedly())
-      case Failure(reason)               => Left(DesertFailure.FailedToReadInput(reason))
-    }
-
-  private def assert(condition: Boolean, failure: DesertFailure): Either[DesertFailure, Unit] =
-    if (condition) {
-      Right(())
-    } else {
-      Left(failure)
+  private def wrapError(reason: Throwable): DesertFailure =
+    reason match {
+      case _: EOFException => DesertFailure.InputEndedUnexpectedly()
+      case _               => DesertFailure.FailedToReadInput(reason)
     }
 }

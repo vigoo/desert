@@ -4,11 +4,11 @@ import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
-val scala2 = "2.13.10"
-val scala3 = "3.2.1"
+val scala2 = "2.13.12"
+val scala3 = "3.3.1"
 
-val zioVersion       = "2.0.4"
-val zioSchemaVersion = "0.3.1"
+val zioVersion       = "2.0.19"
+val zioSchemaVersion = "0.4.15"
 
 name := "desert"
 
@@ -102,12 +102,7 @@ lazy val core = CrossProject("desert-core", file("desert-core"))(JVMPlatform, JS
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-    description := "A Scala binary serialization library",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion,
-      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
-    )
+    description := "A Scala binary serialization library"
   )
   .jsSettings(coverageEnabled := false)
   .enablePlugins(TupleCodecGenerator)
@@ -145,7 +140,7 @@ lazy val cats = CrossProject("desert-cats", file("desert-cats"))(JVMPlatform, JS
     description := "Desert serializers for cats data types",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"        % "2.9.0",
-      "dev.zio"       %% "zio-interop-cats" % "22.0.0.0" % Test
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.8" % Test
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -158,7 +153,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.4.1"
+      "org.typelevel" %% "cats-effect" % "3.5.2"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -169,10 +164,26 @@ lazy val zio = CrossProject("desert-zio", file("desert-zio"))(JVMPlatform, JSPla
   .crossType(CrossType.Pure)
   .settings(commonSettings)
   .settings(
-    description := "ZIO API and codecs for desert"
+    description := "ZIO API and codecs for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio"         % zioVersion,
+      "dev.zio" %% "zio-streams" % zioVersion
+    )
   )
   .jsSettings(coverageEnabled := false)
   .dependsOn(core)
+
+lazy val zioPrelude = CrossProject("desert-zio-prelude", file("desert-zio-prelude"))(JVMPlatform, JSPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    description := "ZIO Prelude codecs and monadic API for desert",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-prelude" % "1.0.0-RC16"
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test", zio)
 
 lazy val zioSchema = CrossProject("desert-zio-schema", file("desert-zio-schema"))(JVMPlatform, JSPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -202,7 +213,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.0.5",
+      "com.devsisters" %% "shardcake-core"        % "2.0.6",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
@@ -218,7 +229,7 @@ lazy val benchmarks = project
     crossScalaVersions -= scala3
   )
   .enablePlugins(JmhPlugin)
-  .dependsOn(core.jvm, shapeless.jvm)
+  .dependsOn(core.jvm, shapeless.jvm, zioSchema.jvm)
 
 lazy val docsPlugins = project
   .in(file("docs-plugins"))
@@ -228,7 +239,7 @@ lazy val docsPlugins = project
     coverageEnabled := false,
     crossScalaVersions -= scala3,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "mdoc-cli" % "2.3.6"
+      "org.scalameta" %% "mdoc-cli" % "2.3.7"
     )
   )
   .dependsOn(core.jvm)
@@ -253,6 +264,7 @@ lazy val docs = project
       cats.js,
       benchmarks,
       shapeless.js,
+      zioPrelude.js,
       zioSchema.js
     ),
     git.remoteRepo                             := "git@github.com:vigoo/desert.git",
@@ -287,7 +299,7 @@ lazy val docs = project
     micrositeGithubToken                       := sys.env.get("GITHUB_TOKEN"),
     micrositePushSiteWith                      := GitHub4s
   )
-  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
+  .dependsOn(core.jvm, catsEffect.jvm, zio.jvm, zioPrelude.jvm, akka, cats.jvm, shapeless.jvm, shardcake, docsPlugins)
 
 // Temporary fix to avoid including mdoc in the published POM
 

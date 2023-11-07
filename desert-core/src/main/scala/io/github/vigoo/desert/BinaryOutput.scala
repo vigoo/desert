@@ -19,43 +19,43 @@ trait BinaryOutput {
     * @param value
     *   The value to write
     */
-  def writeByte(value: Byte): Either[DesertFailure, Unit]
+  def writeByte(value: Byte): Unit
 
   /** Writes one 16-bit integer
     * @param value
     *   The value to write
     */
-  def writeShort(value: Short): Either[DesertFailure, Unit]
+  def writeShort(value: Short): Unit
 
   /** Writes one 32-bit integer
     * @param value
     *   The value to write
     */
-  def writeInt(value: Int): Either[DesertFailure, Unit]
+  def writeInt(value: Int): Unit
 
   /** Writes one 64-bit integer
     * @param value
     *   The value to write
     */
-  def writeLong(value: Long): Either[DesertFailure, Unit]
+  def writeLong(value: Long): Unit
 
   /** Writes one 32-bit floating point value
     * @param value
     *   The value to write
     */
-  def writeFloat(value: Float): Either[DesertFailure, Unit]
+  def writeFloat(value: Float): Unit
 
   /** Writes one 64-bit floating point value
     * @param value
     *   The value to write
     */
-  def writeDouble(value: Double): Either[DesertFailure, Unit]
+  def writeDouble(value: Double): Unit
 
   /** Writes an array of bytes (without writing any information about the number of bytes)
     * @param value
     *   The bytes to write
     */
-  def writeBytes(value: Array[Byte]): Either[DesertFailure, Unit]
+  def writeBytes(value: Array[Byte]): Unit
 
   /** Writes a slice of an array of bytes (without writing any infomation about the number of bytes)
     * @param value
@@ -65,7 +65,7 @@ trait BinaryOutput {
     * @param count
     *   Number of bytes to write
     */
-  def writeBytes(value: Array[Byte], start: Int, count: Int): Either[DesertFailure, Unit]
+  def writeBytes(value: Array[Byte], start: Int, count: Int): Unit
 
   /** Writes a 32-bit integer with a variable-length encoding
     *
@@ -77,7 +77,7 @@ trait BinaryOutput {
     * @param optimizeForPositive
     *   If true the encoding is optimized for positive numbers
     */
-  def writeVarInt(value: Int, optimizeForPositive: Boolean = false): Either[DesertFailure, Unit] = {
+  def writeVarInt(value: Int, optimizeForPositive: Boolean = false): Unit = {
     val adjustedValue = if (optimizeForPositive) value else (value << 1) ^ (value >> 31)
     if (adjustedValue >>> 7 == 0) {
       writeByte(adjustedValue.toByte)
@@ -121,7 +121,7 @@ trait BinaryOutput {
   def writeCompressedByteArray(
       uncompressedData: Array[Byte],
       level: Int = Deflater.BEST_SPEED
-  ): Either[DesertFailure, Unit] =
+  ): Unit =
     if (uncompressedData.length == 0) {
       writeVarInt(0, optimizeForPositive = true)
     } else {
@@ -140,17 +140,15 @@ trait BinaryOutput {
             compressedLength += length
           }
 
-          for {
-            _ <- writeVarInt(uncompressedData.length, optimizeForPositive = true)
-            _ <- writeVarInt(compressedLength, optimizeForPositive = true)
-            _ <- compressedData.foldLeft[Either[DesertFailure, Unit]](Right(())) { case (r, bs) =>
-                   r.flatMap(_ => writeBytes(bs))
-                 }
-          } yield ()
+          writeVarInt(uncompressedData.length, optimizeForPositive = true)
+          writeVarInt(compressedLength, optimizeForPositive = true)
+          for (bs <- compressedData)
+            writeBytes(bs)
         } finally
           deflater.end()
       } catch {
-        case NonFatal(failure) => Left(DesertFailure.SerializationFailure("Failed to compress data", Some(failure)))
+        case NonFatal(failure) =>
+          throw DesertException(DesertFailure.SerializationFailure("Failed to compress data", Some(failure)))
       }
     }
 }

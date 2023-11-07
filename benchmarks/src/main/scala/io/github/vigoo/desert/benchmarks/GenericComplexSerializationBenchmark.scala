@@ -67,14 +67,12 @@ class GenericComplexSerializationBenchmark {
   }
 
   @Benchmark
-  def serializeComplexDataStructure(): Unit = {
-    val data = serializeToArray(testDocument)
-  }
+  def serializeComplexDataStructure(): Either[DesertFailure, Array[Byte]] =
+    serializeToArray(testDocument)
 
   @Benchmark
-  def deserializeComplexDataStructure(): Unit = {
-    val result = deserializeFromArray[Root](serializedData)
-  }
+  def deserializeComplexDataStructure(): Either[DesertFailure, Root] =
+    deserializeFromArray[Root](serializedData)
 }
 
 object GenericComplexSerializationBenchmark {

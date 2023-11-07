@@ -4,37 +4,73 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 import io.github.vigoo.desert.custom._
 import io.github.vigoo.desert.internal.SerializerState.{StringAlreadyStored, StringId, StringIsNew}
-import _root_.zio.{Chunk, NonEmptyChunk}
-import _root_.zio.prelude.{Associative, NonEmptyList, Validation, ZSet}
-import io.github.vigoo.desert.internal.AdtCodec
+import io.github.vigoo.desert.internal.{AdtCodec, OptionBinaryCodec}
 
 import java.time._
+import scala.annotation.tailrec
 import scala.collection.{Factory, mutable}
 import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /** Module containing implicit binary codecs for a lot of base types
   */
 trait Codecs extends internal.TupleCodecs {
 
-  implicit val byteCodec: BinaryCodec[Byte]     = BinaryCodec.define[Byte](value => writeByte(value))(readByte())
-  implicit val shortCodec: BinaryCodec[Short]   = BinaryCodec.define[Short](value => writeShort(value))(readShort())
-  implicit val intCodec: BinaryCodec[Int]       = BinaryCodec.define[Int](value => writeInt(value))(readInt())
-  implicit val longCodec: BinaryCodec[Long]     = BinaryCodec.define[Long](value => writeLong(value))(readLong())
-  implicit val floatCodec: BinaryCodec[Float]   = BinaryCodec.define[Float](value => writeFloat(value))(readFloat())
-  implicit val doubleCodec: BinaryCodec[Double] = BinaryCodec.define[Double](value => writeDouble(value))(readDouble())
+  implicit val byteCodec: BinaryCodec[Byte] = new BinaryCodec[Byte] {
+    override def deserialize()(implicit ctx: DeserializationContext): Byte            = readByte()
+    override def serialize(value: Byte)(implicit context: SerializationContext): Unit = writeByte(value)
+  }
 
-  private def createVarIntCodec(optimizeForPositive: Boolean): BinaryCodec[Int] =
-    BinaryCodec.define[Int](value => writeVarInt(value, optimizeForPositive))(readVarInt(optimizeForPositive))
-  val varIntOptimizedForPositiveCodec: BinaryCodec[Int]                         = createVarIntCodec(optimizeForPositive = true)
-  val varIntCodec: BinaryCodec[Int]                                             = createVarIntCodec(optimizeForPositive = false)
+  implicit val shortCodec: BinaryCodec[Short] = new BinaryCodec[Short] {
+    override def deserialize()(implicit ctx: DeserializationContext): Short            = readShort()
+    override def serialize(value: Short)(implicit context: SerializationContext): Unit = writeShort(value)
+  }
 
-  implicit val booleanCodec: BinaryCodec[Boolean] =
-    BinaryCodec.define[Boolean](value => writeByte(if (value) 1 else 0))(readByte().map(_ != 0))
+  implicit val intCodec: BinaryCodec[Int] = new BinaryCodec[Int] {
+    override def deserialize()(implicit ctx: DeserializationContext): Int            = readInt()
+    override def serialize(value: Int)(implicit context: SerializationContext): Unit = writeInt(value)
+  }
 
-  implicit val unitCodec: BinaryCodec[Unit] =
-    BinaryCodec.define[Unit](_ => finishSerializer())(finishDeserializerWith(()))
+  implicit val longCodec: BinaryCodec[Long] = new BinaryCodec[Long] {
+    override def deserialize()(implicit ctx: DeserializationContext): Long            = readLong()
+    override def serialize(value: Long)(implicit context: SerializationContext): Unit = writeLong(value)
+  }
+
+  implicit val floatCodec: BinaryCodec[Float] = new BinaryCodec[Float] {
+    override def deserialize()(implicit ctx: DeserializationContext): Float            = readFloat()
+    override def serialize(value: Float)(implicit context: SerializationContext): Unit = writeFloat(value)
+  }
+
+  implicit val doubleCodec: BinaryCodec[Double] = new BinaryCodec[Double] {
+    override def deserialize()(implicit ctx: DeserializationContext): Double            = readDouble()
+    override def serialize(value: Double)(implicit context: SerializationContext): Unit = writeDouble(value)
+  }
+
+  private def createVarIntCodec(optimizeForPositive: Boolean): BinaryCodec[Int] = new BinaryCodec[Int] {
+    override def deserialize()(implicit ctx: DeserializationContext): Int            =
+      readVarInt(optimizeForPositive)
+    override def serialize(value: Int)(implicit context: SerializationContext): Unit =
+      writeVarInt(value, optimizeForPositive)
+  }
+
+  val varIntOptimizedForPositiveCodec: BinaryCodec[Int] = createVarIntCodec(optimizeForPositive = true)
+  val varIntCodec: BinaryCodec[Int]                     = createVarIntCodec(optimizeForPositive = false)
+
+  implicit val booleanCodec: BinaryCodec[Boolean] = new BinaryCodec[Boolean] {
+    override def deserialize()(implicit ctx: DeserializationContext): Boolean =
+      readByte() != 0
+
+    override def serialize(value: Boolean)(implicit context: SerializationContext): Unit = writeByte(
+      if (value) 1 else 0
+    )
+  }
+
+  implicit val unitCodec: BinaryCodec[Unit] = new BinaryCodec[Unit] {
+    override def deserialize()(implicit ctx: DeserializationContext): Unit            = ()
+    override def serialize(value: Unit)(implicit context: SerializationContext): Unit = ()
+  }
 
   implicit val charCodec: BinaryCodec[Char] = BinaryCodec.from(
     shortCodec.contramap(_.toShort),
@@ -44,69 +80,70 @@ trait Codecs extends internal.TupleCodecs {
   implicit val stringCodec: BinaryCodec[String] = new BinaryCodec[String] {
     private val charset = StandardCharsets.UTF_8
 
-    override def serialize(value: String): io.github.vigoo.desert.Ser[Unit] = {
-      val raw = value.getBytes(charset)
-      for {
-        _ <- writeVarInt(raw.size, optimizeForPositive = false)
-        _ <- writeBytes(raw)
-      } yield ()
+    override def deserialize()(implicit ctx: DeserializationContext): String = {
+      val count = readVarInt(optimizeForPositive = false)
+      val bytes = readBytes(count)
+      try
+        new String(bytes, charset)
+      catch {
+        case NonFatal(reason) =>
+          throw DesertException(DesertFailure.DeserializationFailure("Failed to decode string", Some(reason)))
+      }
     }
 
-    override def deserialize(): Deser[String] =
-      for {
-        count  <- readVarInt(optimizeForPositive = false)
-        bytes  <- readBytes(count)
-        string <- Deser.fromEither(
-                    Try(new String(bytes, charset)).toEither.left.map(reason =>
-                      DesertFailure.DeserializationFailure("Failed to decode string", Some(reason))
-                    )
-                  )
-      } yield string
+    override def serialize(value: String)(implicit context: SerializationContext): Unit = {
+      val raw = value.getBytes(charset)
+      writeVarInt(raw.size, optimizeForPositive = false)
+      writeBytes(raw)
+    }
   }
 
   implicit val deduplicatedStringCodec: BinaryCodec[DeduplicatedString] = new BinaryCodec[DeduplicatedString] {
     private val charset = StandardCharsets.UTF_8
 
-    override def serialize(value: DeduplicatedString): io.github.vigoo.desert.Ser[Unit] =
-      storeString(value.string).flatMap {
+    override def deserialize()(implicit ctx: DeserializationContext): DeduplicatedString = {
+      val countOrId = readVarInt(optimizeForPositive = false)
+      if (countOrId < 0) {
+        val id = StringId(-countOrId)
+        getString(id) match {
+          case Some(string) => DeduplicatedString(string)
+          case None         => throw DesertException(DesertFailure.InvalidStringId(id))
+        }
+      } else {
+        val bytes  = readBytes(countOrId)
+        val string =
+          try
+            new String(bytes, charset)
+          catch {
+            case NonFatal(reason) =>
+              throw DesertException(DesertFailure.DeserializationFailure("Failed to decode string", Some(reason)))
+          }
+        storeReadString(string)
+        DeduplicatedString(string)
+      }
+    }
+
+    override def serialize(value: DeduplicatedString)(implicit context: SerializationContext): Unit =
+      storeString(value.string) match {
         case StringAlreadyStored(id) =>
           writeVarInt(-id.value, optimizeForPositive = false)
         case StringIsNew(id)         =>
           stringCodec.serialize(value.string)
       }
-
-    override def deserialize(): Deser[DeduplicatedString] =
-      for {
-        countOrId <- readVarInt(optimizeForPositive = false)
-        result    <- if (countOrId < 0) {
-                       val id = StringId(-countOrId)
-                       getString(id).flatMap {
-                         case Some(string) => finishDeserializerWith[String](string)
-                         case None         => failDeserializerWith[String](DesertFailure.InvalidStringId(id))
-                       }
-                     } else {
-                       for {
-                         bytes  <- readBytes(countOrId)
-                         string <- Deser.fromEither(
-                                     Try(new String(bytes, charset)).toEither.left.map(reason =>
-                                       DesertFailure.DeserializationFailure("Failed to decode string", Some(reason))
-                                     )
-                                   )
-                         _      <- storeReadString(string)
-                       } yield string
-                     }
-      } yield DeduplicatedString(result)
   }
 
-  implicit val uuidCodec: BinaryCodec[UUID] = BinaryCodec.define((uuid: UUID) =>
-    for {
-      _ <- writeLong(uuid.getMostSignificantBits)
-      _ <- writeLong(uuid.getLeastSignificantBits)
-    } yield ()
-  )(for {
-    msb <- readLong()
-    lsb <- readLong()
-  } yield new UUID(msb, lsb))
+  implicit val uuidCodec: BinaryCodec[UUID] = new BinaryCodec[UUID] {
+    override def deserialize()(implicit ctx: DeserializationContext): UUID = {
+      val mostSigBits  = readLong()
+      val leastSigBits = readLong()
+      new UUID(mostSigBits, leastSigBits)
+    }
+
+    override def serialize(value: UUID)(implicit context: SerializationContext): Unit = {
+      writeLong(value.getMostSignificantBits)
+      writeLong(value.getLeastSignificantBits)
+    }
+  }
 
   implicit val bigDecimalCodec: BinaryCodec[BigDecimal] =
     BinaryCodec.from(stringCodec.contramap(_.toString()), stringCodec.map(BigDecimal(_)))
@@ -114,19 +151,19 @@ trait Codecs extends internal.TupleCodecs {
   implicit val javaBigDecimalCodec: BinaryCodec[java.math.BigDecimal] =
     BinaryCodec.from(stringCodec.contramap(_.toString()), stringCodec.map(new java.math.BigDecimal(_)))
 
-  implicit val javaBigIntegerCodec: BinaryCodec[java.math.BigInteger] =
-    BinaryCodec.define({ (bigint: java.math.BigInteger) =>
-      val array = bigint.toByteArray
-      for {
-        _ <- writeVarInt(array.length, optimizeForPositive = true)
-        _ <- writeBytes(array)
-      } yield ()
-    })(
-      for {
-        length <- readVarInt(optimizeForPositive = true)
-        bytes  <- readBytes(length)
-      } yield new java.math.BigInteger(bytes)
-    )
+  implicit val javaBigIntegerCodec: BinaryCodec[java.math.BigInteger] = new BinaryCodec[java.math.BigInteger] {
+    override def deserialize()(implicit ctx: DeserializationContext): java.math.BigInteger = {
+      val length = readVarInt(optimizeForPositive = true)
+      val bytes  = readBytes(length)
+      new java.math.BigInteger(bytes)
+    }
+
+    override def serialize(value: java.math.BigInteger)(implicit context: SerializationContext): Unit = {
+      val bytes = value.toByteArray
+      writeVarInt(bytes.length, optimizeForPositive = true)
+      writeBytes(bytes)
+    }
+  }
 
   implicit val bigIntCodec: BinaryCodec[BigInt] =
     BinaryCodec.from(
@@ -153,64 +190,69 @@ trait Codecs extends internal.TupleCodecs {
     )
 
   implicit val monthDayCodec: BinaryCodec[MonthDay] =
-    BinaryCodec.define((monthDay: MonthDay) =>
-      for {
-        _ <- write(monthDay.getMonth)
-        _ <- writeByte(monthDay.getDayOfMonth.toByte)
-      } yield ()
-    )(for {
-      month      <- read[Month]()
-      dayOfMonth <- readByte()
-    } yield MonthDay.of(month, dayOfMonth.toInt))
+    new BinaryCodec[MonthDay] {
+      override def deserialize()(implicit ctx: DeserializationContext): MonthDay = {
+        val month      = read[Month]()
+        val dayOfMonth = readByte()
+        MonthDay.of(month, dayOfMonth.toInt)
+      }
 
-  implicit val yearMonthCodec: BinaryCodec[YearMonth] =
-    BinaryCodec.define((yearMonth: YearMonth) =>
-      for {
-        _ <- writeVarInt(yearMonth.getYear, optimizeForPositive = true)
-        _ <- write(yearMonth.getMonth)
-      } yield ()
-    )(for {
-      year  <- readVarInt(optimizeForPositive = true)
-      month <- read[Month]()
-    } yield YearMonth.of(year, month))
+      override def serialize(value: MonthDay)(implicit context: SerializationContext): Unit = {
+        write(value.getMonth)
+        writeByte(value.getDayOfMonth.toByte)
+      }
+    }
+
+  implicit val yearMonthCodec: BinaryCodec[YearMonth] = new BinaryCodec[YearMonth] {
+    override def deserialize()(implicit ctx: DeserializationContext): YearMonth = {
+      val year  = readVarInt(optimizeForPositive = true)
+      val month = read[Month]()
+      YearMonth.of(year, month)
+    }
+
+    override def serialize(value: YearMonth)(implicit context: SerializationContext): Unit = {
+      writeVarInt(value.getYear, optimizeForPositive = true)
+      write(value.getMonth)
+    }
+  }
 
   implicit val periodCodec: BinaryCodec[Period] =
-    BinaryCodec.define((period: Period) =>
-      for {
-        _ <- writeVarInt(period.getYears, optimizeForPositive = true)
-        _ <- writeVarInt(period.getMonths, optimizeForPositive = true)
-        _ <- writeVarInt(period.getDays, optimizeForPositive = true)
-      } yield ()
-    )(for {
-      years  <- readVarInt(optimizeForPositive = true)
-      months <- readVarInt(optimizeForPositive = true)
-      days   <- readVarInt(optimizeForPositive = true)
-    } yield Period.of(years, months, days))
+    new BinaryCodec[Period] {
+      override def deserialize()(implicit ctx: DeserializationContext): Period = {
+        val years  = readVarInt(optimizeForPositive = true)
+        val months = readVarInt(optimizeForPositive = true)
+        val days   = readVarInt(optimizeForPositive = true)
+        Period.of(years, months, days)
+      }
+
+      override def serialize(value: Period)(implicit context: SerializationContext): Unit = {
+        writeVarInt(value.getYears, optimizeForPositive = true)
+        writeVarInt(value.getMonths, optimizeForPositive = true)
+        writeVarInt(value.getDays, optimizeForPositive = true)
+      }
+    }
 
   implicit val zoneIdCodec: BinaryCodec[ZoneId] =
-    BinaryCodec.define[ZoneId] {
-      case offset: ZoneOffset =>
-        for {
-          _ <- writeByte(0)
-          _ <- writeVarInt(offset.getTotalSeconds, optimizeForPositive = false)
-        } yield ()
-      case region             =>
-        for {
-          _ <- writeByte(1)
-          _ <- write(region.getId)
-        } yield ()
-    }(
-      for {
-        typ    <- readByte()
-        result <-
-          typ match {
-            case 0 =>
-              readVarInt(optimizeForPositive = false).map(totalSeconds => ZoneOffset.ofTotalSeconds(totalSeconds))
-            case 1 => read[String]().map(id => ZoneId.of(id))
-            case 2 => failDeserializerWith(DesertFailure.InvalidConstructorId(typ.toInt, "ZoneId"))
-          }
-      } yield result
-    )
+    new BinaryCodec[ZoneId] {
+      override def deserialize()(implicit ctx: DeserializationContext): ZoneId = {
+        val typ = readByte()
+        typ match {
+          case 0 => ZoneOffset.ofTotalSeconds(readVarInt(optimizeForPositive = false))
+          case 1 => ZoneId.of(read[String]())
+          case _ => throw DesertException(DesertFailure.InvalidConstructorId(typ.toInt, "ZoneId"))
+        }
+      }
+
+      override def serialize(value: ZoneId)(implicit context: SerializationContext): Unit =
+        value match {
+          case offset: ZoneOffset =>
+            writeByte(0)
+            writeVarInt(offset.getTotalSeconds, optimizeForPositive = false)
+          case region             =>
+            writeByte(1)
+            write(region.getId)
+        }
+    }
 
   implicit val zoneOffsetCodec: BinaryCodec[ZoneOffset] =
     BinaryCodec.from(
@@ -219,138 +261,147 @@ trait Codecs extends internal.TupleCodecs {
     )
 
   implicit val durationCodec: BinaryCodec[Duration] =
-    BinaryCodec.define((duration: Duration) =>
-      for {
-        _ <- writeLong(duration.getSeconds)
-        _ <- writeInt(duration.getNano)
-      } yield ()
-    )(for {
-      seconds <- readLong()
-      nanos   <- readInt()
-    } yield Duration.ofSeconds(seconds, nanos.toLong))
+    new BinaryCodec[Duration] {
+      override def deserialize()(implicit ctx: DeserializationContext): Duration = {
+        val seconds = readLong()
+        val nanos   = readInt()
+        Duration.ofSeconds(seconds, nanos.toLong)
+      }
 
-  implicit val instantCodec: BinaryCodec[Instant] =
-    BinaryCodec.define((instant: Instant) =>
-      for {
-        _ <- writeLong(instant.getEpochSecond)
-        _ <- writeInt(instant.getNano)
-      } yield ()
-    )(for {
-      seconds <- readLong()
-      nanos   <- readInt()
-    } yield Instant.ofEpochSecond(seconds, nanos.toLong))
+      override def serialize(value: Duration)(implicit context: SerializationContext): Unit = {
+        writeLong(value.getSeconds)
+        writeInt(value.getNano)
+      }
+    }
+
+  implicit val instantCodec: BinaryCodec[Instant] = new BinaryCodec[Instant] {
+    override def deserialize()(implicit ctx: DeserializationContext): Instant = {
+      val seconds = readLong()
+      val nanos   = readInt()
+      Instant.ofEpochSecond(seconds, nanos.toLong)
+    }
+
+    override def serialize(value: Instant)(implicit context: SerializationContext): Unit = {
+      writeLong(value.getEpochSecond)
+      writeInt(value.getNano)
+    }
+  }
 
   implicit val localDateCodec: BinaryCodec[LocalDate] =
-    BinaryCodec.define((localDate: LocalDate) =>
-      for {
-        _ <- writeVarInt(localDate.getYear, optimizeForPositive = true)
-        _ <- write(localDate.getMonth)
-        _ <- writeByte(localDate.getDayOfMonth.toByte)
-      } yield ()
-    )(for {
-      year       <- readVarInt(optimizeForPositive = true)
-      month      <- read[Month]()
-      dayOfMonth <- readByte()
-    } yield LocalDate.of(year, month, dayOfMonth.toInt))
+    new BinaryCodec[LocalDate] {
+      override def deserialize()(implicit ctx: DeserializationContext): LocalDate = {
+        val year  = readVarInt(optimizeForPositive = true)
+        val month = read[Month]()
+        val day   = readByte()
+        LocalDate.of(year, month, day.toInt)
+      }
+
+      override def serialize(value: LocalDate)(implicit context: SerializationContext): Unit = {
+        writeVarInt(value.getYear, optimizeForPositive = true)
+        write(value.getMonth)
+        writeByte(value.getDayOfMonth.toByte)
+      }
+    }
 
   implicit val localTimeCodec: BinaryCodec[LocalTime] =
-    BinaryCodec.define((localTime: LocalTime) =>
-      for {
-        _ <- writeByte(localTime.getHour.toByte)
-        _ <- writeByte(localTime.getMinute.toByte)
-        _ <- writeByte(localTime.getSecond.toByte)
-        _ <- writeVarInt(localTime.getNano, optimizeForPositive = true)
-      } yield ()
-    )(for {
-      hour   <- readByte()
-      minute <- readByte()
-      second <- readByte()
-      nano   <- readVarInt(optimizeForPositive = true)
-    } yield LocalTime.of(hour, minute, second, nano))
+    new BinaryCodec[LocalTime] {
+      override def deserialize()(implicit ctx: DeserializationContext): LocalTime = {
+        val hour   = readByte()
+        val minute = readByte()
+        val second = readByte()
+        val nano   = readVarInt(optimizeForPositive = true)
+        LocalTime.of(hour, minute, second, nano)
+      }
+
+      override def serialize(value: LocalTime)(implicit context: SerializationContext): Unit = {
+        writeByte(value.getHour.toByte)
+        writeByte(value.getMinute.toByte)
+        writeByte(value.getSecond.toByte)
+        writeVarInt(value.getNano, optimizeForPositive = true)
+      }
+    }
 
   implicit val localDateTimeCodec: BinaryCodec[LocalDateTime] =
-    BinaryCodec.define((localDateTime: LocalDateTime) =>
-      for {
-        _ <- write(localDateTime.toLocalDate)
-        _ <- write(localDateTime.toLocalTime)
-      } yield ()
-    )(for {
-      date <- read[LocalDate]()
-      time <- read[LocalTime]()
-    } yield LocalDateTime.of(date, time))
+    new BinaryCodec[LocalDateTime] {
+      override def deserialize()(implicit ctx: DeserializationContext): LocalDateTime = {
+        val date = read[LocalDate]()
+        val time = read[LocalTime]()
+        LocalDateTime.of(date, time)
+      }
+
+      override def serialize(value: LocalDateTime)(implicit context: SerializationContext): Unit = {
+        write(value.toLocalDate)
+        write(value.toLocalTime)
+      }
+    }
 
   implicit val offsetTimeCodec: BinaryCodec[OffsetTime] =
-    BinaryCodec.define((offsetTime: OffsetTime) =>
-      for {
-        _ <- write(offsetTime.toLocalTime)
-        _ <- write(offsetTime.getOffset)
-      } yield ()
-    )(for {
-      time   <- read[LocalTime]()
-      offset <- read[ZoneOffset]()
-    } yield OffsetTime.of(time, offset))
+    new BinaryCodec[OffsetTime] {
+      override def deserialize()(implicit ctx: DeserializationContext): OffsetTime = {
+        val time   = read[LocalTime]()
+        val offset = read[ZoneOffset]()
+        OffsetTime.of(time, offset)
+      }
+
+      override def serialize(value: OffsetTime)(implicit context: SerializationContext): Unit = {
+        write(value.toLocalTime)
+        write(value.getOffset)
+      }
+    }
 
   implicit val offsetDateTimeCodec: BinaryCodec[OffsetDateTime] =
-    BinaryCodec.define((offsetDateTime: OffsetDateTime) =>
-      for {
-        _ <- write(offsetDateTime.toLocalDateTime)
-        _ <- write(offsetDateTime.getOffset)
-      } yield ()
-    )(for {
-      dateTime <- read[LocalDateTime]()
-      offset   <- read[ZoneOffset]()
-    } yield OffsetDateTime.of(dateTime, offset))
+    new BinaryCodec[OffsetDateTime] {
+      override def deserialize()(implicit ctx: DeserializationContext): OffsetDateTime = {
+        val dateTime = read[LocalDateTime]()
+        val offset   = read[ZoneOffset]()
+        OffsetDateTime.of(dateTime, offset)
+      }
+
+      override def serialize(value: OffsetDateTime)(implicit context: SerializationContext): Unit = {
+        write(value.toLocalDateTime)
+        write(value.getOffset)
+      }
+    }
 
   implicit val zonedDateTimeCodec: BinaryCodec[ZonedDateTime] =
-    BinaryCodec.define((offsetDateTime: ZonedDateTime) =>
-      for {
-        _ <- write(offsetDateTime.toLocalDateTime)
-        _ <- write(offsetDateTime.getOffset)
-        _ <- write(offsetDateTime.getZone)
-      } yield ()
-    )(for {
-      dateTime <- read[LocalDateTime]()
-      offset   <- read[ZoneOffset]()
-      zone     <- read[ZoneId]()
-    } yield ZonedDateTime.ofStrict(dateTime, offset, zone))
-
-  private[desert] final case class OptionBinaryCodec[T]()(implicit val innerCodec: BinaryCodec[T])
-      extends BinaryCodec[Option[T]] {
-    override def deserialize(): Deser[Option[T]] =
-      for {
-        isDefined <- read[Boolean]()
-        result    <- if (isDefined) read[T]().map(Some.apply) else finishDeserializerWith(None)
-      } yield result
-
-    override def serialize(value: Option[T]): io.github.vigoo.desert.Ser[Unit] =
-      value match {
-        case Some(value) => write(true) *> write(value)
-        case None        => write(false)
+    new BinaryCodec[ZonedDateTime] {
+      override def deserialize()(implicit ctx: DeserializationContext): ZonedDateTime = {
+        val dateTime = read[LocalDateTime]()
+        val offset   = read[ZoneOffset]()
+        val zone     = read[ZoneId]()
+        ZonedDateTime.ofStrict(dateTime, offset, zone)
       }
-  }
+
+      override def serialize(value: ZonedDateTime)(implicit context: SerializationContext): Unit = {
+        write(value.toLocalDateTime)
+        write(value.getOffset)
+        write(value.getZone)
+      }
+    }
 
   implicit def optionCodec[T: BinaryCodec]: BinaryCodec[Option[T]] = OptionBinaryCodec[T]()
 
   // Throwable
 
   implicit val stackTraceElementCodec: BinaryCodec[StackTraceElement] =
-    BinaryCodec.define[StackTraceElement](stackTraceElement =>
-      for {
-        _ <- writeByte(0) // version
-        _ <- write(Option(stackTraceElement.getClassName))
-        _ <- write(Option(stackTraceElement.getMethodName))
-        _ <- write(Option(stackTraceElement.getFileName))
-        _ <- writeVarInt(stackTraceElement.getLineNumber, optimizeForPositive = true)
-      } yield ()
-    )(
-      for {
-        _          <- readByte() // version
-        className  <- read[Option[String]]()
-        methodName <- read[Option[String]]()
-        fileName   <- read[Option[String]]()
-        lineNumber <- readVarInt(optimizeForPositive = true)
-      } yield new StackTraceElement(className.orNull, methodName.orNull, fileName.orNull, lineNumber)
-    )
+    new BinaryCodec[StackTraceElement] {
+      override def deserialize()(implicit ctx: DeserializationContext): StackTraceElement = {
+        val _          = readByte()
+        val className  = read[Option[String]]()
+        val methodName = read[Option[String]]()
+        val fileName   = read[Option[String]]()
+        val lineNumber = readVarInt(optimizeForPositive = true)
+        new StackTraceElement(className.orNull, methodName.orNull, fileName.orNull, lineNumber)
+      }
+
+      override def serialize(value: StackTraceElement)(implicit context: SerializationContext): Unit = {
+        writeByte(0)
+        write(Option(value.getClassName))
+        write(Option(value.getMethodName))
+        write(Option(value.getFileName))
+        writeVarInt(value.getLineNumber, optimizeForPositive = true)
+      }
+    }
 
   implicit def persistedThrowableCodec: BinaryCodec[PersistedThrowable] =
     new AdtCodec[PersistedThrowable, PersistedThrowable](
@@ -385,12 +436,15 @@ trait Codecs extends internal.TupleCodecs {
           (cause: Option[PersistedThrowable], pt: PersistedThrowable) => pt.copy(cause = cause)
         )
       ),
-      initialBuilderState = PersistedThrowable("", "", Array.empty, None),
+      initialBuilderState = () => PersistedThrowable("", "", Array.empty, None),
       materialize = Right(_)
     )
 
   implicit val throwableCodec: BinaryCodec[Throwable] = BinaryCodec.from(
-    persistedThrowableCodec.contramap(PersistedThrowable.apply),
+    persistedThrowableCodec.contramap {
+      case persistedThrowable: PersistedThrowable => persistedThrowable
+      case throwable: Throwable                   => PersistedThrowable(throwable)
+    },
     persistedThrowableCodec.map(persisted => persisted)
   )
 
@@ -398,64 +452,57 @@ trait Codecs extends internal.TupleCodecs {
 
   def iterableCodec[A: BinaryCodec, T <: Iterable[A]](implicit factory: Factory[A, T]): BinaryCodec[T] =
     new BinaryCodec[T] {
-      override def deserialize(): Deser[T] =
-        for {
-          knownSize <- readVarInt(optimizeForPositive = false)
-          result    <- if (knownSize == -1) {
-                         deserializeWithUnknownSize()
-                       } else {
-                         deserializeWithKnownSize(knownSize)
-                       }
-        } yield result
-
-      private def deserializeWithUnknownSize(): Deser[T] = {
-        val builder = factory.newBuilder
-        readAll(builder).map(_.result())
+      override def deserialize()(implicit ctx: DeserializationContext): T = {
+        val knownSize = readVarInt(optimizeForPositive = false)
+        if (knownSize == -1)
+          deserializeWithUnknownSize()
+        else
+          deserializeWithKnownSize(knownSize)
       }
 
-      private def readAll(builder: mutable.Builder[A, T]): Deser[mutable.Builder[A, T]] =
-        readNext().flatMap {
-          case None       => finishDeserializerWith(builder)
-          case Some(elem) => readAll(builder += elem)
+      private def deserializeWithUnknownSize()(implicit ctx: DeserializationContext): T = {
+        val builder = factory.newBuilder
+        readAll(builder)
+        builder.result()
+      }
+
+      @tailrec
+      private def readAll(builder: mutable.Builder[A, T])(implicit ctx: DeserializationContext): Unit =
+        read[Option[A]]() match {
+          case Some(value) =>
+            builder += value
+            readAll(builder)
+          case None        =>
         }
 
-      private def readNext(): Deser[Option[A]] =
-        read[Option[A]]()
-
-      private def deserializeWithKnownSize(size: Int): Deser[T] = {
+      private def deserializeWithKnownSize(size: Int)(implicit ctx: DeserializationContext): T = {
         val builder = factory.newBuilder
         builder.sizeHint(size)
-
-        (0 until size)
-          .foldLeft(finishDeserializerWith(builder)) { case (b, _) =>
-            b.flatMap(b => read[A]().map(b += _))
-          }
-          .map(_.result())
+        for (_ <- 0 until size)
+          builder += read[A]()
+        builder.result()
       }
 
-      override def serialize(value: T): io.github.vigoo.desert.Ser[Unit] =
-        if (value.knownSize == -1) {
+      override def serialize(value: T)(implicit context: SerializationContext): Unit =
+        if (value.knownSize == -1)
           serializeWithUnknownSize(value)
-        } else {
+        else
           serializeWithKnownSize(value, value.knownSize)
+
+      private def serializeWithUnknownSize(value: T)(implicit context: SerializationContext): Unit = {
+        writeVarInt(-1, optimizeForPositive = false)
+        for (elem <- value) {
+          write(true)
+          write(elem)
         }
+        write(false)
+      }
 
-      private def serializeWithUnknownSize(value: T): io.github.vigoo.desert.Ser[Unit] =
-        for {
-          _ <- writeVarInt(-1, optimizeForPositive = false)
-          _ <- value.foldRight(finishSerializer()) { case (elem, rest) =>
-                 write(true) *> write(elem) *> rest
-               }
-          _ <- write(false)
-        } yield ()
-
-      private def serializeWithKnownSize(value: T, size: Int): io.github.vigoo.desert.Ser[Unit] =
-        for {
-          _ <- writeVarInt(size, optimizeForPositive = false)
-          _ <- value.foldRight(finishSerializer()) { case (elem, rest) =>
-                 write(elem) *> rest
-               }
-        } yield ()
+      private def serializeWithKnownSize(value: T, size: Int)(implicit context: SerializationContext): Unit = {
+        writeVarInt(size, optimizeForPositive = false)
+        for (elem <- value)
+          write(elem)
+      }
     }
 
   implicit def wrappedArrayCodec[A: BinaryCodec: ClassTag]: BinaryCodec[ArraySeq[A]] = iterableCodec[A, ArraySeq[A]]
@@ -479,89 +526,34 @@ trait Codecs extends internal.TupleCodecs {
     iterableCodec[(K, V), SortedMap[K, V]]
 
   implicit def eitherCodec[L: BinaryCodec, R: BinaryCodec]: BinaryCodec[Either[L, R]] = new BinaryCodec[Either[L, R]] {
-    override def deserialize(): Deser[Either[L, R]] =
-      for {
-        isRight <- read[Boolean]()
-        result  <- if (isRight) read[R]().map(Right.apply) else read[L]().map(Left.apply)
-      } yield result
 
-    override def serialize(value: Either[L, R]): io.github.vigoo.desert.Ser[Unit] =
+    override def deserialize()(implicit ctx: DeserializationContext): Either[L, R] = {
+      val isRight = read[Boolean]()
+      if (isRight) Right(read[R]()) else Left(read[L]())
+    }
+
+    override def serialize(value: Either[L, R])(implicit context: SerializationContext): Unit =
       value match {
-        case Left(value)  => write(false) *> write(value)
-        case Right(value) => write(true) *> write(value)
+        case Left(value)  =>
+          write(false)
+          write(value)
+        case Right(value) =>
+          write(true)
+          write(value)
       }
   }
 
   implicit def tryCodec[A: BinaryCodec]: BinaryCodec[Try[A]] = new BinaryCodec[Try[A]] {
-    override def deserialize(): Deser[Try[A]] =
-      for {
-        isSuccess <- read[Boolean]()
-        result    <- if (isSuccess) read[A]().map(Success.apply) else read[Throwable]().map(Failure.apply)
-      } yield result
 
-    override def serialize(value: Try[A]): io.github.vigoo.desert.Ser[Unit] =
-      value match {
-        case Failure(reason) => write(false) *> write(reason)
-        case Success(value)  => write(true) *> write(value)
-      }
-  }
-
-  // ZIO prelude specific codecs
-
-  implicit def nonEmptyChunkCodec[A: BinaryCodec]: BinaryCodec[NonEmptyChunk[A]] = {
-    val inner = iterableCodec[A, Chunk[A]](BinaryCodec[A], Chunk.iterableFactory)
-    BinaryCodec.from(
-      inner.contramap(_.toChunk),
-      () =>
-        inner.deserialize().flatMap { chunk =>
-          NonEmptyChunk.fromChunk(chunk) match {
-            case Some(nonEmptyChunk) => finishDeserializerWith(nonEmptyChunk)
-            case None                =>
-              failDeserializerWith(DesertFailure.DeserializationFailure("Non empty chunk is serialized as empty", None))
-          }
-        }
-    )
-  }
-
-  implicit def validationCodec[E: BinaryCodec, A: BinaryCodec]: BinaryCodec[Validation[E, A]] =
-    new BinaryCodec[Validation[E, A]] {
-      override def deserialize(): Deser[Validation[E, A]] =
-        for {
-          isValid <- read[Boolean]()
-          result  <-
-            if (isValid)
-              read[A]().map(Validation.succeed[A])
-            else
-              read[NonEmptyChunk[E]]().map { errors =>
-                Validation.validateAll(errors.map(Validation.fail)).map(x => x.asInstanceOf[A])
-              }
-        } yield result
-
-      override def serialize(value: Validation[E, A]): io.github.vigoo.desert.Ser[Unit] =
-        value match {
-          case Validation.Failure(_, value) => write(false) *> write(value)
-          case Validation.Success(_, value) => write(true) *> write(value)
-        }
+    override def deserialize()(implicit ctx: DeserializationContext): Try[A] = {
+      val isSuccess = read[Boolean]()
+      if (isSuccess) Success(read[A]()) else Failure(read[Throwable]())
     }
 
-  implicit def nonEmptyListCodec[A: BinaryCodec]: BinaryCodec[NonEmptyList[A]] = {
-    val inner = listCodec[A]
-    BinaryCodec.from(
-      inner.contramap(_.toList),
-      () =>
-        inner.deserialize().flatMap {
-          case x :: xs => finishDeserializerWith(NonEmptyList.fromIterable(x, xs))
-          case Nil     =>
-            failDeserializerWith(DesertFailure.DeserializationFailure("Non empty list is serialized as empty", None))
-        }
-    )
-  }
-
-  implicit def zsetCodec[A: BinaryCodec, B: BinaryCodec]: BinaryCodec[ZSet[A, B]] = {
-    val inner = mapCodec[A, B]
-    BinaryCodec.from(
-      inner.contramap(_.toMap),
-      inner.map(ZSet.fromMap)
-    )
+    override def serialize(value: Try[A])(implicit context: SerializationContext): Unit =
+      value match {
+        case Failure(reason) => write(false); write(reason)
+        case Success(value)  => write(true); write(value)
+      }
   }
 }

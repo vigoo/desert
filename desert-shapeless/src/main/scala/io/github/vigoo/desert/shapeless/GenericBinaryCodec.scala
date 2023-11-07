@@ -561,7 +561,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
     val constructorMap  = toConstructorMap.value.constructors
     val trs             = zip(keys.value() :: transientAnnotations() :: HNil)
     val transientFields = toList(trs).collect { case (key, Some(transientField(defaultValue))) =>
-      (key, defaultValue)
+      (key.name, defaultValue)
     }.toMap
 
     new AdtCodec[T, BuilderState](
@@ -574,7 +574,7 @@ class GenericBinaryCodec(evolutionSteps: Vector[Evolution]) extends GenericDeriv
         serializationPlan.value.commands(taggedTransients.tag(genericValue))
       },
       deserializationPlan.value.commands,
-      BuilderState.empty,
+      () => BuilderState.empty,
       (values => Right(gen.from(taggedTransients.untag(deserializationPlan.value.materialize(values)))))
     )
   }
