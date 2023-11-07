@@ -4,11 +4,11 @@ import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
-val scala2 = "2.13.11"
+val scala2 = "2.13.12"
 val scala3 = "3.3.1"
 
-val zioVersion       = "2.0.13"
-val zioSchemaVersion = "0.4.14"
+val zioVersion       = "2.0.19"
+val zioSchemaVersion = "0.4.15"
 
 name := "desert"
 
@@ -153,7 +153,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.5.1"
+      "org.typelevel" %% "cats-effect" % "3.5.2"
     )
   )
   .jsSettings(coverageEnabled := false)
