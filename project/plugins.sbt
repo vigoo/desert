@@ -10,7 +10,7 @@ addSbtPlugin("com.github.sbt"     % "sbt-unidoc"               % "0.5.0")
 addSbtPlugin("com.github.sbt"     % "sbt-ci-release"           % "1.5.10")
 addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.2")
 
-libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.8.13"
+libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.8.14"
 
 libraryDependencies += "org.scoverage" %% "scalac-scoverage-plugin" % "2.0.11" cross (CrossVersion.full)
 
