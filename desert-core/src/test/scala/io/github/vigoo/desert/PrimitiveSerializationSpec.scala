@@ -73,6 +73,14 @@ object PrimitiveSerializationSpec extends ZIOSpecDefault with SerializationPrope
       test("localDateTime")(canBeSerialized(Gen.localDateTime)),
       test("offsetTime")(canBeSerialized(Gen.offsetTime)),
       test("offsetDateTime")(canBeSerialized(Gen.offsetDateTime)),
-      test("zonedDateTime")(canBeSerialized(Gen.zonedDateTime))
+      test("zonedDateTime")(canBeSerialized(Gen.zonedDateTime)),
+      test("debug") {
+        val value        = -1
+        val serialized   = serializeToArray(value)(varIntCodec)
+        println(serialized.map(_.toList.map(_.toHexString)))
+        val deserialized = deserializeFromArray(serialized.toOption.get)(varIntCodec)
+        println(deserialized)
+        assertCompletes
+      }
     )
 }
