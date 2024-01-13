@@ -3,14 +3,17 @@ package io.github.vigoo.desert.zioschema
 import io.github.vigoo.desert.Evolution.FieldAdded
 import io.github.vigoo.desert.{
   BinaryCodec,
+  Evolution,
   SerializationProperties,
   TypeRegistry,
   evolutionSteps,
+  serializeToArray,
   transientConstructor,
   transientField
 }
+import zio.Chunk
 import zio.schema.{DeriveSchema, Schema}
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault}
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object TransientSpec extends ZIOSpecDefault with SerializationProperties {
   case class TypeWithoutCodec(value: Int)
@@ -32,13 +35,21 @@ object TransientSpec extends ZIOSpecDefault with SerializationProperties {
 
   case class Case3(x: String) extends SumWithTransientCons
 
+  @evolutionSteps(
+    Evolution.FieldAdded("x", 0),
+    Evolution.FieldRemoved("z")
+  )
+  case class Point(x: Int, y: Int, @transientField(None) cachedStr: Option[String])
+
   private implicit val typeRegistry: TypeRegistry = TypeRegistry.empty
 
   implicit val ttSchema: Schema[TransientTest]         = DeriveSchema.gen[TransientTest]
   implicit val swtSchema: Schema[SumWithTransientCons] = DeriveSchema.gen[SumWithTransientCons]
+  implicit val pointSchema: Schema[Point]              = DeriveSchema.gen[Point]
 
   implicit val ttCodec: BinaryCodec[TransientTest]         = DerivedBinaryCodec.derive[TransientTest]
   implicit val swtCodec: BinaryCodec[SumWithTransientCons] = DerivedBinaryCodec.derive[SumWithTransientCons]
+  implicit val pointCodec: BinaryCodec[Point]              = DerivedBinaryCodec.derive[Point]
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Support for transient modifiers")(
@@ -60,6 +71,12 @@ object TransientSpec extends ZIOSpecDefault with SerializationProperties {
       },
       test("serializing a transient constructor fails") {
         cannotBeSerializedAndReadBack[SumWithTransientCons, SumWithTransientCons](Case2(TypeWithoutCodec(1)))
+      },
+      test("expected binary format") {
+        val point                 = Point(1, -10, None)
+        val bytes                 = serializeToArray(point).map(Chunk.fromArray)
+        val expected: Chunk[Byte] = Chunk(2, 8, 8, 3, 2, 122, -1, -1, -1, -10, 0, 0, 0, 1)
+        assertTrue(bytes.toOption.get == expected)
       }
     )
 }

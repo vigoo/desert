@@ -396,7 +396,7 @@ object AdtCodec {
           }
         }
 
-        override def serialize(value: SerializedEvolutionStep)(implicit context: SerializationContext): Unit =
+        override def serialize(value: SerializedEvolutionStep)(implicit context: SerializationContext): Unit = {
           value match {
             case FieldAddedToNewChunk(size)  =>
               writeVarInt(size, optimizeForPositive = false)
@@ -409,6 +409,7 @@ object AdtCodec {
             case UnknownEvolutionStep        =>
               writeVarInt(Codes.Unknown, optimizeForPositive = false)
           }
+        }
       }
   }
 

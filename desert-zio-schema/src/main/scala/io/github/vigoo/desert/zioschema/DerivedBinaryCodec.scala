@@ -36,10 +36,12 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
         fields: => Chunk[Deriver.WrappedF[BinaryCodec, _]],
         summoned: => Option[BinaryCodec[A]]
     ): BinaryCodec[A] = {
+      val transientFields               = getTransientFields(record.fields)
       val preparedSerializationCommands =
-        record.fields
-          .zip(fields)
-          .map { case (field, fieldCodec) =>
+        record.fields.zipWithIndex
+          .filter { case (field, _) => !transientFields.contains(field.name) }
+          .map { case (field, idx) =>
+            val fieldCodec = fields(idx)
             (field.name, field.get, () => fieldCodec.unwrap.asInstanceOf[BinaryCodec[Any]])
           }
           .toList
@@ -50,7 +52,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
             evolutionSteps = getEvolutionStepsFromAnnotation(record.annotations),
             typeName = record.id.name,
             constructors = Vector(record.id.name),
-            transientFields = getTransientFields(record.fields),
+            transientFields = transientFields,
             getSerializationCommands = (value: A) =>
               preparedSerializationCommands.map { case (fieldName, getter, codec) =>
                 AdtCodec.SerializationCommand.WriteField[Any](
