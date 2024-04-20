@@ -906,6 +906,7 @@ object DerivedBinaryCodec extends DerivedBinaryCodecVersionSpecific {
         case Schema.Either(left, right, annotations)              => None
         case Schema.Lazy(schema0)                                 => findTopLevelOptionalNode(schema0())
         case Schema.Dynamic(annotations)                          => None
+        case Schema.Fallback(left, right, schema, annotations)    => None
       }
 
     private def fieldToDeserializationCommand(

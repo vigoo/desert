@@ -19,12 +19,12 @@ package object schemas {
     Schema.fail("__builtin_throwable_codec__")
 
   val builtInArrayCodecTypeId: TypeId                                                           = TypeId.parse("scala.Array")
-  implicit def builtInArrayCodec[A: ClassTag](implicit elemSchema: Schema[A]): Schema[Array[A]] =
+  implicit def builtInArrayCodec[A](implicit elemSchema: Schema[A]): Schema[Array[A]] =
     Schema.CaseClass1[A, Array[A]](
       builtInArrayCodecTypeId,
       Schema.Field[Array[A], A]("element", elemSchema, get0 = _ => ???, set0 = (_, _) => ???),
       (_: A) => ???,
-      annotations0 = Chunk(implicitly[ClassTag[A]])
+      annotations0 = Chunk.empty
     )
 
   val builtInTryCodecTypeId: TypeId                                               = TypeId.parse("scala.util.Try")
@@ -62,7 +62,7 @@ package object schemas {
     )
 
   val typeRegistryTypeId: TypeId                    = TypeId.parse("io.github.vigoo.desert.TypeRegistry")
-  def codecFromTypeRegistry[A: ClassTag]: Schema[A] =
+  def codecFromTypeRegistry[A]: Schema[A] =
     Schema.CaseClass1[Nothing, A](
       typeRegistryTypeId,
       Schema.Field[A, Nothing](
@@ -72,6 +72,6 @@ package object schemas {
         set0 = (_, _) => ???
       ),
       (_: A) => ???,
-      annotations0 = Chunk(implicitly[ClassTag[A]])
+      annotations0 = Chunk.empty
     )
 }
