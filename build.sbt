@@ -7,7 +7,7 @@ import xerial.sbt.Sonatype._
 val scala2 = "2.13.13"
 val scala3 = "3.3.3"
 
-val zioVersion       = "2.0.21"
+val zioVersion       = "2.0.22"
 val zioSchemaVersion = "1.1.0"
 
 name := "desert"
@@ -213,7 +213,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.1.6",
+      "com.devsisters" %% "shardcake-core"        % "2.2.5",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
