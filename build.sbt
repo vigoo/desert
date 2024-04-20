@@ -7,7 +7,7 @@ import xerial.sbt.Sonatype._
 val scala2 = "2.13.13"
 val scala3 = "3.3.3"
 
-val zioVersion       = "2.0.21"
+val zioVersion       = "2.0.22"
 val zioSchemaVersion = "0.4.17"
 
 name := "desert"
