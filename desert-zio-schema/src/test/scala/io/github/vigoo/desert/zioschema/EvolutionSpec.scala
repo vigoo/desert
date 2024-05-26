@@ -71,6 +71,19 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
     )
   }
 
+  case class Prod2V1(fieldA: Option[String], fieldB: Int)
+
+  object Prod2V1 {
+    val gen: Gen[Sized, ProdV1] = DeriveGen[ProdV1]
+  }
+
+  @evolutionSteps(FieldRemoved("fieldA"))
+  case class Prod2V2(fieldB: Int)
+
+  object Prod2V2 {
+    val gen: Gen[Sized, Prod2V2] = DeriveGen[Prod2V2]
+  }
+
   sealed trait Coprod1
 
   case class Case11(a: Int) extends Coprod1
@@ -93,6 +106,8 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val schemaProdV3: Schema[ProdV3]   = DeriveSchema.gen
   implicit val schemaProdV4: Schema[ProdV4]   = DeriveSchema.gen
   implicit val schemaProdV5: Schema[ProdV5]   = DeriveSchema.gen
+  implicit val schemaProd2V1: Schema[Prod2V1] = DeriveSchema.gen
+  implicit val schemaProd2V2: Schema[Prod2V2] = DeriveSchema.gen
   implicit val schemaCoprod1: Schema[Coprod1] = DeriveSchema.gen
   implicit val schemaCoprod2: Schema[Coprod2] = DeriveSchema.gen
 
@@ -101,6 +116,8 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
   implicit val v3codec: BinaryCodec[ProdV3]     = DerivedBinaryCodec.derive
   implicit val v4codec: BinaryCodec[ProdV4]     = DerivedBinaryCodec.derive
   implicit val v5codec: BinaryCodec[ProdV5]     = DerivedBinaryCodec.derive
+  implicit val v6codec: BinaryCodec[Prod2V1]    = DerivedBinaryCodec.derive
+  implicit val v7codec: BinaryCodec[Prod2V2]    = DerivedBinaryCodec.derive
   implicit val c1codec: BinaryCodec[Coprod1]    = DerivedBinaryCodec.derive
   implicit val c2codec: BinaryCodec[Coprod2]    = DerivedBinaryCodec.derive
   implicit val testIdCodec: BinaryCodec[TestId] = DerivedBinaryCodec.deriveForWrapper[TestId]
@@ -242,6 +259,12 @@ object EvolutionSpec extends ZIOSpecDefault with SerializationProperties {
           canBeSerializedAndReadBack(
             ProdV4("hello", newField1 = false),
             ProdV3("hello", newField1 = false, fieldB = None)
+          )
+        ),
+        test("removing a non-last field from the original set of of fields")(
+          canBeSerializedAndReadBack(
+            Prod2V2(200),
+            Prod2V1(None, 200)
           )
         )
       ),
