@@ -1,0 +1,1 @@
+{"name":"sbt","version":"1.9.8","bspVersion":"2.1.0-M1","languages":["scala"],"argv":["/Users/vigoo/.sdkman/candidates/java/21-zulu/zulu-21.jdk/Contents/Home/bin/java","-Xms100m","-Xmx100m","-classpath","/Users/vigoo/.sdkman/candidates/sbt/1.9.6/bin/sbt-launch.jar","-Dsbt.script=/Users/vigoo/.sdkman/candidates/sbt/current/bin/sbt","xsbt.boot.Boot","-bsp"]}
