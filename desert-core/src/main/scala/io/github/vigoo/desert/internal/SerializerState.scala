@@ -19,7 +19,7 @@ final class SerializerState private (
     idsByString.get(value) match {
       case Some(id) => StringAlreadyStored(id)
       case None     =>
-        val id = lastStringId.next
+        val id    = lastStringId.next
         lastStringId = id
         stringsById += (id    -> value)
         idsByString += (value -> id)
@@ -30,7 +30,7 @@ final class SerializerState private (
     idsByRef.get(value) match {
       case Some(id) => RefAlreadyStored(id)
       case None     =>
-        val id = lastRefId.next
+        val id    = lastRefId.next
         lastRefId = id
         refsById += (id    -> value)
         idsByRef += (value -> id)
