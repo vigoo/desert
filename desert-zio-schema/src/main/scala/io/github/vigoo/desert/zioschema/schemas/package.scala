@@ -18,7 +18,7 @@ package object schemas {
   implicit lazy val builtInThrowableCodecPlaceholder: Schema[Throwable] =
     Schema.fail("__builtin_throwable_codec__")
 
-  val builtInArrayCodecTypeId: TypeId                                                           = TypeId.parse("scala.Array")
+  val builtInArrayCodecTypeId: TypeId                                                 = TypeId.parse("scala.Array")
   implicit def builtInArrayCodec[A](implicit elemSchema: Schema[A]): Schema[Array[A]] =
     Schema.CaseClass1[A, Array[A]](
       builtInArrayCodecTypeId,
@@ -61,7 +61,7 @@ package object schemas {
       )
     )
 
-  val typeRegistryTypeId: TypeId                    = TypeId.parse("io.github.vigoo.desert.TypeRegistry")
+  val typeRegistryTypeId: TypeId          = TypeId.parse("io.github.vigoo.desert.TypeRegistry")
   def codecFromTypeRegistry[A]: Schema[A] =
     Schema.CaseClass1[Nothing, A](
       typeRegistryTypeId,
