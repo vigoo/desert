@@ -8,7 +8,7 @@ val scala2 = "2.13.14"
 val scala3 = "3.3.3"
 
 val zioVersion       = "2.1.7"
-val zioSchemaVersion = "1.2.2"
+val zioSchemaVersion = "1.3.0"
 
 name := "desert"
 
@@ -213,7 +213,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.3.0",
+      "com.devsisters" %% "shardcake-core"        % "2.3.2",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
