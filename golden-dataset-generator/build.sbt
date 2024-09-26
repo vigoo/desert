@@ -4,7 +4,7 @@ name := "golden-dataset-generator"
 
 lazy val commonSettings = Seq(
   organization  := "io.github.vigoo",
-  scalaVersion  := "2.13.14",
+  scalaVersion  := "2.13.15",
   scalacOptions := Seq(
     "-deprecation",
     "-unchecked"
