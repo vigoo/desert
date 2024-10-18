@@ -9,3 +9,8 @@ project/plugins/project/
 travis-deploy-key
 travis-deploy-key.pub
 .jekyll-cache/
+.bloop
+.bsp
+.metals
+.vscode
+metals.sbt
