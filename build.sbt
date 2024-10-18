@@ -85,6 +85,7 @@ lazy val root = Project("desert", file("."))
     shapeless.jvm,
     shapeless.js,
     akka,
+    pekko,
     cats.jvm,
     cats.js,
     catsEffect.jvm,
@@ -128,6 +129,17 @@ lazy val akka = Project("desert-akka", file("desert-akka"))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"       % "2.6.19",
       "com.typesafe.akka" %% "akka-actor-typed" % "2.6.19"
+    )
+  )
+  .dependsOn(core.jvm)
+
+lazy val pekko = Project("desert-pekko", file("desert-pekko"))
+  .settings(commonSettings)
+  .settings(
+    description := "Pekko serialization bindings for desert",
+    libraryDependencies ++= Seq(
+      "org.apache.pekko" %% "pekko-actor"       % "1.1.2",
+      "org.apache.pekko" %% "pekko-actor-typed" % "1.1.2"
     )
   )
   .dependsOn(core.jvm)
