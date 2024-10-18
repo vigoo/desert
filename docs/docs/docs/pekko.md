@@ -8,7 +8,7 @@ The pekko module adds some extra codecs and a _pekko serializer_.
 
 To use it add the dependency:
 ```scala
-libraryDependencies += "io.github.vigoo" %% "desert-pekko" % "0.3.0"
+libraryDependencies += "io.github.vigoo" %% "desert-pekko" % "0.3.7"
 ``` 
 
 ### Codecs
