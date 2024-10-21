@@ -225,7 +225,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.4.0",
+      "com.devsisters" %% "shardcake-core"        % "2.4.1",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
