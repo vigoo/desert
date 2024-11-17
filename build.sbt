@@ -7,7 +7,7 @@ import xerial.sbt.Sonatype._
 val scala2 = "2.13.15"
 val scala3 = "3.3.3"
 
-val zioVersion       = "2.1.9"
+val zioVersion       = "2.1.11"
 val zioSchemaVersion = "1.5.0"
 
 name := "desert"
@@ -165,7 +165,7 @@ lazy val catsEffect = CrossProject("desert-cats-effect", file("desert-cats-effec
   .settings(
     description := "Cats-effect API bindings for desert",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.5.4"
+      "org.typelevel" %% "cats-effect" % "3.5.5"
     )
   )
   .jsSettings(coverageEnabled := false)
@@ -225,7 +225,7 @@ lazy val shardcake = Project("desert-shardcake", file("desert-shardcake"))
   .settings(
     description := "Shardcake serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "com.devsisters" %% "shardcake-core"        % "2.3.2",
+      "com.devsisters" %% "shardcake-core"        % "2.4.0",
       "dev.zio"        %% "zio-schema-derivation" % zioSchemaVersion % Test
     )
   )
