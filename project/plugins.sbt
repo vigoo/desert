@@ -9,7 +9,7 @@ addSbtPlugin("com.github.sbt"     % "sbt-unidoc"               % "0.5.0")
 addSbtPlugin("com.github.sbt"     % "sbt-ci-release"           % "1.9.0")
 addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.2")
 
-libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.11.0"
+libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.11.1"
 
 ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
