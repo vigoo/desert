@@ -6,7 +6,7 @@ addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
 addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % "1.17.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"                  % "0.4.7")
 addSbtPlugin("com.github.sbt"     % "sbt-unidoc"               % "0.5.0")
-addSbtPlugin("com.github.sbt"     % "sbt-ci-release"           % "1.9.0")
+addSbtPlugin("com.github.sbt"     % "sbt-ci-release"           % "1.9.2")
 addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.2")
 
 libraryDependencies += "org.scalameta" % "scalameta_2.12" % "4.11.0"
