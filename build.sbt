@@ -4,7 +4,7 @@ import sbtcrossproject.{CrossProject, CrossType}
 import scoverage.ScoverageKeys.coverageEnabled
 import xerial.sbt.Sonatype._
 
-val scala2 = "2.13.15"
+val scala2 = "2.13.16"
 val scala3 = "3.3.3"
 
 val zioVersion       = "2.1.12"
