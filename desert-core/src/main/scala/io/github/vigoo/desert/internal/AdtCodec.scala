@@ -180,7 +180,7 @@ class AdtCodec[T, BuilderState](
       val serializedEvolutionSteps = new Array[SerializedEvolutionStep](storedVer + 1)
       for (v <- 0 to storedVer)
         serializedEvolutionSteps(v) = read[SerializedEvolutionStep]()
-      val chunks = new Array[Array[Byte]](serializedEvolutionSteps.length)
+      val chunks                   = new Array[Array[Byte]](serializedEvolutionSteps.length)
       for (v <- 0 to storedVer)
         serializedEvolutionSteps(v) match {
           case SerializedEvolutionStep.FieldAddedToNewChunk(size) =>
