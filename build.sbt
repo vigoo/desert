@@ -8,7 +8,7 @@ val scala2 = "2.13.15"
 val scala3 = "3.3.3"
 
 val zioVersion       = "2.1.12"
-val zioSchemaVersion = "1.5.0"
+val zioSchemaVersion = "1.6.3"
 
 name := "desert"
 
