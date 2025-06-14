@@ -138,8 +138,8 @@ lazy val pekko = Project("desert-pekko", file("desert-pekko"))
   .settings(
     description := "Pekko serialization bindings for desert",
     libraryDependencies ++= Seq(
-      "org.apache.pekko" %% "pekko-actor"       % "1.1.2",
-      "org.apache.pekko" %% "pekko-actor-typed" % "1.1.2"
+      "org.apache.pekko" %% "pekko-actor"       % "1.1.4",
+      "org.apache.pekko" %% "pekko-actor-typed" % "1.1.4"
     )
   )
   .dependsOn(core.jvm)
