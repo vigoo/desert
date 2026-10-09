@@ -1,5 +1,5 @@
 addSbtPlugin("org.scoverage"      % "sbt-scoverage"            % "2.2.2")
-addSbtPlugin("com.timushev.sbt"   % "sbt-updates"              % "0.6.4")
+addSbtPlugin("com.timushev.sbt"   % "sbt-updates"              % "0.7.1")
 addSbtPlugin("com.47deg"          % "sbt-microsites"           % "1.4.3")
 addSbtPlugin("org.scalameta"      % "sbt-mdoc"                 % "2.6.1")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
